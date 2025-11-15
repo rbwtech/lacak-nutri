@@ -1,6 +1,6 @@
 -- Insert sample admin user (password: admin123)
 INSERT INTO users (email, password_hash, name, role) VALUES 
-('admin@lacaknutri.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYXxFqKbqcu', 'Admin LacakNutri', 'admin');
+('admin@lacaknutri.com', '8a9778e1af274d3169fb3cdeab9e914e3a15c690413291e31505f774a8760204', 'Admin LacakNutri', 'admin');
 
 -- Insert sample allergens
 INSERT INTO allergens (name, description) VALUES 
