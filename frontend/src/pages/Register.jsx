@@ -109,7 +109,7 @@ const Register = () => {
               value={formData.name}
               onChange={handleChange}
               error={errors.name}
-              placeholder="John Doe"
+              //   placeholder=""
             />
 
             <Input

@@ -1,4 +1,4 @@
--- Insert sample admin user (password: admin123)
+-- Insert sample admin user (password: L4c4kNutr1Adm1n)
 INSERT INTO users (email, password_hash, name, role) VALUES 
 ('admin@lacaknutri.com', '8a9778e1af274d3169fb3cdeab9e914e3a15c690413291e31505f774a8760204', 'Admin LacakNutri', 'admin');
 
