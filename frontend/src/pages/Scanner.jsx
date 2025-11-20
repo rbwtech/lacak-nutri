@@ -4,6 +4,7 @@ import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import AnimatedStatus from "../components/ui/AnimatedStatus";
 import api from "../config/api";
 
 const Scanner = () => {
@@ -461,45 +462,87 @@ const Scanner = () => {
               <div className="p-8">
                 {result.type === "bpom" ? (
                   <div className="text-center">
-                    {/* Tampilan BPOM (Minimalis) */}
+                    <AnimatedStatus type={result.found ? "success" : "error"} />
+
                     <h2 className="text-2xl font-extrabold text-text-primary mb-4">
-                      {result.found ? "✅ Terdaftar" : "❌ Tidak Ditemukan"}
+                      {result.found ? "Produk Ditemukan!" : "Tidak Ditemukan"}
                     </h2>
+
                     {result.found ? (
-                      <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm">
+                      <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm animate-fade-in-up">
+                        {" "}
                         <div>
                           <p className="text-xs font-bold text-text-secondary uppercase">
-                            Produk
+                            Nama Produk
                           </p>
                           <p className="font-bold text-lg text-text-primary">
                             {result.data.product_name}
                           </p>
                         </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-bold text-text-secondary uppercase">
+                              BPOM
+                            </p>
+                            <p className="font-mono font-medium text-primary">
+                              {result.data.bpom_number}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-text-secondary uppercase">
+                              Merk
+                            </p>
+                            <p className="font-medium text-text-primary">
+                              {result.data.brand || "-"}
+                            </p>
+                          </div>
+                        </div>
                         <div>
                           <p className="text-xs font-bold text-text-secondary uppercase">
-                            BPOM
+                            Pabrik
                           </p>
-                          <p className="font-mono font-medium text-primary">
-                            {result.data.bpom_number}
+                          <p className="text-sm text-text-primary">
+                            {result.data.manufacturer}
                           </p>
                         </div>
                       </div>
                     ) : (
-                      <p className="mb-4">
-                        Kode <strong>{result.code}</strong> tidak valid.
-                      </p>
+                      <div className="bg-bg-base p-4 rounded-xl border border-border mb-6">
+                        <p className="text-text-secondary">
+                          Nomor <strong>{result.code}</strong> tidak terdaftar.
+                        </p>
+                      </div>
                     )}
                   </div>
                 ) : (
-                  // TAMPILAN AI ANALYSIS + CHAT
                   <div className="space-y-6">
                     <div className="text-center">
-                      <div className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full font-extrabold text-xl mb-4">
-                        Skor: {result.data.health_score}/10
+                      <div className="w-24 h-24 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-card">
+                        <svg
+                          className="w-12 h-12 animate-pulse"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                          />
+                        </svg>
                       </div>
-                      <h2 className="text-2xl font-bold text-text-primary">
-                        Analisis Nutrisi
+                      <h2 className="text-2xl font-extrabold text-text-primary">
+                        Analisis Nutrisi AI
                       </h2>
+                      <div className="inline-block px-3 py-1 bg-bg-base rounded-lg border border-border mt-2">
+                        <span className="text-xs font-bold text-text-secondary">
+                          Skor Kesehatan:{" "}
+                        </span>
+                        <span className="text-lg font-extrabold text-primary">
+                          {result.data.health_score}/10
+                        </span>
+                      </div>
                     </div>
 
                     <div className="bg-bg-base p-5 rounded-2xl border border-border text-sm leading-relaxed text-text-secondary">

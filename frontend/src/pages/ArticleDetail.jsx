@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-// import api from "../config/api";
+import api from "../config/api";
 
 const ArticleDetail = () => {
   const { id } = useParams(); // Bisa slug atau ID
@@ -15,14 +15,12 @@ const ArticleDetail = () => {
     const fetchArticle = async () => {
       setLoading(true);
       try {
-        // const { data } = await api.get(`/education/articles/${id}`);
-        // setArticle(data.data);
+        const { data } = await api.get(`/education/articles/${id}`);
+        setArticle(data.data);
 
-        // Simulasi Loading
         setTimeout(() => {
-          // Jika data tidak ada (karena belum ada backend), set null atau handle error
           setLoading(false);
-        }, 800);
+        }, 500);
       } catch (error) {
         console.error(error);
         setLoading(false);

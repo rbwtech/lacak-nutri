@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-// import api from "../config/api"; // Uncomment saat integrasi
+import api from "../config/api"; // Uncomment saat integrasi
 
 const Articles = () => {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -22,14 +22,15 @@ const Articles = () => {
     const fetchArticles = async () => {
       setLoading(true);
       try {
-        // const response = await api.get(`/education/articles?category=${activeCategory}`);
-        // setArticles(response.data.data);
+        const response = await api.get(
+          `/education/articles?category=${activeCategory}`
+        );
+        setArticles(response.data.data);
 
-        // Simulasi Loading untuk UI Development
         setTimeout(() => {
-          setArticles([]); // Kosongkan dulu, nanti diisi API
+          setArticles([]);
           setLoading(false);
-        }, 800);
+        }, 500);
       } catch (error) {
         console.error(error);
         setLoading(false);

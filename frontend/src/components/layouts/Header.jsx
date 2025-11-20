@@ -38,8 +38,12 @@ const Header = () => {
         <div className="flex items-center h-16">
           <div className="flex-1 flex justify-start">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                <span className="font-extrabold text-lg">LN</span>
+              <div className="p-1 rounded-xl shadow-md group-hover:scale-105 transition-transform">
+                <img
+                  src="/lacaknutri.webp"
+                  alt="LacakNutri Logo"
+                  className="w-7.5 h-7.5 object-cover rounded-lg"
+                />
               </div>
               <span className="text-xl font-extrabold text-text-primary tracking-tight hidden sm:block">
                 LacakNutri

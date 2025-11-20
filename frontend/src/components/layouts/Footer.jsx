@@ -7,8 +7,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">LN</span>
+              <div className="p-1 rounded-lg shadow-md">
+                <img
+                  src="/lacaknutri.webp"
+                  alt="LacakNutri Logo"
+                  className="w-7.5 h-7.5 object-cover rounded-md"
+                />
               </div>
               <span className="text-h4 font-bold text-text-primary">
                 LacakNutri
