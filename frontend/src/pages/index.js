@@ -6,3 +6,6 @@ export { default as Products } from "./Products";
 export { default as ProductDetail } from "./ProductDetail";
 export { default as Profile } from "./Profile";
 export { default as NotFound } from "./NotFound";
+export { default as ArticleDetail } from "./ArticleDetail";
+export { default as Articles } from "./Articles";
+export { default as Scanner } from "./Scanner";
