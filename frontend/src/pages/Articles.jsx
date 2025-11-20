@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import api from "../config/api"; // Uncomment saat integrasi
+import api from "../config/api";
 
 const Articles = () => {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -13,26 +13,26 @@ const Articles = () => {
   const categories = [
     { id: "all", label: "Semua" },
     { id: "gizi", label: "Gizi" },
-    { id: "alergen", label: "Alergen" },
     { id: "aditif", label: "Aditif" },
-    { id: "panduan", label: "Panduan" },
+    { id: "penyakit", label: "Penyakit & Diet" },
+    { id: "label", label: "Membaca Label" },
+    { id: "tips", label: "Tips Sehat" },
   ];
 
   useEffect(() => {
     const fetchArticles = async () => {
       setLoading(true);
       try {
-        const response = await api.get(
-          `/education/articles?category=${activeCategory}`
-        );
-        setArticles(response.data.data);
+        const response = await api.get(`/education/articles`, {
+          params: {
+            category: activeCategory === "all" ? undefined : activeCategory,
+          },
+        });
 
-        setTimeout(() => {
-          setArticles([]);
-          setLoading(false);
-        }, 500);
+        setArticles(response.data || []);
       } catch (error) {
-        console.error(error);
+        console.error("Gagal memuat artikel:", error);
+      } finally {
         setLoading(false);
       }
     };
@@ -71,7 +71,7 @@ const Articles = () => {
           {/* Content Grid */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+              {[1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className="h-64 bg-white rounded-3xl border border-border animate-pulse p-6"
@@ -79,7 +79,6 @@ const Articles = () => {
                   <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                 </div>
               ))}
             </div>
@@ -88,7 +87,14 @@ const Articles = () => {
               {articles.map((article) => (
                 <Link key={article.id} to={`/articles/${article.slug}`}>
                   <Card hover className="h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-3">
+                    {article.thumbnail_url && (
+                      <img
+                        src={article.thumbnail_url}
+                        alt={article.title}
+                        className="w-full h-40 object-cover rounded-t-xl mb-4 -mt-6 -mx-6"
+                      />
+                    )}
+                    <div className="flex items-start justify-between mb-3 mt-2">
                       <span className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded-lg">
                         {article.category}
                       </span>
@@ -99,9 +105,12 @@ const Articles = () => {
                     <h3 className="text-xl font-bold text-text-primary mb-2 line-clamp-2">
                       {article.title}
                     </h3>
+                    {/* Render HTML content strip tags untuk preview */}
                     <p className="text-sm text-text-secondary mb-4 line-clamp-3 flex-1">
-                      {article.excerpt ||
-                        article.content.substring(0, 100) + "..."}
+                      {(article.content || "")
+                        .replace(/<[^>]+>/g, "")
+                        .substring(0, 100)}
+                      ...
                     </p>
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
                       <span className="text-xs text-text-secondary">
@@ -138,7 +147,7 @@ const Articles = () => {
                 Belum ada artikel
               </h3>
               <p className="text-text-secondary">
-                Nantikan konten edukasi terbaru dari kami.
+                Coba kategori lain atau nantikan konten terbaru.
               </p>
             </div>
           )}
