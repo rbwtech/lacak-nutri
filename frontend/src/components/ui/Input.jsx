@@ -8,40 +8,41 @@ const Input = ({
   containerClass = "",
   ...props
 }) => {
-  const baseStyles =
-    "w-full px-4 py-2.5 rounded-lg border bg-bg-surface text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 transition-all";
-  const errorStyles = error
-    ? "border-error focus:ring-error/20"
-    : "border-border focus:ring-primary/20";
-
   return (
-    <div className={`flex flex-col gap-1.5 ${containerClass}`}>
+    <div className={`flex flex-col gap-2 ${containerClass}`}>
       {label && (
-        <label className="text-label font-medium text-text-primary">
+        <label className="text-sm font-bold text-text-primary ml-1">
           {label}
         </label>
       )}
 
       <div className="relative">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">
             {icon}
           </div>
         )}
 
         <input
           type={type}
-          className={`${baseStyles} ${errorStyles} ${
-            icon ? "pl-10" : ""
-          } ${className}`}
+          className={`
+            w-full px-4 py-3.5 rounded-2xl border bg-bg-surface 
+            text-text-primary placeholder:text-text-secondary/70 
+            focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+            transition-all duration-200
+            ${error ? "border-error focus:ring-error/20" : "border-border"}
+            ${icon ? "pl-11" : ""}
+            ${className}
+          `}
           {...props}
         />
       </div>
 
-      {error && <span className="text-caption text-error-text">{error}</span>}
-
+      {error && (
+        <span className="text-xs text-error font-medium ml-1">{error}</span>
+      )}
       {helperText && !error && (
-        <span className="text-caption text-text-secondary">{helperText}</span>
+        <span className="text-xs text-text-secondary ml-1">{helperText}</span>
       )}
     </div>
   );

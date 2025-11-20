@@ -1,20 +1,31 @@
-@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 @layer base {
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  body {
-    font-family: "Manrope", "Inter", system-ui, sans-serif;
+  html {
+    font-family: "Manrope", sans-serif;
+    scroll-behavior: smooth;
     background-color: #fdfdf5;
     color: #333333;
   }
 
-  html {
-    scroll-behavior: smooth;
+  body {
+    @apply bg-bg-base text-text-primary min-h-screen;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #fdfdf5;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #ebe3d5;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff9966;
   }
 }
 
@@ -26,7 +37,6 @@
     transform: rotate(360deg);
   }
 }
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }

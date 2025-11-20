@@ -5,15 +5,23 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Manrope", "Inter", "system-ui", "sans-serif"],
+        sans: ["Manrope", "Inter", "sans-serif"],
       },
       colors: {
         primary: {
           DEFAULT: "#FF9966",
           hover: "#FF7A4D",
+          light: "rgba(255, 153, 102, 0.15)",
         },
-        secondary: "#6B8E23",
-        accent: "#A1D2D5",
+        secondary: {
+          DEFAULT: "#6B8E23",
+          hover: "#5A7A1C",
+          light: "rgba(107, 142, 35, 0.15)",
+        },
+        accent: {
+          DEFAULT: "#A1D2D5",
+          light: "rgba(161, 210, 213, 0.15)",
+        },
         bg: {
           base: "#FDFDF5",
           surface: "#FFFFF7",
@@ -24,38 +32,20 @@ export default {
         },
         border: "#EBE3D5",
         success: "#4CAF50",
-        warning: {
-          DEFAULT: "#FFC107",
-          text: "#F57C00",
-        },
-        error: {
-          DEFAULT: "#EF5350",
-          text: "#D32F2F",
-        },
-      },
-      fontSize: {
-        caption: "12px",
-        label: "14px",
-        base: "16px",
-        h4: "20px",
-        h3: "24px",
-        h2: "32px",
-        h1: "40px",
-      },
-      lineHeight: {
-        base: "1.5",
-      },
-      spacing: {
-        grid: "8px",
+        warning: "#FFC107",
+        error: "#EF5350",
       },
       boxShadow: {
-        soft: "0 4px 12px rgba(0, 0, 0, 0.05)",
-        md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
-        lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+        soft: "0 8px 24px rgba(149, 157, 165, 0.05)",
+        card: "0 4px 20px rgba(0, 0, 0, 0.03)",
+        floating: "0 10px 30px rgba(255, 153, 102, 0.2)",
+      },
+      borderRadius: {
+        xl: "12px",
+        "2xl": "16px",
+        "3xl": "24px",
       },
     },
   },
-  plugins: [
-    typography, // Tambahkan plugin typography
-  ],
+  plugins: [typography],
 };
