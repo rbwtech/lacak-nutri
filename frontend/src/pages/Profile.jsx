@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "../components/layouts";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
@@ -8,6 +8,8 @@ import Input from "../components/ui/Input";
 const Profile = () => {
   const { user, updateProfile, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [allergens, setAllergens] = useState([]);
+  const [userAllergies, setUserAllergies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -87,6 +89,36 @@ const Profile = () => {
       alert("Gagal mengupdate profil");
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [masterRes, myRes] = await Promise.all([
+          api.get("/users/allergens"),
+          api.get("/users/my-allergies"),
+        ]);
+        setAllergens(masterRes.data);
+        setUserAllergies(myRes.data.map((a) => a.id));
+      } catch (e) {
+        console.error("Gagal load alergi", e);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const toggleAllergy = async (id) => {
+    const newSelection = userAllergies.includes(id)
+      ? userAllergies.filter((a) => a !== id)
+      : [...userAllergies, id];
+
+    setUserAllergies(newSelection);
+
+    try {
+      await api.put("/users/allergies", { allergen_ids: newSelection });
+    } catch (e) {
+      console.error("Gagal simpan alergi", e);
     }
   };
 
@@ -306,6 +338,28 @@ const Profile = () => {
                     </svg>
                     Ganti Password
                   </Button>
+                </div>
+              </Card>
+
+              {/* Allergens */}
+              <Card title="Alergi Saya">
+                <p className="text-xs text-text-secondary mb-4">
+                  Pilih bahan yang ingin Anda hindari:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {allergens.map((allergen) => (
+                    <button
+                      key={allergen.id}
+                      onClick={() => toggleAllergy(allergen.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        userAllergies.includes(allergen.id)
+                          ? "bg-error text-white border-error shadow-md"
+                          : "bg-bg-base text-text-secondary border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {allergen.name}
+                    </button>
+                  ))}
                 </div>
               </Card>
             </div>

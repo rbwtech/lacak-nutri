@@ -1,21 +1,24 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
-from app.core.database import get_db
+from fastapi import APIRouter, Depends
 from app.services.bpom_endpoint import BPOMScraper
-from app.schemas.scan import BPOMRequest, BPOMResponse
+from app.schemas.scan import BPOMRequest, ScanResponse
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
 
-@router.post("/bpom", response_model=BPOMResponse)
+@router.post("/bpom", response_model=ScanResponse)
 async def scan_bpom(request: BPOMRequest):
     scraper = BPOMScraper()
     
-    # 1. Cari data ke BPOM
     result = await scraper.search_bpom(request.bpom_number)
     
     if not result:
-        raise HTTPException(status_code=404, detail="Produk tidak ditemukan di database BPOM")
+        return {
+            "found": False,
+            "message": f"Produk dengan kode {request.bpom_number} tidak ditemukan di database BPOM.",
+            "data": None
+        }
     
-    # 2. (TODO) Simpan ke Database History di sini (user_id optional)
-    
-    return result
+    return {
+        "found": True,
+        "message": "Data ditemukan",
+        "data": result
+    }

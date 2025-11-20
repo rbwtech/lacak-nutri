@@ -54,27 +54,19 @@ const Scanner = () => {
     setError(null);
 
     try {
-      const { data } = await api.post("/scan/bpom", { bpom_number: code });
+      const { data } = await api.post("/scan/bpom", {
+        bpom_number: code,
+      });
 
       setResult({
-        found: true,
-        data: data,
+        found: data.found,
+        data: data.data,
         code: code,
+        message: data.message,
       });
     } catch (err) {
-      if (err.response && err.response.status === 404) {
-        console.log(
-          `Info: Produk dengan kode ${code} belum terdaftar di database.`
-        );
-        setResult({
-          found: false,
-          code: code,
-          message: "Produk tidak ditemukan di database BPOM.",
-        });
-      } else {
-        console.error("Scan Error:", err); // Log error asli jika 500/Network Error
-        setError("Gagal mengambil data. Silakan coba lagi.");
-      }
+      console.error(err);
+      setError("Terjadi kesalahan koneksi server.");
     } finally {
       setLoading(false);
     }

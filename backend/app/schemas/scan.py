@@ -1,10 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class BPOMRequest(BaseModel):
-    bpom_number: str
-
-class BPOMResponse(BaseModel):
+class BPOMData(BaseModel):
     bpom_number: str
     product_name: str
     brand: Optional[str] = None
@@ -16,3 +13,8 @@ class BPOMResponse(BaseModel):
     packaging: Optional[str] = None
     status: Optional[str] = None
     qr_code: Optional[str] = None
+
+class ScanResponse(BaseModel):
+    found: bool
+    message: str
+    data: Optional[BPOMData] = None

@@ -1,10 +1,25 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, func, Float
+from sqlalchemy import Column, Integer, String, Enum, DateTime, func, Float, ForeignKey, Table
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
+
+# Tabel Asosiasi (Pivot Table)
+user_allergies = Table(
+    'user_allergies',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('allergen_id', Integer, ForeignKey('allergens.id'))
+)
 
 class UserRole(str, enum.Enum):
     user = "user"
     admin = "admin"
+
+class Allergen(Base):
+    __tablename__ = "allergens"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True)
+    description = Column(String(255))
 
 class User(Base):
     __tablename__ = "users"
@@ -15,7 +30,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user)
     
-    # Kolom Profil (Nullable)
+    # Profil
     age = Column(Integer, nullable=True)
     weight = Column(Float, nullable=True)
     height = Column(Float, nullable=True)
@@ -23,3 +38,6 @@ class User(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relasi Alergi
+    allergies = relationship("Allergen", secondary=user_allergies, backref="users")
