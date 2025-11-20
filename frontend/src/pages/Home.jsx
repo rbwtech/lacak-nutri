@@ -41,7 +41,8 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-bg-surface rounded-xl border border-border p-6">
+            {/* Kartu Fitur 1: Scanner Barcode & OCR */}
+            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <svg
                   className="w-6 h-6 text-primary"
@@ -65,7 +66,8 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="bg-bg-surface rounded-xl border border-border p-6">
+            {/* Kartu Fitur 2: Validasi BPOM */}
+            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
                 <svg
                   className="w-6 h-6 text-accent"
@@ -89,7 +91,8 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="bg-bg-surface rounded-xl border border-border p-6">
+            {/* Kartu Fitur 3: Analisis AI */}
+            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
               <div className="w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center mb-4">
                 <svg
                   className="w-6 h-6 text-secondary"

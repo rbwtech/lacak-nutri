@@ -12,7 +12,8 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-bg-surface border-b border-border">
+    // Tambahkan shadow-soft yang baru didefinisikan
+    <header className="sticky top-0 z-50 bg-bg-surface border-b border-border shadow-soft">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
@@ -27,19 +28,19 @@ const Header = () => {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               to="/products"
-              className="text-base text-text-primary hover:text-primary transition-colors"
+              className="text-base text-text-primary hover:text-primary transition-colors font-medium"
             >
               Produk
             </Link>
             <Link
               to="/scanner"
-              className="text-base text-text-primary hover:text-primary transition-colors"
+              className="text-base text-text-primary hover:text-primary transition-colors font-medium"
             >
               Scanner
             </Link>
             <Link
               to="/articles"
-              className="text-base text-text-primary hover:text-primary transition-colors"
+              className="text-base text-text-primary hover:text-primary transition-colors font-medium"
             >
               Artikel
             </Link>

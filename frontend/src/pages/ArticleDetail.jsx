@@ -41,7 +41,7 @@ const ArticleDetail = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             to="/articles"
-            className="inline-flex items-center gap-2 text-label text-text-secondary hover:text-primary mb-6"
+            className="inline-flex items-center gap-2 text-label text-text-secondary hover:text-primary font-medium mb-6" // font-medium ditambahkan
           >
             <svg
               className="w-4 h-4"
@@ -82,7 +82,7 @@ const ArticleDetail = () => {
             </div>
 
             <div
-              className="prose prose-lg max-w-none"
+              className="prose prose-lg max-w-none text-text-primary"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
           </Card>
