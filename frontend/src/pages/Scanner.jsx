@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Html5QrcodeScanner } from "html5-qrcode"; // Import Library Scanner
+import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -8,57 +7,82 @@ import Input from "../components/ui/Input";
 import api from "../config/api";
 
 const Scanner = () => {
-  const [scanMode, setScanMode] = useState("barcode"); // 'barcode' | 'ocr'
+  const [scanMode, setScanMode] = useState("barcode");
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Memproses...");
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null); // Hasil scan (Real Data)
-
-  // State untuk Scanner Kamera
+  const [result, setResult] = useState(null);
   const [isScannerActive, setIsScannerActive] = useState(false);
-  const scannerRef = useRef(null);
+  const [ocrImage, setOcrImage] = useState(null);
 
-  // Fungsi Start Scanner Kamera
-  const startCamera = () => {
+  const scannerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const bpomFileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      stopMediaStream();
+      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
+    };
+  }, []);
+
+  const stopMediaStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  // ... (Logic Barcode & Upload Barcode SAMA, tidak perlu diubah) ...
+  // ... Copy paste bagian startBarcodeCamera, handleBarcodeUpload, handleBarcodeSuccess dari kode sebelumnya ...
+  const startBarcodeCamera = () => {
+    setResult(null);
     setIsScannerActive(true);
     setError(null);
-
-    // Tunggu DOM render
     setTimeout(() => {
       const scanner = new Html5QrcodeScanner(
         "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        /* verbose= */ false
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        false
       );
-
       scanner.render(
         (decodedText) => {
-          // SUKSES SCAN
-          console.log("Scan Success:", decodedText);
-          handleScanSuccess(decodedText);
+          handleBarcodeSuccess(decodedText);
           scanner.clear();
           setIsScannerActive(false);
         },
-        (errorMessage) => {
-          // Scan error (biasa terjadi saat mencari barcode, abaikan saja)
-        }
+        (err) => {}
       );
-
       scannerRef.current = scanner;
     }, 100);
   };
-
-  const handleScanSuccess = async (code) => {
+  const handleBarcodeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
     setLoading(true);
-    setResult(null);
+    setLoadingMessage("Memindai gambar barcode...");
     setError(null);
-
     try {
-      const { data } = await api.post("/scan/bpom", {
-        bpom_number: code,
-      });
-
+      const html5QrCode = new Html5Qrcode("reader-hidden");
+      const decodedText = await html5QrCode.scanFile(file, true);
+      handleBarcodeSuccess(decodedText);
+    } catch (err) {
+      console.error(err);
+      setError("Barcode tidak ditemukan dalam gambar.");
+      setLoading(false);
+    }
+  };
+  const handleBarcodeSuccess = async (code) => {
+    setLoading(true);
+    setLoadingMessage("Mencari data BPOM...");
+    try {
+      const { data } = await api.post("/scan/bpom", { bpom_number: code });
       setResult({
+        type: "bpom",
         found: data.found,
         data: data.data,
         code: code,
@@ -72,209 +96,513 @@ const Scanner = () => {
     }
   };
 
-  // Cleanup scanner saat component unmount
-  useEffect(() => {
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current
-          .clear()
-          .catch((error) => console.error("Failed to clear scanner", error));
-      }
-    };
-  }, []);
+  // --- LOGIKA BARU: OCR Menggunakan Gemini Vision (Kirim Gambar) ---
+  const startOCRCamera = async () => {
+    setResult(null);
+    setOcrImage(null);
+    setIsScannerActive(true);
+    setError(null);
 
-  // Handler Input Manual
-  const handleManualSubmit = () => {
-    if (bpomInput) handleScanSuccess(bpomInput);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      setTimeout(() => {
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      }, 100);
+    } catch (err) {
+      setError("Gagal mengakses kamera. Pastikan izin diberikan.");
+      setIsScannerActive(false);
+    }
   };
 
+  const captureOCRImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+
+      // Set ukuran canvas sesuai video asli
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Kompres sedikit biar upload cepat (0.8 quality)
+      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      setOcrImage(imageDataUrl);
+      stopMediaStream();
+      setIsScannerActive(false);
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setOcrImage(reader.result);
+        setError(null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // FUNGSI BARU: Kirim Gambar Langsung ke Backend
+  const processImageAnalysis = async () => {
+    if (!ocrImage) return;
+
+    setLoading(true);
+    setLoadingMessage("Mengirim gambar ke AI...");
+    setError(null);
+
+    try {
+      // Langsung kirim base64 image ke endpoint baru
+      const { data } = await api.post("/scan/analyze", {
+        image_base64: ocrImage,
+      });
+
+      if (!data.success) {
+        throw new Error(data.message || "Gagal menganalisis data.");
+      }
+
+      setResult({
+        type: "ocr",
+        found: true,
+        data: data.data, // Hasil analisis Gemini
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Gagal memproses gambar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- UTILS SAMA ---
+  const switchMode = (mode) => {
+    setScanMode(mode);
+    setResult(null);
+    setError(null);
+    setOcrImage(null);
+    setBpomInput("");
+    if (isScannerActive) {
+      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
+      stopMediaStream();
+      setIsScannerActive(false);
+    }
+  };
   const resetScan = () => {
     setResult(null);
+    setOcrImage(null);
     setBpomInput("");
     setError(null);
+  };
+  const handleManualSubmit = () => {
+    if (bpomInput) handleBarcodeSuccess(bpomInput);
   };
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header & Tab Switcher SAMA */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-text-primary mb-2">
               Pindai Produk
             </h1>
             <p className="text-text-secondary">
-              Scan barcode BPOM untuk cek legalitas produk.
+              {scanMode === "barcode"
+                ? "Scan barcode BPOM."
+                : "Foto label gizi untuk analisis AI."}
             </p>
           </div>
+          {!result && (
+            <div className="bg-bg-surface p-1 rounded-2xl border border-border flex mb-6 shadow-sm">
+              <button
+                onClick={() => switchMode("barcode")}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+                  scanMode === "barcode"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-text-secondary hover:bg-gray-50"
+                }`}
+              >
+                Barcode / BPOM
+              </button>
+              <button
+                onClick={() => switchMode("ocr")}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+                  scanMode === "ocr"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-text-secondary hover:bg-gray-50"
+                }`}
+              >
+                Foto Label Gizi (AI)
+              </button>
+            </div>
+          )}
 
           <Card className="shadow-lg relative overflow-hidden p-0">
-            {/* Area Kamera */}
-            {isScannerActive && !result && (
-              <div className="p-4 bg-black text-white text-center">
-                <div
-                  id="reader"
-                  className="w-full rounded-xl overflow-hidden"
-                ></div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => {
-                    scannerRef.current?.clear();
-                    setIsScannerActive(false);
-                  }}
-                >
-                  Tutup Kamera
-                </Button>
+            {loading && (
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-primary font-bold animate-pulse">
+                  {loadingMessage}
+                </p>
               </div>
             )}
 
-            {/* Area Input Default (Jika Kamera Mati & Belum Ada Hasil) */}
-            {!isScannerActive && !result && (
+            <div id="reader-hidden" className="hidden"></div>
+
+            {!result && (
               <div className="p-8">
-                <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base mb-6">
-                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
-                    <svg
-                      className="w-10 h-10 text-primary"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                {scanMode === "barcode" ? (
+                  // TAMPILAN BARCODE SAMA SEPERTI SEBELUMNYA
+                  <>
+                    {isScannerActive ? (
+                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
+                        <div id="reader" className="w-full h-64"></div>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
+                          onClick={() => {
+                            scannerRef.current?.clear();
+                            setIsScannerActive(false);
+                          }}
+                        >
+                          Tutup Kamera
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base mb-6">
+                        {/* ... Icon & Text ... */}
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
+                          <svg
+                            className="w-10 h-10 text-primary"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                            />
+                          </svg>
+                        </div>
+                        <h3 className="font-bold text-text-primary mb-1">
+                          Scan Barcode
+                        </h3>
+                        <p className="text-sm text-text-secondary mb-4">
+                          Arahkan kamera ke barcode produk
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Button onClick={startBarcodeCamera}>
+                            Buka Kamera
+                          </Button>
+                          <button
+                            onClick={() => bpomFileInputRef.current.click()}
+                            className="px-4 py-2 rounded-lg border-2 border-primary text-primary font-bold text-sm hover:bg-primary/5"
+                          >
+                            Upload
+                          </button>
+                        </div>
+                        <input
+                          type="file"
+                          ref={bpomFileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleBarcodeUpload}
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      <Input
+                        label="Nomor Registrasi / Barcode / Nama Produk"
+                        placeholder="Contoh: MD 0411... atau Chitato"
+                        value={bpomInput}
+                        onChange={(e) => setBpomInput(e.target.value)}
+                        helperText="Kode BPOM (MD/ML), barcode, atau nama produk."
                       />
-                    </svg>
+                      <Button
+                        fullWidth
+                        onClick={() =>
+                          bpomInput && handleBarcodeSuccess(bpomInput)
+                        }
+                        disabled={!bpomInput}
+                      >
+                        Cek Validitas
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    {isScannerActive ? (
+                      // FIX: Tampilan Kamera Mobile (Responsive Height, bukan aspect-square)
+                      <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 shadow-inner border-4 border-white ring-2 ring-border">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="absolute inset-0 w-full h-full object-cover"
+                        ></video>
+                        <canvas ref={canvasRef} className="hidden"></canvas>
+
+                        {/* Overlay Guide */}
+                        <div className="absolute inset-0 border-2 border-white/30 m-8 rounded-xl pointer-events-none flex items-center justify-center">
+                          <p className="text-white/80 text-sm font-bold bg-black/50 px-3 py-1 rounded-full">
+                            Arahkan ke Tabel Nilai Gizi
+                          </p>
+                        </div>
+
+                        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-6 z-10">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              stopMediaStream();
+                              setIsScannerActive(false);
+                            }}
+                          >
+                            Batal
+                          </Button>
+                          <button
+                            onClick={captureOCRImage}
+                            className="w-16 h-16 bg-white rounded-full border-4 border-gray-200 shadow-lg active:scale-95 transition-transform flex items-center justify-center"
+                          >
+                            <div className="w-12 h-12 bg-primary rounded-full"></div>
+                          </button>
+                        </div>
+                      </div>
+                    ) : ocrImage ? (
+                      <div className="relative">
+                        <img
+                          src={ocrImage}
+                          alt="Preview"
+                          className="w-full max-h-[60vh] object-contain rounded-xl bg-black/5 mb-4"
+                        />
+                        <div className="flex gap-3">
+                          <Button
+                            variant="outline"
+                            fullWidth
+                            onClick={() => setOcrImage(null)}
+                          >
+                            Ulangi
+                          </Button>
+                          {/* TOMBOL ANALISIS MEMANGGIL FUNGSI BARU */}
+                          <Button fullWidth onClick={processImageAnalysis}>
+                            Analisis Foto
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base group">
+                        {/* Icon & Text SAMA */}
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border group-hover:scale-105 transition-transform">
+                          <svg
+                            className="w-10 h-10 text-primary"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                        </div>
+                        <h3 className="font-bold text-text-primary mb-1">
+                          Foto Label Gizi
+                        </h3>
+                        <p className="text-sm text-text-secondary mb-4">
+                          Pastikan teks terbaca jelas
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Button onClick={startOCRCamera}>Buka Kamera</Button>
+                          <button
+                            onClick={() => fileInputRef.current.click()}
+                            className="px-4 py-2 rounded-lg border-2 border-primary text-primary font-bold text-sm hover:bg-primary/5"
+                          >
+                            Upload
+                          </button>
+                        </div>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                        />
+                      </div>
+                    )}
+                    {error && (
+                      <div className="p-4 bg-error/10 text-error text-sm rounded-xl text-center font-medium">
+                        {error}
+                      </div>
+                    )}
                   </div>
-                  <h3 className="font-bold text-text-primary mb-1">
-                    Scan Barcode
-                  </h3>
-                  <p className="text-sm text-text-secondary mb-4">
-                    Arahkan kamera ke barcode produk
-                  </p>
-                  <Button onClick={startCamera}>Buka Kamera</Button>
-                </div>
-
-                <div className="relative flex py-2 items-center mb-6">
-                  <div className="grow border-t border-border"></div>
-                  <span className="shrink-0 mx-4 text-text-secondary text-xs font-bold uppercase">
-                    Atau Input Manual
-                  </span>
-                  <div className="grow border-t border-border"></div>
-                </div>
-
-                <div className="space-y-4">
-                  <Input
-                    label="Nomor Registrasi / Barcode"
-                    placeholder="Contoh: 899..."
-                    value={bpomInput}
-                    onChange={(e) => setBpomInput(e.target.value)}
-                  />
-                  <Button
-                    fullWidth
-                    onClick={handleManualSubmit}
-                    disabled={!bpomInput || loading}
-                  >
-                    {loading ? "Memproses..." : "Cek Validitas"}
-                  </Button>
-                </div>
+                )}
               </div>
             )}
 
-            {/* Hasil Scan */}
+            {/* --- RESULT VIEW (SAMA SEPERTI SEBELUMNYA) --- */}
             {result && (
-              <div className="p-8 text-center">
-                <div
-                  className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card ${
-                    result.found
-                      ? "bg-success/10 text-success"
-                      : "bg-error/10 text-error"
-                  }`}
-                >
-                  {result.found ? (
-                    <svg
-                      className="w-12 h-12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+              <div className="p-8">
+                {result.type === "bpom" ? (
+                  // Tampilan BPOM Result
+                  <div className="text-center">
+                    <div
+                      className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card ${
+                        result.found
+                          ? "bg-success/10 text-success"
+                          : "bg-error/10 text-error"
+                      }`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-12 h-12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  )}
-                </div>
-
-                <h2 className="text-2xl font-extrabold text-text-primary mb-2">
-                  {result.found ? "Produk Ditemukan!" : "Tidak Ditemukan"}
-                </h2>
-
-                {result.found ? (
-                  <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm">
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                        Nama Produk
-                      </p>
-                      <p className="font-bold text-lg text-text-primary">
-                        {result.data.product_name}
+                      {result.found ? (
+                        <svg
+                          className="w-12 h-12"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-12 h-12"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-text-primary mb-4">
+                      {result.found ? "Produk Ditemukan!" : "Tidak Ditemukan"}
+                    </h2>
+                    {result.found ? (
+                      <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm">
+                        <div>
+                          <p className="text-xs font-bold text-text-secondary uppercase">
+                            Nama Produk
+                          </p>
+                          <p className="font-bold text-lg text-text-primary">
+                            {result.data.product_name}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-bold text-text-secondary uppercase">
+                              BPOM
+                            </p>
+                            <p className="font-mono font-medium text-primary">
+                              {result.data.bpom_number}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-text-secondary uppercase">
+                              Merk
+                            </p>
+                            <p className="font-medium text-text-primary">
+                              {result.data.brand || "-"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-bg-base p-4 rounded-xl border border-border mb-6">
+                        <p className="text-text-secondary">
+                          Nomor <strong>{result.code}</strong> tidak terdaftar.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Tampilan OCR AI Result
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="w-20 h-20 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg
+                          className="w-10 h-10"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="text-2xl font-extrabold text-text-primary">
+                        Analisis Nutrisi AI
+                      </h2>
+                      <div className="inline-block px-3 py-1 bg-bg-base rounded-lg border border-border mt-2">
+                        <span className="text-xs font-bold text-text-secondary">
+                          Skor:{" "}
+                        </span>
+                        <span className="text-lg font-extrabold text-primary">
+                          {result.data.health_score}/10
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-bg-base p-5 rounded-2xl border border-border">
+                      <h3 className="font-bold text-text-primary mb-3">
+                        Ringkasan
+                      </h3>
+                      <p className="text-sm text-text-secondary leading-relaxed">
+                        {result.data.analysis}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                          Nomor BPOM
-                        </p>
-                        <p className="font-mono font-medium text-primary">
-                          {result.data.bpom_number}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                          Merk
-                        </p>
-                        <p className="font-medium text-text-primary">
-                          {result.data.brand || "-"}
-                        </p>
-                      </div>
+                      {Object.entries(result.data.nutrition || {}).map(
+                        ([key, val]) => (
+                          <div
+                            key={key}
+                            className="p-3 bg-white rounded-xl border border-border text-center"
+                          >
+                            <p className="text-xs text-text-secondary uppercase">
+                              {key.replace(/_/g, " ")}
+                            </p>
+                            <p className="text-lg font-extrabold text-primary">
+                              {val}
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                        Pabrik
-                      </p>
-                      <p className="text-sm text-text-primary">
-                        {result.data.manufacturer}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-bg-base p-4 rounded-xl border border-border mb-6">
-                    <p className="text-text-secondary">
-                      Nomor <strong>{result.code}</strong> tidak terdaftar di
-                      database BPOM.
-                    </p>
                   </div>
                 )}
-
-                <Button variant="outline" fullWidth onClick={resetScan}>
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onClick={resetScan}
+                  className="mt-6"
+                >
                   Scan Lagi
                 </Button>
               </div>
