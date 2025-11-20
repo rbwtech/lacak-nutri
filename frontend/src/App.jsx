@@ -10,6 +10,9 @@ import {
   Products,
   ProductDetail,
   Profile,
+  Scanner,
+  Articles,
+  ArticleDetail,
   NotFound,
 } from "./pages";
 
@@ -33,6 +36,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/scanner" element={<Scanner />} />
+            <Route path="/articles" element={<Articles />} />
+            <Route path="/articles/:id" element={<ArticleDetail />} />
 
             <Route
               path="/dashboard"
