@@ -1,6 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Any
 
+# Request Body
+class BPOMRequest(BaseModel):
+    bpom_number: str
+
+# Data Structure
 class BPOMData(BaseModel):
     bpom_number: str
     product_name: str
@@ -14,6 +19,7 @@ class BPOMData(BaseModel):
     status: Optional[str] = None
     qr_code: Optional[str] = None
 
+# API Response Wrapper
 class ScanResponse(BaseModel):
     found: bool
     message: str

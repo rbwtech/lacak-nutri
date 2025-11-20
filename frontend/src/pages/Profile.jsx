@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import api from "../config/api";
 
 const Profile = () => {
   const { user, updateProfile, changePassword } = useAuth();

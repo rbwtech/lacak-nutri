@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from app.services.bpom_endpoint import BPOMScraper
 from app.schemas.scan import BPOMRequest, ScanResponse
 

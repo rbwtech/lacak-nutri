@@ -76,15 +76,15 @@ class BPOMScraper:
 
     def _format_product(self, raw: Dict) -> Dict:
         return {
-            'bpom_number': raw.get('PRODUCT_REGISTER', ''),
-            'product_name': raw.get('PRODUCT_NAME', ''),
-            'brand': raw.get('PRODUCT_BRANDS', ''),
-            'manufacturer': raw.get('MANUFACTURER_NAME', ''),
-            'address': raw.get('MANUFACTURER_ADDRESS', ''),
-            'issued_date': raw.get('PRODUCT_DATE', ''),
-            'expired_date': raw.get('PRODUCT_EXPIRED', ''),
-            'composition': raw.get('INGREDIENTS', ''),
-            'packaging': raw.get('PRODUCT_PACKAGE', ''),
-            'status': raw.get('STATUS', ''),
-            'qr_code': raw.get('PRODUCT_QR', '')
+            'bpom_number': raw.get('PRODUCT_REGISTER', 'Tidak Diketahui'),
+            'product_name': raw.get('PRODUCT_NAME', 'Nama Produk Tidak Tersedia'),
+            'brand': raw.get('PRODUCT_BRANDS') or "-",
+            'manufacturer': raw.get('MANUFACTURER_NAME') or "-",
+            'address': raw.get('MANUFACTURER_ADDRESS') or None, 
+            'issued_date': raw.get('PRODUCT_DATE') or None,
+            'expired_date': raw.get('PRODUCT_EXPIRED') or None,
+            'composition': raw.get('INGREDIENTS') or "Komposisi tidak tersedia",
+            'packaging': raw.get('PRODUCT_PACKAGE') or None,
+            'status': raw.get('STATUS') or "Tidak Diketahui",
+            'qr_code': raw.get('PRODUCT_QR') or None
         }
