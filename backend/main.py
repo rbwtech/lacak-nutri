@@ -1,11 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import auth
+from app.routers import auth, scan # Tambah scan
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
-# Konfigurasi CORS (Wajib untuk komunikasi Frontend-Backend)
 origins = [
     "http://localhost:5173",
     "https://lacaknutri.rbwtech.io",
@@ -20,8 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers
 app.include_router(auth.router)
+app.include_router(scan.router) 
 
 @app.get("/")
 def root():

@@ -2,6 +2,7 @@ import typography from "@tailwindcss/typography";
 
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "selector",
   theme: {
     extend: {
       fontFamily: {
@@ -9,36 +10,30 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: "#FF9966",
-          hover: "#FF7A4D",
-          light: "rgba(255, 153, 102, 0.15)",
+          DEFAULT: "var(--color-primary)",
+          hover: "var(--color-primary-hover)",
         },
         secondary: {
-          DEFAULT: "#6B8E23",
-          hover: "#5A7A1C",
-          light: "rgba(107, 142, 35, 0.15)",
+          DEFAULT: "var(--color-secondary)",
         },
         accent: {
-          DEFAULT: "#A1D2D5",
-          light: "rgba(161, 210, 213, 0.15)",
+          DEFAULT: "var(--color-accent)",
         },
         bg: {
-          base: "#FDFDF5",
-          surface: "#FFFFF7",
+          base: "var(--color-bg-base)",
+          surface: "var(--color-bg-surface)",
         },
         text: {
-          primary: "#333333",
-          secondary: "#8C8C8C",
+          primary: "var(--color-text-primary)",
+          secondary: "var(--color-text-secondary)",
         },
-        border: "#EBE3D5",
+        border: "var(--color-border)",
         success: "#4CAF50",
         warning: "#FFC107",
         error: "#EF5350",
       },
       boxShadow: {
-        soft: "0 8px 24px rgba(149, 157, 165, 0.05)",
-        card: "0 4px 20px rgba(0, 0, 0, 0.03)",
-        floating: "0 10px 30px rgba(255, 153, 102, 0.2)",
+        soft: "0 8px 24px rgba(0, 0, 0, 0.05)",
       },
       borderRadius: {
         xl: "12px",

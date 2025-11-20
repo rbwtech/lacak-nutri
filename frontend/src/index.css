@@ -3,42 +3,41 @@
 @config "../tailwind.config.js";
 
 @layer base {
+  :root {
+    /* Light Mode Colors */
+    --color-primary: #ff9966;
+    --color-primary-hover: #ff7a4d;
+    --color-secondary: #6b8e23;
+    --color-accent: #a1d2d5;
+    --color-bg-base: #fdfdf5;
+    --color-bg-surface: #fffff7;
+    --color-text-primary: #333333;
+    --color-text-secondary: #8c8c8c;
+    --color-border: #ebe3d5;
+  }
+
+  .dark {
+    /* Dark Mode Colors (Darkened & Adjusted) */
+    --color-primary: #ff9966; /* Tetap */
+    --color-primary-hover: #ff7a4d;
+    --color-secondary: #8abe53; /* Lebih terang dikit biar kontras */
+    --color-accent: #5d8a8d;
+    --color-bg-base: #121212; /* Dark BG */
+    --color-bg-surface: #1e1e1e; /* Dark Surface */
+    --color-text-primary: #e0e0e0; /* Light Text */
+    --color-text-secondary: #a0a0a0;
+    --color-border: #333333;
+  }
+
   html {
     font-family: "Manrope", sans-serif;
     scroll-behavior: smooth;
-    background-color: #fdfdf5;
-    color: #333333;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
     overflow-y: scroll;
   }
 
   body {
-    @apply bg-bg-base text-text-primary min-h-screen;
+    @apply bg-bg-base text-text-primary min-h-screen transition-colors duration-300;
   }
-
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #fdfdf5;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #ebe3d5;
-    border-radius: 10px;
-    border: 2px solid #fdfdf5;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #ff9966;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-.animate-spin {
-  animation: spin 1s linear infinite;
 }

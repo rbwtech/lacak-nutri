@@ -5,7 +5,7 @@ import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
-// import api from "../config/api"; // Siapkan untuk nanti
+import api from "../config/api";
 
 const Scanner = () => {
   const [scanMode, setScanMode] = useState("barcode"); // 'barcode' | 'ocr'
@@ -48,28 +48,33 @@ const Scanner = () => {
     }, 100);
   };
 
-  // Handler ketika Barcode ditemukan atau BPOM diinput
   const handleScanSuccess = async (code) => {
     setLoading(true);
-    setResult(null); // Reset result sebelumnya
+    setResult(null);
+    setError(null);
 
     try {
-      // TODO: Ganti dengan API Call yang sebenarnya
-      // const { data } = await api.post('/scan/bpom', { code });
-      // setResult(data);
+      const { data } = await api.post("/scan/bpom", {
+        bpom_number: code,
+      });
 
-      // SEMENTARA: Tampilkan apa yang discan saja (BUKAN DUMMY INDOMIE)
-      // Ini membuktikan data dinamis, bukan hardcoded
-      setTimeout(() => {
-        setResult({
-          found: false, // Anggap belum ada di database backend
-          code: code,
-          message: "Backend belum terhubung sepenuhnya. Kode discan: " + code,
-        });
-        setLoading(false);
-      }, 1000);
+      setResult({
+        found: true,
+        data: data,
+        code: code,
+      });
     } catch (err) {
-      setError("Gagal memproses data. Coba lagi.");
+      console.error(err);
+      if (err.response?.status === 404) {
+        setResult({
+          found: false,
+          code: code,
+          message: "Produk tidak ditemukan di database BPOM.",
+        });
+      } else {
+        setError("Gagal mengambil data. Silakan coba lagi.");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -182,8 +187,20 @@ const Scanner = () => {
             {/* Hasil Scan */}
             {result && (
               <div className="p-8 text-center">
-                <div className="w-20 h-20 bg-bg-base rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
-                  🔍
+                <div className="w-24 h-24 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card">
+                  <svg
+                    className="w-12 h-12"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                 </div>
                 <h2 className="text-xl font-bold text-text-primary mb-2">
                   Hasil Pindaian
