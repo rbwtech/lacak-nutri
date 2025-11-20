@@ -21,6 +21,7 @@ def create_user(db: Session, user: UserCreate):
 
 def update_user(db: Session, db_user: User, user_update: UserUpdate):
     update_data = user_update.dict(exclude_unset=True)
+    
     for key, value in update_data.items():
         setattr(db_user, key, value)
     
