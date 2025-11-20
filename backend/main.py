@@ -1,20 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.routers import auth
 
-app = FastAPI(title="LacakNutri API", version="1.0.0")
+app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+
+# Konfigurasi CORS (Wajib untuk komunikasi Frontend-Backend)
+origins = [
+    "http://localhost:5173",
+    "https://lacaknutri.rbwtech.io",
+    "http://lacaknutri.rbwtech.io"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://lacaknutri.rbwtech.io"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include Routers
+app.include_router(auth.router)
+
 @app.get("/")
 def root():
     return {"message": "LacakNutri API is running"}
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
