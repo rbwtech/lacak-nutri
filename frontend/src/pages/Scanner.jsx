@@ -13,6 +13,12 @@ const Scanner = () => {
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+
+  // Chat State
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [ocrImage, setOcrImage] = useState(null);
 
@@ -37,45 +43,7 @@ const Scanner = () => {
     }
   };
 
-  // ... (Logic Barcode & Upload Barcode SAMA, tidak perlu diubah) ...
-  // ... Copy paste bagian startBarcodeCamera, handleBarcodeUpload, handleBarcodeSuccess dari kode sebelumnya ...
-  const startBarcodeCamera = () => {
-    setResult(null);
-    setIsScannerActive(true);
-    setError(null);
-    setTimeout(() => {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        false
-      );
-      scanner.render(
-        (decodedText) => {
-          handleBarcodeSuccess(decodedText);
-          scanner.clear();
-          setIsScannerActive(false);
-        },
-        (err) => {}
-      );
-      scannerRef.current = scanner;
-    }, 100);
-  };
-  const handleBarcodeUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setLoading(true);
-    setLoadingMessage("Memindai gambar barcode...");
-    setError(null);
-    try {
-      const html5QrCode = new Html5Qrcode("reader-hidden");
-      const decodedText = await html5QrCode.scanFile(file, true);
-      handleBarcodeSuccess(decodedText);
-    } catch (err) {
-      console.error(err);
-      setError("Barcode tidak ditemukan dalam gambar.");
-      setLoading(false);
-    }
-  };
+  // --- LOGIC BARCODE & BPOM ---
   const handleBarcodeSuccess = async (code) => {
     setLoading(true);
     setLoadingMessage("Mencari data BPOM...");
@@ -96,13 +64,83 @@ const Scanner = () => {
     }
   };
 
-  // --- LOGIKA BARU: OCR Menggunakan Gemini Vision (Kirim Gambar) ---
+  // --- LOGIC AI ---
+  const processImageAnalysis = async () => {
+    if (!ocrImage) return;
+    setLoading(true);
+    setLoadingMessage("Analisis AI mendalam...");
+    setError(null);
+    try {
+      const { data } = await api.post("/scan/analyze", {
+        image_base64: ocrImage,
+      });
+      if (!data.success) throw new Error(data.message);
+      setResult({ type: "ocr", found: true, data: data.data });
+    } catch (err) {
+      console.error(err);
+      setError("Gagal memproses gambar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- LOGIC CHAT ---
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const question = chatInput;
+    setChatHistory([...chatHistory, { role: "user", text: question }]);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      // Kirim konteks produk (JSON) + Pertanyaan
+      const context = JSON.stringify(result.data);
+      const { data } = await api.post("/scan/chat", {
+        product_context: context,
+        question: question,
+      });
+      setChatHistory((prev) => [...prev, { role: "ai", text: data.answer }]);
+    } catch (err) {
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "ai", text: "Maaf, terjadi kesalahan." },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // --- CAMERA UTILS (Sama seperti sebelumnya) ---
+  const startBarcodeCamera = () => {
+    /* ... logic sama ... */
+    setResult(null);
+    setIsScannerActive(true);
+    setError(null);
+    setTimeout(() => {
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        false
+      );
+      scanner.render(
+        (decodedText) => {
+          handleBarcodeSuccess(decodedText);
+          scanner.clear();
+          setIsScannerActive(false);
+        },
+        () => {}
+      );
+      scannerRef.current = scanner;
+    }, 100);
+  };
   const startOCRCamera = async () => {
+    /* ... logic sama ... */
     setResult(null);
     setOcrImage(null);
     setIsScannerActive(true);
     setError(null);
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -112,85 +150,60 @@ const Scanner = () => {
         if (videoRef.current) videoRef.current.srcObject = stream;
       }, 100);
     } catch (err) {
-      setError("Gagal mengakses kamera. Pastikan izin diberikan.");
+      setError("Gagal akses kamera.");
       setIsScannerActive(false);
     }
   };
-
   const captureOCRImage = () => {
+    /* ... logic sama ... */
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const context = canvas.getContext("2d");
-
-      // Set ukuran canvas sesuai video asli
+      const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Kompres sedikit biar upload cepat (0.8 quality)
-      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
-      setOcrImage(imageDataUrl);
+      ctx.drawImage(video, 0, 0);
+      setOcrImage(canvas.toDataURL("image/jpeg", 0.8));
       stopMediaStream();
       setIsScannerActive(false);
     }
   };
-
   const handleImageUpload = (e) => {
+    /* ... logic sama ... */
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setOcrImage(reader.result);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
+      const r = new FileReader();
+      r.onloadend = () => setOcrImage(r.result);
+      r.readAsDataURL(file);
     }
   };
-
-  // FUNGSI BARU: Kirim Gambar Langsung ke Backend
-  const processImageAnalysis = async () => {
-    if (!ocrImage) return;
-
+  const handleBarcodeUpload = async (e) => {
+    /* ... logic sama ... */
+    const file = e.target.files[0];
+    if (!file) return;
     setLoading(true);
-    setLoadingMessage("Mengirim gambar ke AI...");
+    setLoadingMessage("Scan barcode...");
     setError(null);
-
     try {
-      // Langsung kirim base64 image ke endpoint baru
-      const { data } = await api.post("/scan/analyze", {
-        image_base64: ocrImage,
-      });
-
-      if (!data.success) {
-        throw new Error(data.message || "Gagal menganalisis data.");
-      }
-
-      setResult({
-        type: "ocr",
-        found: true,
-        data: data.data, // Hasil analisis Gemini
-      });
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Gagal memproses gambar.");
-    } finally {
+      const html5 = new Html5Qrcode("reader-hidden");
+      const txt = await html5.scanFile(file, true);
+      handleBarcodeSuccess(txt);
+    } catch {
+      setError("Barcode tidak terbaca.");
       setLoading(false);
     }
   };
-
-  // --- UTILS SAMA ---
   const switchMode = (mode) => {
     setScanMode(mode);
     setResult(null);
     setError(null);
     setOcrImage(null);
     setBpomInput("");
+    setChatHistory([]);
     if (isScannerActive) {
-      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
       stopMediaStream();
       setIsScannerActive(false);
+      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
     }
   };
   const resetScan = () => {
@@ -198,6 +211,7 @@ const Scanner = () => {
     setOcrImage(null);
     setBpomInput("");
     setError(null);
+    setChatHistory([]);
   };
   const handleManualSubmit = () => {
     if (bpomInput) handleBarcodeSuccess(bpomInput);
@@ -207,17 +221,17 @@ const Scanner = () => {
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header & Tab Switcher SAMA */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-text-primary mb-2">
               Pindai Produk
             </h1>
             <p className="text-text-secondary">
               {scanMode === "barcode"
-                ? "Scan barcode BPOM."
-                : "Foto label gizi untuk analisis AI."}
+                ? "Cek legalitas BPOM."
+                : "Analisis Nutrisi Cerdas (AI)."}
             </p>
           </div>
+
           {!result && (
             <div className="bg-bg-surface p-1 rounded-2xl border border-border flex mb-6 shadow-sm">
               <button
@@ -238,7 +252,7 @@ const Scanner = () => {
                     : "text-text-secondary hover:bg-gray-50"
                 }`}
               >
-                Foto Label Gizi (AI)
+                Foto Label (AI)
               </button>
             </div>
           )}
@@ -252,32 +266,16 @@ const Scanner = () => {
                 </p>
               </div>
             )}
-
             <div id="reader-hidden" className="hidden"></div>
 
+            {/* --- INPUT AREA (SAMA SEPERTI SEBELUMNYA, COPY PASTE LOGIC KAMERA) --- */}
             {!result && (
               <div className="p-8">
                 {scanMode === "barcode" ? (
-                  // TAMPILAN BARCODE SAMA SEPERTI SEBELUMNYA
+                  // ... (Tampilan Input Barcode SAMA) ...
                   <>
-                    {isScannerActive ? (
-                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
-                        <div id="reader" className="w-full h-64"></div>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
-                          onClick={() => {
-                            scannerRef.current?.clear();
-                            setIsScannerActive(false);
-                          }}
-                        >
-                          Tutup Kamera
-                        </Button>
-                      </div>
-                    ) : (
+                    {!isScannerActive ? (
                       <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base mb-6">
-                        {/* ... Icon & Text ... */}
                         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
                           <svg
                             className="w-10 h-10 text-primary"
@@ -318,14 +316,28 @@ const Scanner = () => {
                           onChange={handleBarcodeUpload}
                         />
                       </div>
+                    ) : (
+                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
+                        <div id="reader" className="w-full h-64"></div>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
+                          onClick={() => {
+                            scannerRef.current?.clear();
+                            setIsScannerActive(false);
+                          }}
+                        >
+                          Tutup
+                        </Button>
+                      </div>
                     )}
                     <div className="space-y-4">
                       <Input
-                        label="Nomor Registrasi / Barcode / Nama Produk"
-                        placeholder="Contoh: MD 0411... atau Chitato"
+                        label="Nomor BPOM / Barcode"
+                        placeholder="Contoh: MD 0411..."
                         value={bpomInput}
                         onChange={(e) => setBpomInput(e.target.value)}
-                        helperText="Kode BPOM (MD/ML), barcode, atau nama produk."
                       />
                       <Button
                         fullWidth
@@ -339,10 +351,10 @@ const Scanner = () => {
                     </div>
                   </>
                 ) : (
+                  // ... (Tampilan Input OCR SAMA) ...
                   <div className="space-y-6">
                     {isScannerActive ? (
-                      // FIX: Tampilan Kamera Mobile (Responsive Height, bukan aspect-square)
-                      <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 shadow-inner border-4 border-white ring-2 ring-border">
+                      <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 border-4 border-white">
                         <video
                           ref={videoRef}
                           autoPlay
@@ -350,14 +362,6 @@ const Scanner = () => {
                           className="absolute inset-0 w-full h-full object-cover"
                         ></video>
                         <canvas ref={canvasRef} className="hidden"></canvas>
-
-                        {/* Overlay Guide */}
-                        <div className="absolute inset-0 border-2 border-white/30 m-8 rounded-xl pointer-events-none flex items-center justify-center">
-                          <p className="text-white/80 text-sm font-bold bg-black/50 px-3 py-1 rounded-full">
-                            Arahkan ke Tabel Nilai Gizi
-                          </p>
-                        </div>
-
                         <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-6 z-10">
                           <Button
                             variant="danger"
@@ -371,7 +375,7 @@ const Scanner = () => {
                           </Button>
                           <button
                             onClick={captureOCRImage}
-                            className="w-16 h-16 bg-white rounded-full border-4 border-gray-200 shadow-lg active:scale-95 transition-transform flex items-center justify-center"
+                            className="w-16 h-16 bg-white rounded-full border-4 border-gray-200 shadow-lg flex items-center justify-center"
                           >
                             <div className="w-12 h-12 bg-primary rounded-full"></div>
                           </button>
@@ -392,7 +396,6 @@ const Scanner = () => {
                           >
                             Ulangi
                           </Button>
-                          {/* TOMBOL ANALISIS MEMANGGIL FUNGSI BARU */}
                           <Button fullWidth onClick={processImageAnalysis}>
                             Analisis Foto
                           </Button>
@@ -400,8 +403,7 @@ const Scanner = () => {
                       </div>
                     ) : (
                       <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base group">
-                        {/* Icon & Text SAMA */}
-                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border group-hover:scale-105 transition-transform">
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
                           <svg
                             className="w-10 h-10 text-primary"
                             fill="none"
@@ -446,165 +448,155 @@ const Scanner = () => {
                         />
                       </div>
                     )}
-                    {error && (
-                      <div className="p-4 bg-error/10 text-error text-sm rounded-xl text-center font-medium">
-                        {error}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* --- RESULT VIEW (SAMA SEPERTI SEBELUMNYA) --- */}
+            {/* --- RESULT VIEW (DIPERBARUI UNTUK CHAT) --- */}
             {result && (
               <div className="p-8">
                 {result.type === "bpom" ? (
-                  // Tampilan BPOM Result
                   <div className="text-center">
-                    <div
-                      className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card ${
-                        result.found
-                          ? "bg-success/10 text-success"
-                          : "bg-error/10 text-error"
-                      }`}
-                    >
-                      {result.found ? (
-                        <svg
-                          className="w-12 h-12"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-12 h-12"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      )}
-                    </div>
+                    {/* Tampilan BPOM (Minimalis) */}
                     <h2 className="text-2xl font-extrabold text-text-primary mb-4">
-                      {result.found ? "Produk Ditemukan!" : "Tidak Ditemukan"}
+                      {result.found ? "✅ Terdaftar" : "❌ Tidak Ditemukan"}
                     </h2>
                     {result.found ? (
                       <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm">
                         <div>
                           <p className="text-xs font-bold text-text-secondary uppercase">
-                            Nama Produk
+                            Produk
                           </p>
                           <p className="font-bold text-lg text-text-primary">
                             {result.data.product_name}
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs font-bold text-text-secondary uppercase">
-                              BPOM
-                            </p>
-                            <p className="font-mono font-medium text-primary">
-                              {result.data.bpom_number}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-text-secondary uppercase">
-                              Merk
-                            </p>
-                            <p className="font-medium text-text-primary">
-                              {result.data.brand || "-"}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-xs font-bold text-text-secondary uppercase">
+                            BPOM
+                          </p>
+                          <p className="font-mono font-medium text-primary">
+                            {result.data.bpom_number}
+                          </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-bg-base p-4 rounded-xl border border-border mb-6">
-                        <p className="text-text-secondary">
-                          Nomor <strong>{result.code}</strong> tidak terdaftar.
-                        </p>
-                      </div>
+                      <p className="mb-4">
+                        Kode <strong>{result.code}</strong> tidak valid.
+                      </p>
                     )}
                   </div>
                 ) : (
-                  // Tampilan OCR AI Result
+                  // TAMPILAN AI ANALYSIS + CHAT
                   <div className="space-y-6">
                     <div className="text-center">
-                      <div className="w-20 h-20 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                      <div className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full font-extrabold text-xl mb-4">
+                        Skor: {result.data.health_score}/10
+                      </div>
+                      <h2 className="text-2xl font-bold text-text-primary">
+                        Analisis Nutrisi
+                      </h2>
+                    </div>
+
+                    <div className="bg-bg-base p-5 rounded-2xl border border-border text-sm leading-relaxed text-text-secondary">
+                      {result.data.analysis}
+                    </div>
+
+                    {/* Nutrisi Utama */}
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      {["calories", "sugar", "sodium"].map((k) => (
+                        <div
+                          key={k}
+                          className="p-3 bg-white rounded-xl border border-border"
+                        >
+                          <p className="text-[10px] uppercase text-text-secondary">
+                            {k}
+                          </p>
+                          <p className="font-bold text-text-primary">
+                            {result.data.nutrition?.[k] || "-"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Peringatan / Diet Tags */}
+                    {result.data.diet_tags && (
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {result.data.diet_tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-3 py-1 bg-success/10 text-success text-xs font-bold rounded-lg"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* FITUR CHAT Q&A */}
+                    <div className="pt-6 border-t border-border">
+                      <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
                         <svg
-                          className="w-10 h-10"
+                          className="w-5 h-5 text-primary"
                           fill="none"
-                          stroke="currentColor"
                           viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                           />
                         </svg>
-                      </div>
-                      <h2 className="text-2xl font-extrabold text-text-primary">
-                        Analisis Nutrisi AI
-                      </h2>
-                      <div className="inline-block px-3 py-1 bg-bg-base rounded-lg border border-border mt-2">
-                        <span className="text-xs font-bold text-text-secondary">
-                          Skor:{" "}
-                        </span>
-                        <span className="text-lg font-extrabold text-primary">
-                          {result.data.health_score}/10
-                        </span>
-                      </div>
-                    </div>
-                    <div className="bg-bg-base p-5 rounded-2xl border border-border">
-                      <h3 className="font-bold text-text-primary mb-3">
-                        Ringkasan
+                        Tanya AI tentang produk ini
                       </h3>
-                      <p className="text-sm text-text-secondary leading-relaxed">
-                        {result.data.analysis}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {Object.entries(result.data.nutrition || {}).map(
-                        ([key, val]) => (
+
+                      <div className="space-y-4 mb-4 max-h-48 overflow-y-auto">
+                        {chatHistory.map((msg, idx) => (
                           <div
-                            key={key}
-                            className="p-3 bg-white rounded-xl border border-border text-center"
+                            key={idx}
+                            className={`p-3 rounded-xl text-sm ${
+                              msg.role === "user"
+                                ? "bg-primary/10 ml-8"
+                                : "bg-bg-base mr-8"
+                            }`}
                           >
-                            <p className="text-xs text-text-secondary uppercase">
-                              {key.replace(/_/g, " ")}
-                            </p>
-                            <p className="text-lg font-extrabold text-primary">
-                              {val}
-                            </p>
+                            <strong>
+                              {msg.role === "user" ? "Anda" : "AI"}:
+                            </strong>{" "}
+                            {msg.text}
                           </div>
-                        )
-                      )}
+                        ))}
+                      </div>
+
+                      <form onSubmit={handleChatSubmit} className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 px-4 py-2 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none text-sm"
+                          placeholder="Cth: Apakah ini aman untuk diabetes?"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          disabled={chatLoading}
+                        />
+                        <Button
+                          size="sm"
+                          type="submit"
+                          disabled={chatLoading || !chatInput}
+                        >
+                          {chatLoading ? "..." : "Kirim"}
+                        </Button>
+                      </form>
                     </div>
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  fullWidth
-                  onClick={resetScan}
-                  className="mt-6"
-                >
-                  Scan Lagi
-                </Button>
+
+                <div className="pt-6 mt-6 border-t border-border">
+                  <Button variant="outline" fullWidth onClick={resetScan}>
+                    Scan Produk Lain
+                  </Button>
+                </div>
               </div>
             )}
           </Card>

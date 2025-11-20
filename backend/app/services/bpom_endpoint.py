@@ -1,7 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
-import re # Import Regex
+import re
 
 class BPOMScraper:
     def __init__(self):
@@ -11,14 +11,16 @@ class BPOMScraper:
         }
 
     async def search_bpom(self, bpom_number: str) -> Optional[Dict]:
-        """Mencari data produk berdasarkan nomor registrasi BPOM secara Async"""
         clean_number = bpom_number.strip().upper()
         
-        if re.match(r"^[A-Z]{2}\d+$", clean_number):
-            clean_number = f"{clean_number[:2]} {clean_number[2:]}"
-            print(f"Auto-formatting BPOM: {bpom_number} -> {clean_number}")
+        match = re.match(r"^([A-Z]{2}|P-IRT)\s*(\d+)$", clean_number)
         
-        search_query = clean_number
+        if match:
+            prefix = match.group(1) 
+            numbers = match.group(2)
+            search_query = f"{prefix} {numbers}"
+        else:
+            search_query = clean_number
 
         async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
@@ -32,7 +34,7 @@ class BPOMScraper:
                 
                 csrf_token = csrf_meta['content']
                 
-                # 2. Prepare Data
+                # 2. POST Data
                 post_data = {
                     'draw': '1',
                     'columns[0][data]': 'PRODUCT_ID',

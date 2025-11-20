@@ -1,14 +1,9 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 from app.services.bpom_endpoint import BPOMScraper
 from app.services.ai_service import GeminiService
-from app.schemas.scan import BPOMRequest, ScanResponse
-from typing import Optional
+from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, ChatRequest
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
-
-class AnalyzeImageRequest(BaseModel):
-    image_base64: str
 
 @router.post("/analyze")
 async def analyze_ocr(request: AnalyzeImageRequest):
@@ -23,6 +18,12 @@ async def analyze_ocr(request: AnalyzeImageRequest):
         
     return {"success": True, "data": result}
 
+@router.post("/chat")
+async def chat_product(request: ChatRequest):
+    service = GeminiService()
+    answer = await service.chat_about_product(request.product_context, request.question)
+    return {"answer": answer}
+
 @router.post("/bpom", response_model=ScanResponse)
 async def scan_bpom(request: BPOMRequest):
     scraper = BPOMScraper()
@@ -35,8 +36,4 @@ async def scan_bpom(request: BPOMRequest):
             "data": None
         }
     
-    return {
-        "found": True,
-        "message": "Data ditemukan",
-        "data": result
-    }
+    return {"found": True, "message": "Data ditemukan", "data": result}
