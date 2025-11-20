@@ -1,112 +1,126 @@
+import { useEffect, useState } from "react";
 import { MainLayout } from "../components/layouts";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Link } from "react-router-dom";
+import api from "../config/api"; // Import API config
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    scans: 0,
+    favorites: 0,
+    history: 0,
+    recommendations: 0,
+  });
+  const [recentScans, setRecentScans] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { label: "Produk Dipindai", value: "24", icon: "📱" },
-    { label: "Favorit", value: "12", icon: "❤️" },
-    { label: "Riwayat", value: "156", icon: "📊" },
-    { label: "Rekomendasi", value: "8", icon: "✨" },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Nanti diganti dengan endpoint API yang sebenarnya
+        // const { data } = await api.get('/user/dashboard');
+        // setStats(data.stats);
+        // setRecentScans(data.recent);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+        setLoading(false);
+      }
+    };
 
-  const recentScans = [
-    {
-      name: "Indomie Goreng",
-      brand: "Indofood",
-      date: "2 jam lalu",
-      grade: "B",
-    },
-    { name: "Teh Botol Sosro", brand: "Sosro", date: "5 jam lalu", grade: "A" },
-    {
-      name: "Chitato Rasa Sapi Panggang",
-      brand: "Indofood",
-      date: "Kemarin",
-      grade: "C",
-    },
-  ];
+    fetchDashboardData();
+  }, []);
+
+  const StatCard = ({ label, value, icon }) => (
+    <Card className="text-center flex flex-col items-center justify-center py-6">
+      <div className="text-4xl mb-3 bg-bg-base p-3 rounded-full">{icon}</div>
+      {loading ? (
+        <div className="h-8 w-16 bg-gray-200 animate-pulse rounded mb-1"></div>
+      ) : (
+        <div className="text-3xl font-bold text-text-primary mb-1">{value}</div>
+      )}
+      <div className="text-sm text-text-secondary font-medium">{label}</div>
+    </Card>
+  );
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-h2 font-bold text-text-primary mb-2">
-              Halo, {user?.name || "User"}! 👋
+            <h1 className="text-3xl font-bold text-text-primary mb-2">
+              Halo, {user?.name || "Pengguna"}! 👋
             </h1>
-            <p className="text-base text-text-secondary">
-              Selamat datang kembali di LacakNutri
+            <p className="text-text-secondary">
+              Ringkasan aktivitas nutrisi Anda
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <Card key={index} className="text-center">
-                <div className="text-4xl mb-3">{stat.icon}</div>
-                <div className="text-h3 font-bold text-text-primary mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-label text-text-secondary">
-                  {stat.label}
-                </div>
-              </Card>
-            ))}
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="Produk Dipindai" value={stats.scans} icon="📱" />
+            <StatCard label="Favorit" value={stats.favorites} icon="❤️" />
+            <StatCard label="Riwayat" value={stats.history} icon="📊" />
+            <StatCard
+              label="Saran AI"
+              value={stats.recommendations}
+              icon="✨"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Riwayat Scan */}
             <div className="lg:col-span-2">
-              <Card title="Riwayat Scan Terakhir">
-                <div className="space-y-4">
-                  {recentScans.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-bg-base rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-text-primary">
-                          {item.name}
-                        </h4>
-                        <p className="text-label text-text-secondary">
-                          {item.brand}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-caption text-text-secondary">
-                          {item.date}
-                        </span>
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
-                            item.grade === "A"
-                              ? "bg-success/20 text-success"
-                              : item.grade === "B"
-                              ? "bg-primary/20 text-primary"
-                              : "bg-warning/20 text-warning-text"
-                          }`}
-                        >
-                          {item.grade}
+              <Card title="Riwayat Scan Terakhir" className="h-full">
+                {loading ? (
+                  <div className="space-y-4 animate-pulse">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-20 bg-gray-100 rounded-xl"
+                      ></div>
+                    ))}
+                  </div>
+                ) : recentScans.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentScans.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-bg-base rounded-xl border border-border"
+                      >
+                        <div>
+                          <h4 className="font-bold text-text-primary">
+                            {item.name}
+                          </h4>
+                          <p className="text-xs text-text-secondary">
+                            {item.brand}
+                          </p>
                         </div>
+                        {/* Grade Indicator */}
                       </div>
-                    </div>
-                  ))}
-                  <Link to="/products">
-                    <Button variant="ghost" className="w-full">
-                      Lihat Semua Riwayat
-                    </Button>
-                  </Link>
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-text-secondary">
+                    <p className="mb-4">Belum ada riwayat scan.</p>
+                    <Link to="/scanner">
+                      <Button size="sm">Mulai Scan Sekarang</Button>
+                    </Link>
+                  </div>
+                )}
               </Card>
             </div>
 
-            <div>
-              <Card title="Quick Actions">
-                <div className="space-y-3">
+            {/* Quick Actions & Tips */}
+            <div className="space-y-6">
+              <Card title="Aksi Cepat">
+                <div className="grid gap-3">
                   <Link to="/scanner">
                     <Button fullWidth className="justify-start">
-                      📱 Scan Produk
+                      📱 Scan Barcode/OCR
                     </Button>
                   </Link>
                   <Link to="/products">
@@ -118,37 +132,14 @@ const Dashboard = () => {
                       🔍 Cari Produk
                     </Button>
                   </Link>
-                  <Link to="/profile">
-                    <Button
-                      variant="outline"
-                      fullWidth
-                      className="justify-start"
-                    >
-                      👤 Edit Profil
-                    </Button>
-                  </Link>
-                  <Link to="/articles">
-                    <Button
-                      variant="outline"
-                      fullWidth
-                      className="justify-start"
-                    >
-                      📰 Baca Artikel
-                    </Button>
-                  </Link>
                 </div>
               </Card>
 
-              <Card title="Tips Hari Ini" className="mt-6">
-                <div className="text-label text-text-secondary">
-                  <p className="mb-3">
-                    Pastikan asupan gula harian tidak melebihi 50 gram per hari
-                    untuk menjaga kesehatan.
-                  </p>
-                  <Link to="/articles" className="text-primary hover:underline">
-                    Baca tips lainnya →
-                  </Link>
-                </div>
+              <Card title="Tips Hari Ini">
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  "Kurangi konsumsi natrium harian hingga di bawah 2000mg untuk
+                  menjaga tekanan darah tetap normal."
+                </p>
               </Card>
             </div>
           </div>

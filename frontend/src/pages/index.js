@@ -1,6 +1,7 @@
 export { default as Home } from "./Home";
 export { default as Login } from "./Login";
 export { default as Register } from "./Register";
+export { default as ForgotPassword } from "./ForgotPassword";
 export { default as Dashboard } from "./Dashboard";
 export { default as Products } from "./Products";
 export { default as ProductDetail } from "./ProductDetail";
@@ -9,3 +10,4 @@ export { default as NotFound } from "./NotFound";
 export { default as ArticleDetail } from "./ArticleDetail";
 export { default as Articles } from "./Articles";
 export { default as Scanner } from "./Scanner";
+export { About, FAQ, Contact, Privacy, Terms } from "./StaticPages";
