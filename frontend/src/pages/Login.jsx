@@ -88,7 +88,7 @@ const Login = () => {
               <div className="text-right">
                 <Link
                   to="/forgot-password"
-                  class="text-xs text-primary font-semibold hover:underline"
+                  className="text-xs text-primary font-semibold hover:underline"
                 >
                   Lupa Password?
                 </Link>

@@ -6,12 +6,11 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false); // State Modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // Form Profile
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -21,31 +20,105 @@ const Profile = () => {
     gender: user?.gender || "male",
   });
 
-  // Form Password
   const [passData, setPassData] = useState({
     current: "",
     new: "",
     confirm: "",
   });
 
+  const calculateBMIValue = () => {
+    if (formData.weight && formData.height) {
+      const heightInMeters = formData.height / 100;
+      return (formData.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    }
+    return null;
+  };
+
+  const bmiValue = calculateBMIValue();
+
+  const getBMICategory = (bmi) => {
+    if (!bmi)
+      return {
+        label: "Lengkapi Data",
+        color: "text-text-secondary",
+        bg: "bg-gray-100",
+      };
+    const val = parseFloat(bmi);
+
+    if (val <= 18.49)
+      return {
+        label: "Berat Kurang (Underweight)",
+        color: "text-warning-text",
+        bg: "bg-warning/10",
+      };
+    if (val >= 18.5 && val <= 24.9)
+      return {
+        label: "Normal (Ideal)",
+        color: "text-success",
+        bg: "bg-success/10",
+      };
+    if (val >= 25 && val <= 27)
+      return {
+        label: "Berlebih (Overweight)",
+        color: "text-warning-text",
+        bg: "bg-warning/10",
+      };
+    return { label: "Obesitas", color: "text-error", bg: "bg-error/10" };
+  };
+
+  const bmiCategory = getBMICategory(bmiValue);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await updateProfile(formData);
+      const payload = {
+        name: formData.name,
+        gender: formData.gender,
+        age: parseInt(formData.age) || null,
+        weight: parseFloat(formData.weight) || null,
+        height: parseFloat(formData.height) || null,
+      };
+
+      await updateProfile(payload);
       setEditing(false);
     } catch (error) {
       console.error(error);
+      alert("Gagal mengupdate profil");
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Integrasi ke Backend endpoint /api/auth/change-password
-    alert("Fitur ini akan berfungsi setelah backend endpoint siap!");
-    setShowPasswordModal(false);
+
+    if (passData.new !== passData.confirm) {
+      alert("Konfirmasi password tidak cocok!");
+      return;
+    }
+
+    if (passData.new.length < 8) {
+      alert("Password minimal 8 karakter!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await changePassword({
+        current_password: passData.current,
+        new_password: passData.new,
+      });
+
+      alert("Password berhasil diubah! Silakan login ulang.");
+      setShowPasswordModal(false);
+      setPassData({ current: "", new: "", confirm: "" });
+    } catch (error) {
+      const msg = error.response?.data?.detail || "Gagal mengubah password.";
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // BMI Calculation Logic (Tetap)
@@ -198,11 +271,13 @@ const Profile = () => {
                   <p className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-2">
                     Indeks Massa Tubuh
                   </p>
-                  <div className="text-5xl font-extrabold text-primary mb-2">
-                    {bmi || "-"}
+                  <div className="text-5xl font-extrabold text-primary mb-3">
+                    {bmiValue || "-"}
                   </div>
-                  <div className="inline-block px-3 py-1 rounded-lg bg-white border border-border text-xs font-bold text-text-primary">
-                    {bmi ? "Normal" : "Lengkapi Data"}
+                  <div
+                    className={`inline-block px-4 py-1.5 rounded-full border border-border text-xs font-bold ${bmiCategory.color} ${bmiCategory.bg}`}
+                  >
+                    {bmiCategory.label}
                   </div>
                 </div>
               </Card>

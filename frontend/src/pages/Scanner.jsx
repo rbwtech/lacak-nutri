@@ -95,6 +95,12 @@ const Scanner = () => {
     if (bpomInput) handleScanSuccess(bpomInput);
   };
 
+  const resetScan = () => {
+    setResult(null);
+    setBpomInput("");
+    setError(null);
+  };
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-8">
@@ -187,41 +193,95 @@ const Scanner = () => {
             {/* Hasil Scan */}
             {result && (
               <div className="p-8 text-center">
-                <div className="w-24 h-24 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card">
-                  <svg
-                    className="w-12 h-12"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-text-primary mb-2">
-                  Hasil Pindaian
-                </h2>
-                <div className="bg-bg-base p-4 rounded-xl border border-border mb-6 text-left">
-                  <p className="text-sm text-text-secondary">
-                    Kode yang ditemukan:
-                  </p>
-                  <p className="font-mono font-bold text-lg text-primary break-all">
-                    {result.code}
-                  </p>
-                  <p className="text-sm text-text-secondary mt-2 italic">
-                    {result.message}
-                  </p>
+                <div
+                  className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-card ${
+                    result.found
+                      ? "bg-success/10 text-success"
+                      : "bg-error/10 text-error"
+                  }`}
+                >
+                  {result.found ? (
+                    <svg
+                      className="w-12 h-12"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-12 h-12"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  )}
                 </div>
 
-                <Button
-                  variant="outline"
-                  fullWidth
-                  onClick={() => setResult(null)}
-                >
+                <h2 className="text-2xl font-extrabold text-text-primary mb-2">
+                  {result.found ? "Produk Ditemukan!" : "Tidak Ditemukan"}
+                </h2>
+
+                {result.found ? (
+                  <div className="bg-bg-base p-6 rounded-2xl border border-border mb-6 text-left space-y-4 shadow-sm">
+                    <div>
+                      <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                        Nama Produk
+                      </p>
+                      <p className="font-bold text-lg text-text-primary">
+                        {result.data.product_name}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                          Nomor BPOM
+                        </p>
+                        <p className="font-mono font-medium text-primary">
+                          {result.data.bpom_number}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                          Merk
+                        </p>
+                        <p className="font-medium text-text-primary">
+                          {result.data.brand || "-"}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                        Pabrik
+                      </p>
+                      <p className="text-sm text-text-primary">
+                        {result.data.manufacturer}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-bg-base p-4 rounded-xl border border-border mb-6">
+                    <p className="text-text-secondary">
+                      Nomor <strong>{result.code}</strong> tidak terdaftar di
+                      database BPOM.
+                    </p>
+                  </div>
+                )}
+
+                <Button variant="outline" fullWidth onClick={resetScan}>
                   Scan Lagi
                 </Button>
               </div>

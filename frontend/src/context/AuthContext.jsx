@@ -5,66 +5,88 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const initAuth = async () => {
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
 
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-
-    let currentSession = localStorage.getItem("session_id");
-    if (!currentSession) {
-      currentSession = crypto.randomUUID();
-      localStorage.setItem("session_id", currentSession);
-    }
-    setSessionId(currentSession);
-
-    setLoading(false);
+      if (storedUser && token && storedUser !== "undefined") {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          localStorage.clear();
+        }
+      }
+      setLoading(false);
+    };
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
-    localStorage.setItem("token", data.access_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    setUser(data.user);
-    return data;
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+      return data;
+    } catch (e) {
+      throw e;
+    }
   };
 
   const register = async (userData) => {
-    const { data } = await api.post("/auth/register", userData);
-    localStorage.setItem("token", data.access_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    setUser(data.user);
-    return data;
+    try {
+      const { data } = await api.post("/auth/register", userData);
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+      return data;
+    } catch (e) {
+      throw e;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    window.location.href = "/login";
   };
 
   const updateProfile = async (profileData) => {
-    const { data } = await api.put("/auth/profile", profileData);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    setUser(data.user);
-    return data;
+    try {
+      const { data } = await api.put("/auth/profile", profileData);
+      localStorage.setItem("user", JSON.stringify(data));
+      setUser(data);
+      return data;
+    } catch (error) {
+      console.error("Update profile failed", error);
+      throw error;
+    }
+  };
+
+  const changePassword = async (passwordData) => {
+    try {
+      const { data } = await api.post("/auth/change-password", passwordData);
+      return data;
+    } catch (error) {
+      console.error("Change password failed", error);
+      throw error;
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        sessionId,
         loading,
         login,
         register,
         logout,
         updateProfile,
+        changePassword,
       }}
     >
       {children}

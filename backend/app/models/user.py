@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, func
+from sqlalchemy import Column, Integer, String, Enum, DateTime, func, Float
 from app.core.database import Base
 import enum
 
@@ -14,6 +14,10 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user)
+    age = Column(Integer, nullable=True)
+    weight = Column(Float, nullable=True)
+    height = Column(Float, nullable=True)
+    gender = Column(String(10), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
