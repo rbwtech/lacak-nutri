@@ -10,7 +10,6 @@ env/
 
 # Environment Variables (PENTING: Jangan upload DB Password/Secret Key)
 .env
-.env.*
 
 # Distribution / Packaging
 dist/
