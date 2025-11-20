@@ -1,39 +1,74 @@
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+// import api from "../config/api";
 
 const ArticleDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Bisa slug atau ID
+  const navigate = useNavigate();
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const article = {
-    id: 1,
-    title: "Panduan Membaca Label Nutrisi",
-    category: "Panduan",
-    date: "15 Nov 2025",
-    readTime: "5 min",
-    author: "Tim LacakNutri",
-    content: `
-      <p>Label nutrisi pada kemasan makanan adalah sumber informasi penting yang sering diabaikan. 
-      Memahami cara membaca label ini dapat membantu Anda membuat pilihan makanan yang lebih sehat.</p>
+  useEffect(() => {
+    const fetchArticle = async () => {
+      setLoading(true);
+      try {
+        // const { data } = await api.get(`/education/articles/${id}`);
+        // setArticle(data.data);
 
-      <h3>Informasi Dasar</h3>
-      <p>Setiap label nutrisi di Indonesia wajib mencantumkan informasi per sajian, termasuk energi, 
-      protein, lemak total, karbohidrat, dan natrium. Perhatikan ukuran porsi yang tercantum.</p>
+        // Simulasi Loading
+        setTimeout(() => {
+          // Jika data tidak ada (karena belum ada backend), set null atau handle error
+          setLoading(false);
+        }, 800);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+      }
+    };
 
-      <h3>Yang Perlu Diperhatikan</h3>
-      <ul>
-        <li>Kalori per porsi</li>
-        <li>Kandungan gula</li>
-        <li>Kadar natrium</li>
-        <li>Lemak jenuh</li>
-        <li>Serat makanan</li>
-      </ul>
+    fetchArticle();
+  }, [id]);
 
-      <h3>Tips Praktis</h3>
-      <p>Bandingkan produk serupa dan pilih yang memiliki kandungan gula dan natrium lebih rendah. 
-      Perhatikan juga ukuran porsi yang realistis dengan konsumsi Anda.</p>
-    `,
-  };
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="h-64 bg-white rounded-3xl border border-border p-8">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!article && !loading) {
+    // Tampilan fallback sementara sebelum ada data
+    return (
+      <MainLayout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">
+            Artikel Tidak Ditemukan
+          </h2>
+          <p className="text-text-secondary mb-6">
+            Artikel yang Anda cari mungkin belum tersedia atau telah dihapus.
+          </p>
+          <Link to="/articles">
+            <Button>Kembali ke Daftar Artikel</Button>
+          </Link>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -41,10 +76,10 @@ const ArticleDetail = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             to="/articles"
-            className="inline-flex items-center gap-2 text-label text-text-secondary hover:text-primary font-medium mb-6" // font-medium ditambahkan
+            className="inline-flex items-center gap-2 text-sm font-bold text-text-secondary hover:text-primary mb-6 transition-colors"
           >
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -59,59 +94,49 @@ const ArticleDetail = () => {
             Kembali ke Artikel
           </Link>
 
-          <Card>
-            <div className="mb-6">
+          <Card className="overflow-hidden">
+            {article.thumbnail_url && (
+              <img
+                src={article.thumbnail_url}
+                alt={article.title}
+                className="w-full h-64 object-cover mb-6 rounded-xl"
+              />
+            )}
+
+            <div className="mb-8 border-b border-border pb-6">
               <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-caption font-medium">
+                <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wide">
                   {article.category}
                 </span>
-                <span className="text-caption text-text-secondary">
-                  {article.readTime}
+                <span className="text-xs text-text-secondary font-medium">
+                  {new Date(article.created_at).toLocaleDateString("id-ID", {
+                    dateStyle: "long",
+                  })}
                 </span>
               </div>
 
-              <h1 className="text-h1 font-bold text-text-primary mb-4">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-text-primary mb-4 leading-tight">
                 {article.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-label text-text-secondary">
-                <span>Oleh {article.author}</span>
-                <span>•</span>
-                <span>{article.date}</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold">
+                  {article.author ? article.author.charAt(0) : "A"}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-text-primary">
+                    {article.author || "Tim LacakNutri"}
+                  </p>
+                  <p className="text-xs text-text-secondary">Penulis</p>
+                </div>
               </div>
             </div>
 
             <div
-              className="prose prose-lg max-w-none text-text-primary"
+              className="prose prose-lg prose-headings:font-bold prose-a:text-primary prose-img:rounded-xl max-w-none text-text-primary"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
           </Card>
-
-          <div className="mt-8">
-            <h3 className="text-h4 font-semibold text-text-primary mb-4">
-              Artikel Terkait
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Card key={i} padding={false}>
-                  <div className="p-6">
-                    <h4 className="text-h4 font-semibold text-text-primary mb-2">
-                      Artikel Terkait {i}
-                    </h4>
-                    <p className="text-base text-text-secondary mb-4">
-                      Deskripsi singkat artikel terkait
-                    </p>
-                    <Link
-                      to={`/articles/${i + 1}`}
-                      className="text-primary hover:underline text-label font-medium"
-                    >
-                      Baca Selengkapnya →
-                    </Link>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </MainLayout>

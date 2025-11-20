@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+// import api from "../config/api"; // Uncomment saat integrasi
 
 const Articles = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     { id: "all", label: "Semua" },
@@ -15,69 +18,48 @@ const Articles = () => {
     { id: "panduan", label: "Panduan" },
   ];
 
-  const articles = [
-    {
-      id: 1,
-      title: "Panduan Membaca Label Nutrisi",
-      excerpt:
-        "Pelajari cara membaca dan memahami informasi nilai gizi pada kemasan makanan.",
-      category: "panduan",
-      date: "15 Nov 2025",
-      readTime: "5 min",
-    },
-    {
-      id: 2,
-      title: "Memahami Alergen Umum dalam Makanan",
-      excerpt:
-        "Ketahui alergen yang paling sering ditemukan dan cara menghindarinya.",
-      category: "alergen",
-      date: "14 Nov 2025",
-      readTime: "7 min",
-    },
-    {
-      id: 3,
-      title: "Pemanis Buatan: Aman atau Berbahaya?",
-      excerpt:
-        "Fakta ilmiah tentang berbagai jenis pemanis buatan yang beredar.",
-      category: "aditif",
-      date: "13 Nov 2025",
-      readTime: "6 min",
-    },
-    {
-      id: 4,
-      title: "Protein: Berapa Banyak yang Anda Butuhkan?",
-      excerpt:
-        "Panduan lengkap kebutuhan protein harian berdasarkan usia dan aktivitas.",
-      category: "gizi",
-      date: "12 Nov 2025",
-      readTime: "8 min",
-    },
-  ];
+  useEffect(() => {
+    const fetchArticles = async () => {
+      setLoading(true);
+      try {
+        // const response = await api.get(`/education/articles?category=${activeCategory}`);
+        // setArticles(response.data.data);
 
-  const filteredArticles =
-    activeCategory === "all"
-      ? articles
-      : articles.filter((a) => a.category === activeCategory);
+        // Simulasi Loading untuk UI Development
+        setTimeout(() => {
+          setArticles([]); // Kosongkan dulu, nanti diisi API
+          setLoading(false);
+        }, 800);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+      }
+    };
+
+    fetchArticles();
+  }, [activeCategory]);
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-h2 font-bold text-text-primary mb-2">
+          <div className="mb-8 text-center md:text-left">
+            <h1 className="text-3xl font-bold text-text-primary mb-2">
               Pusat Edukasi Gizi
             </h1>
-            <p className="text-base text-text-secondary">
-              Artikel dan panduan untuk hidup lebih sehat
+            <p className="text-text-secondary">
+              Artikel dan panduan terpercaya untuk hidup lebih sehat.
             </p>
           </div>
 
-          <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+          {/* Category Filter */}
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((cat) => (
               <Button
                 key={cat.id}
                 variant={activeCategory === cat.id ? "primary" : "outline"}
                 size="sm"
+                className="whitespace-nowrap rounded-full"
                 onClick={() => setActiveCategory(cat.id)}
               >
                 {cat.label}
@@ -85,41 +67,77 @@ const Articles = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <Link key={article.id} to={`/articles/${article.id}`}>
-                <Card hover>
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-label text-primary font-semibold capitalize">
-                      {article.category}
-                    </span>
-                    <span className="text-caption text-text-secondary">
-                      {article.readTime}
-                    </span>
-                  </div>
-                  <h3 className="text-h4 font-bold text-text-primary mb-2">
-                    {article.title}
-                  </h3>
-                  <p className="text-base text-text-secondary mb-4">
-                    {article.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-caption text-text-secondary">
-                      {article.date}
-                    </span>
-                    <span className="text-primary text-base font-semibold">
-                      Baca →
-                    </span>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-
-          {filteredArticles.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-base text-text-secondary">
-                Tidak ada artikel dalam kategori ini
+          {/* Content Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="h-64 bg-white rounded-3xl border border-border animate-pulse p-6"
+                >
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : articles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {articles.map((article) => (
+                <Link key={article.id} to={`/articles/${article.slug}`}>
+                  <Card hover className="h-full flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded-lg">
+                        {article.category}
+                      </span>
+                      <span className="text-xs text-text-secondary">
+                        {article.read_time || "5 min"}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-text-primary mb-2 line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p className="text-sm text-text-secondary mb-4 line-clamp-3 flex-1">
+                      {article.excerpt ||
+                        article.content.substring(0, 100) + "..."}
+                    </p>
+                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
+                      <span className="text-xs text-text-secondary">
+                        {new Date(article.created_at).toLocaleDateString(
+                          "id-ID",
+                          { dateStyle: "medium" }
+                        )}
+                      </span>
+                      <span className="text-primary text-sm font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        Baca{" "}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-bg-surface rounded-3xl border border-border">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-bold text-text-primary mb-2">
+                Belum ada artikel
+              </h3>
+              <p className="text-text-secondary">
+                Nantikan konten edukasi terbaru dari kami.
               </p>
             </div>
           )}

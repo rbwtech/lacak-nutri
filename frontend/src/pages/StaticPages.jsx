@@ -84,10 +84,10 @@ export const Contact = () => (
         <Card title="Info Kontak">
           <div className="space-y-4 text-text-secondary">
             <p>
-              <strong>Email:</strong> support@lacaknutri.com
+              <strong>Email:</strong> lacaknutri@rbwtech.io
             </p>
             <p>
-              <strong>Telepon:</strong> +62 812-3456-7890
+              <strong>Telepon:</strong> +62 851-8238-1003
             </p>
             <p>
               <strong>Alamat:</strong> UIN Sunan Kalijaga, Yogyakarta
