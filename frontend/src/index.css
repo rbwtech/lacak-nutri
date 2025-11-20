@@ -1,16 +1,16 @@
+@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @layer base {
   * {
-    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply font-sans bg-bg-base text-text-primary;
+    font-family: "Manrope", "Inter", system-ui, sans-serif;
+    background-color: #fdfdf5;
+    color: #333333;
   }
 
   html {
@@ -18,17 +18,15 @@
   }
 }
 
-@layer utilities {
-  .animate-spin {
-    animation: spin 1s linear infinite;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
