@@ -252,7 +252,7 @@ const Scanner = () => {
                     : "text-text-secondary hover:bg-gray-50"
                 }`}
               >
-                Foto Label (AI)
+                Foto Label Gizi (OCR + AI)
               </button>
             </div>
           )}
@@ -317,33 +317,37 @@ const Scanner = () => {
                         />
                       </div>
                     ) : (
-                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
-                        <div id="reader" className="w-full h-64"></div>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
-                          onClick={() => {
-                            scannerRef.current?.clear();
-                            setIsScannerActive(false);
-                          }}
-                        >
-                          Tutup
-                        </Button>
+                      <div className="bg-black text-white text-center rounded-xl overflow-hidden mb-6">
+                        <div
+                          id="reader"
+                          className="w-full aspect-square max-h-[70vh]"
+                        ></div>
+
+                        <div className="p-4">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              scannerRef.current?.clear();
+                              setIsScannerActive(false);
+                            }}
+                          >
+                            Tutup
+                          </Button>
+                        </div>
                       </div>
                     )}
                     <div className="space-y-4">
                       <Input
-                        label="Nomor BPOM / Barcode"
-                        placeholder="Contoh: MD 0411..."
+                        label="Nomor Registrasi / Barcode / Nama Produk"
+                        placeholder="Contoh: MD 0411... atau Chitato"
                         value={bpomInput}
                         onChange={(e) => setBpomInput(e.target.value)}
+                        helperText="Kode BPOM (MD/ML), barcode, atau nama produk."
                       />
                       <Button
                         fullWidth
-                        onClick={() =>
-                          bpomInput && handleBarcodeSuccess(bpomInput)
-                        }
+                        onClick={handleManualSubmit}
                         disabled={!bpomInput}
                       >
                         Cek Validitas
@@ -351,7 +355,6 @@ const Scanner = () => {
                     </div>
                   </>
                 ) : (
-                  // ... (Tampilan Input OCR SAMA) ...
                   <div className="space-y-6">
                     {isScannerActive ? (
                       <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 border-4 border-white">
