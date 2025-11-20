@@ -1,48 +1,63 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { Link } from "react-router-dom";
 
 const Articles = () => {
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  const categories = [
+    { id: "all", label: "Semua" },
+    { id: "gizi", label: "Gizi" },
+    { id: "alergen", label: "Alergen" },
+    { id: "aditif", label: "Aditif" },
+    { id: "panduan", label: "Panduan" },
+  ];
+
   const articles = [
     {
       id: 1,
       title: "Panduan Membaca Label Nutrisi",
       excerpt:
-        "Pelajari cara membaca dan memahami informasi nutrisi pada kemasan makanan",
-      category: "Panduan",
+        "Pelajari cara membaca dan memahami informasi nilai gizi pada kemasan makanan.",
+      category: "panduan",
       date: "15 Nov 2025",
       readTime: "5 min",
     },
     {
       id: 2,
-      title: "Bahaya Konsumsi Gula Berlebihan",
+      title: "Memahami Alergen Umum dalam Makanan",
       excerpt:
-        "Dampak kesehatan dari mengonsumsi gula melebihi batas yang dianjurkan",
-      category: "Kesehatan",
+        "Ketahui alergen yang paling sering ditemukan dan cara menghindarinya.",
+      category: "alergen",
       date: "14 Nov 2025",
       readTime: "7 min",
     },
     {
       id: 3,
-      title: "Mengenal Indeks Glikemik Makanan",
-      excerpt: "Apa itu indeks glikemik dan mengapa penting untuk kesehatan",
-      category: "Edukasi",
+      title: "Pemanis Buatan: Aman atau Berbahaya?",
+      excerpt:
+        "Fakta ilmiah tentang berbagai jenis pemanis buatan yang beredar.",
+      category: "aditif",
       date: "13 Nov 2025",
       readTime: "6 min",
     },
     {
       id: 4,
-      title: "Tips Memilih Camilan Sehat",
+      title: "Protein: Berapa Banyak yang Anda Butuhkan?",
       excerpt:
-        "Panduan memilih camilan yang baik untuk kesehatan dan nutrisi seimbang",
-      category: "Tips",
+        "Panduan lengkap kebutuhan protein harian berdasarkan usia dan aktivitas.",
+      category: "gizi",
       date: "12 Nov 2025",
-      readTime: "4 min",
+      readTime: "8 min",
     },
   ];
 
-  const categories = ["Semua", "Panduan", "Kesehatan", "Edukasi", "Tips"];
+  const filteredArticles =
+    activeCategory === "all"
+      ? articles
+      : articles.filter((a) => a.category === activeCategory);
 
   return (
     <MainLayout>
@@ -50,58 +65,64 @@ const Articles = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-h2 font-bold text-text-primary mb-2">
-              Artikel & Tips
+              Pusat Edukasi Gizi
             </h1>
             <p className="text-base text-text-secondary">
-              Baca artikel seputar nutrisi dan kesehatan
+              Artikel dan panduan untuk hidup lebih sehat
             </p>
           </div>
 
           <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
             {categories.map((cat) => (
-              <button
-                key={cat}
-                className="px-4 py-2 rounded-lg text-label font-medium whitespace-nowrap bg-bg-surface text-text-secondary hover:bg-border transition-colors"
+              <Button
+                key={cat.id}
+                variant={activeCategory === cat.id ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setActiveCategory(cat.id)}
               >
-                {cat}
-              </button>
+                {cat.label}
+              </Button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article) => (
-              <Card key={article.id} padding={false}>
-                <div className="p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-caption font-medium">
+            {filteredArticles.map((article) => (
+              <Link key={article.id} to={`/articles/${article.id}`}>
+                <Card hover>
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-label text-primary font-semibold capitalize">
                       {article.category}
                     </span>
                     <span className="text-caption text-text-secondary">
                       {article.readTime}
                     </span>
                   </div>
-
-                  <h3 className="text-h4 font-semibold text-text-primary mb-2">
+                  <h3 className="text-h4 font-bold text-text-primary mb-2">
                     {article.title}
                   </h3>
-                  <p className="text-base text-text-secondary mb-4 line-clamp-2">
+                  <p className="text-base text-text-secondary mb-4">
                     {article.excerpt}
                   </p>
-
                   <div className="flex items-center justify-between">
                     <span className="text-caption text-text-secondary">
                       {article.date}
                     </span>
-                    <Link to={`/articles/${article.id}`}>
-                      <Button variant="ghost" size="sm">
-                        Baca Selengkapnya
-                      </Button>
-                    </Link>
+                    <span className="text-primary text-base font-semibold">
+                      Baca →
+                    </span>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
+
+          {filteredArticles.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-base text-text-secondary">
+                Tidak ada artikel dalam kategori ini
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
