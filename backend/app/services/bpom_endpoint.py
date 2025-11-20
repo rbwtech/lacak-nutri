@@ -1,6 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
+import re # Import Regex
 
 class BPOMScraper:
     def __init__(self):
@@ -11,15 +12,22 @@ class BPOMScraper:
 
     async def search_bpom(self, bpom_number: str) -> Optional[Dict]:
         """Mencari data produk berdasarkan nomor registrasi BPOM secara Async"""
+        clean_number = bpom_number.strip().upper()
+        
+        if re.match(r"^[A-Z]{2}\d+$", clean_number):
+            clean_number = f"{clean_number[:2]} {clean_number[2:]}"
+            print(f"Auto-formatting BPOM: {bpom_number} -> {clean_number}")
+        
+        search_query = clean_number
+
         async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
-                # 1. GET Homepage untuk CSRF & Cookies
+                # 1. GET Homepage
                 home_response = await client.get(self.base_url, headers=self.headers)
                 soup = BeautifulSoup(home_response.text, 'html.parser')
                 csrf_meta = soup.find('meta', {'name': 'csrf-token'})
                 
                 if not csrf_meta:
-                    print("CSRF Token not found")
                     return None
                 
                 csrf_token = csrf_meta['content']
@@ -43,7 +51,7 @@ class BPOMScraper:
                     'length': '10',
                     'search[value]': '',
                     'search[regex]': 'false',
-                    'query': bpom_number # Keyword
+                    'query': search_query 
                 }
                 
                 search_headers = self.headers.copy()
@@ -55,20 +63,16 @@ class BPOMScraper:
                     'Origin': self.base_url,
                 })
 
-                # 3. POST Search
                 api_url = f'{self.base_url}/produk-dt/all'
                 response = await client.post(api_url, data=post_data, headers=search_headers, cookies=home_response.cookies)
                 
                 if response.status_code == 200:
                     result = response.json()
                     if result.get('recordsFiltered', 0) > 0:
-                        # Mengambil item pertama
                         raw = result['data'][0]
                         return self._format_product(raw)
                     return None
-                else:
-                    print(f"BPOM API Error: {response.status_code}")
-                    return None
+                return None
 
             except Exception as e:
                 print(f"Scraper Exception: {e}")
@@ -80,7 +84,7 @@ class BPOMScraper:
             'product_name': raw.get('PRODUCT_NAME', 'Nama Produk Tidak Tersedia'),
             'brand': raw.get('PRODUCT_BRANDS') or "-",
             'manufacturer': raw.get('MANUFACTURER_NAME') or "-",
-            'address': raw.get('MANUFACTURER_ADDRESS') or None, 
+            'address': raw.get('MANUFACTURER_ADDRESS') or None,
             'issued_date': raw.get('PRODUCT_DATE') or None,
             'expired_date': raw.get('PRODUCT_EXPIRED') or None,
             'composition': raw.get('INGREDIENTS') or "Komposisi tidak tersedia",

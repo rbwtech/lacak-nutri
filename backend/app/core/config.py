@@ -13,11 +13,12 @@ class Settings:
     DB_PORT: str = os.getenv("DB_PORT")
     DB_NAME: str = os.getenv("DB_NAME")
     
-    # Buat URL koneksi MySQL
     DATABASE_URL: str = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+    
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
 
 settings = Settings()
