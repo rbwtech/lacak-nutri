@@ -16,6 +16,7 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email sudah terdaftar.")
     
     new_user = crud_user.create_user(db, user=user_in)
+    
     access_token = create_access_token(data={"sub": new_user.email})
     
     return {"access_token": access_token, "token_type": "bearer", "user": new_user}
@@ -29,18 +30,12 @@ def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
-@router.get("/me", response_model=schemas.UserResponse)
-def read_users_me(current_user: User = Depends(get_current_user)):
-    """Mendapatkan data user yang sedang login"""
-    return current_user
-
 @router.put("/profile", response_model=schemas.UserResponse)
 def update_profile(
     user_update: schemas.UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update data profil (umur, berat, tinggi, dll)"""
     updated_user = crud_user.update_user(db, db_user=current_user, user_update=user_update)
     return updated_user
 
@@ -50,7 +45,6 @@ def change_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Ganti password user"""
     if not verify_password(pass_data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Password lama salah.")
     

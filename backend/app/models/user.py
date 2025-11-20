@@ -14,6 +14,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user)
+    
+    # Kolom Profil (Nullable)
     age = Column(Integer, nullable=True)
     weight = Column(Float, nullable=True)
     height = Column(Float, nullable=True)

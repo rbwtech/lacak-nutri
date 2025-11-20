@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -36,8 +36,8 @@ class UserResponse(UserBase):
     gender: Optional[str] = None
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    # Config Pydantic v2
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str

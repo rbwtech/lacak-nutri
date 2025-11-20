@@ -12,7 +12,11 @@ def create_user(db: Session, user: UserCreate):
         email=user.email,
         name=user.name,
         password_hash=hashed_password,
-        role="user"
+        role="user",
+        age=None,
+        weight=None,
+        height=None,
+        gender=None
     )
     db.add(db_user)
     db.commit()
@@ -20,7 +24,8 @@ def create_user(db: Session, user: UserCreate):
     return db_user
 
 def update_user(db: Session, db_user: User, user_update: UserUpdate):
-    update_data = user_update.dict(exclude_unset=True)
+    # Ubah Pydantic model ke dictionary, abaikan yang tidak diisi (unset)
+    update_data = user_update.model_dump(exclude_unset=True)
     
     for key, value in update_data.items():
         setattr(db_user, key, value)
