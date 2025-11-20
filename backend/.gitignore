@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment (Sangat Penting)
+venv/
+env/
+.venv/
+
+# Environment Variables (PENTING: Jangan upload DB Password/Secret Key)
+.env
+.env.*
+
+# Distribution / Packaging
+dist/
+build/
+*.egg-info/
+
+# Database (Jika menggunakan SQLite lokal, meski Anda pakai MariaDB)
+*.sqlite
+*.db
+
+# Logs
+*.log
+
+# Uploads (Jangan upload file user)
+uploads/
+static/uploads/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
