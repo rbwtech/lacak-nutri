@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -8,9 +8,16 @@ from app.schemas import education as schemas
 
 router = APIRouter(prefix="/api/education", tags=["Education"])
 
-@router.get("/articles", response_model=List[schemas.ArticleList])
-def get_articles(category: Optional[str] = "all", db: Session = Depends(get_db)):
-    return crud_education.get_articles(db, category=category)
+@router.get("/articles", response_model=schemas.ArticleSearchResult)
+def get_articles(
+    category: Optional[str] = "all", 
+    q: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(9, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Mengambil daftar artikel dengan search & pagination"""
+    return crud_education.get_articles(db, category=category, query=q, page=page, size=size)
 
 @router.get("/articles/{slug}", response_model=schemas.ArticleDetail)
 def get_article_detail(slug: str, db: Session = Depends(get_db)):
@@ -30,7 +37,6 @@ def get_nutrition_dictionary(db: Session = Depends(get_db)):
 def get_additives(db: Session = Depends(get_db)):
     return crud_education.get_additives_dictionary(db)
 
-# --- ENDPOINT BARU ---
 @router.get("/diseases", response_model=List[schemas.DiseaseOut])
 def get_diseases(db: Session = Depends(get_db)):
     return crud_education.get_diseases_dictionary(db)

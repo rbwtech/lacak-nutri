@@ -45,6 +45,12 @@ class ArticleDetail(ArticleList):
     content: str
     view_count: int
 
+class ArticleSearchResult(BaseModel):
+    total: int
+    page: int
+    size: int
+    data: list[ArticleList]
+
 class NutritionOut(BaseModel):
     id: int
     name: str

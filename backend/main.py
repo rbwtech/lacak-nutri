@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import auth, scan, users, education
+from app.routers import auth, scan, users, education, food
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
@@ -22,6 +22,7 @@ app.include_router(auth.router)
 app.include_router(scan.router)
 app.include_router(users.router) 
 app.include_router(education.router)
+app.include_router(food.router)
 
 @app.get("/")
 def root():

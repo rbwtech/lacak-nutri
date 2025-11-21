@@ -22,7 +22,7 @@ const Home = () => {
             </span>
             <h1 className="text-4xl md:text-6xl font-extrabold text-text-primary mb-6 leading-tight">
               Pantau Nutrisi Makanan dengan{" "}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-red-500">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-orange-600">
                 Cerdas
               </span>
             </h1>
@@ -34,13 +34,19 @@ const Home = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
                 <Link to="/dashboard">
-                  <Button size="lg" className="shadow-lg shadow-primary/30">
+                  <Button
+                    size="lg"
+                    className="shadow-lg shadow-primary/30 border-2 border-transparent"
+                  >
                     Buka Dashboard &rarr;
                   </Button>
                 </Link>
               ) : (
                 <Link to="/register">
-                  <Button size="lg" className="shadow-lg shadow-primary/30">
+                  <Button
+                    size="lg"
+                    className="shadow-lg shadow-primary/30 border-2 border-transparent"
+                  >
                     Mulai Gratis Sekarang
                   </Button>
                 </Link>
@@ -50,9 +56,9 @@ const Home = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="bg-white/50 backdrop-blur-sm"
+                  className="bg-white/50 backdrop-blur-sm border-border"
                 >
-                  Coba Scanner
+                  Coba Scanner Demo
                 </Button>
               </Link>
             </div>
@@ -63,7 +69,7 @@ const Home = () => {
       <section className="py-16 bg-bg-base">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-h2 font-bold text-text-primary mb-4">
+            <h2 className="text-3xl font-bold text-text-primary mb-4">
               Fitur Unggulan
             </h2>
             <p className="text-base text-text-secondary">
@@ -73,10 +79,10 @@ const Home = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Kartu Fitur 1: Scanner Barcode & OCR */}
-            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-bg-surface rounded-2xl border border-border p-8 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 text-center flex flex-col items-center">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary">
                 <svg
-                  className="w-6 h-6 text-primary"
+                  className="w-8 h-8"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -89,19 +95,20 @@ const Home = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-h4 font-semibold text-text-primary mb-2">
+              <h3 className="text-xl font-bold text-text-primary mb-3">
                 Scanner Barcode & OCR
               </h3>
-              <p className="text-base text-text-secondary">
-                Scan barcode atau foto kemasan untuk info nutrisi lengkap
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Scan barcode atau foto kemasan untuk info nutrisi lengkap secara
+                instan.
               </p>
             </div>
 
             {/* Kartu Fitur 2: Validasi BPOM */}
-            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-bg-surface rounded-2xl border border-border p-8 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 text-center flex flex-col items-center">
+              <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 text-accent">
                 <svg
-                  className="w-6 h-6 text-accent"
+                  className="w-8 h-8"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -114,19 +121,20 @@ const Home = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-h4 font-semibold text-text-primary mb-2">
+              <h3 className="text-xl font-bold text-text-primary mb-3">
                 Validasi BPOM
               </h3>
-              <p className="text-base text-text-secondary">
-                Cek status registrasi BPOM produk makanan dan minuman
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Cek status registrasi BPOM produk makanan dan minuman dengan
+                akurat.
               </p>
             </div>
 
             {/* Kartu Fitur 3: Analisis AI */}
-            <div className="bg-bg-surface rounded-xl border border-border p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-bg-surface rounded-2xl border border-border p-8 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 text-center flex flex-col items-center">
+              <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-6 text-secondary">
                 <svg
-                  className="w-6 h-6 text-secondary"
+                  className="w-8 h-8"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -139,11 +147,12 @@ const Home = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-h4 font-semibold text-text-primary mb-2">
+              <h3 className="text-xl font-bold text-text-primary mb-3">
                 Analisis AI
               </h3>
-              <p className="text-base text-text-secondary">
-                Rekomendasi nutrisi personal dengan teknologi Gemini AI
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Rekomendasi nutrisi personal dengan teknologi Gemini AI yang
+                canggih.
               </p>
             </div>
           </div>
