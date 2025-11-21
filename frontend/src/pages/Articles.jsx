@@ -72,7 +72,6 @@ const Articles = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -171,7 +170,7 @@ const Articles = () => {
                         <img
                           src={article.thumbnail_url}
                           alt={article.title}
-                          className="w-full h-48 object-cover rounded-t-xl mb-4 -mt-6 -mx-6"
+                          className="w-full h-48 object-cover rounded-t-xl"
                         />
                       )}
                       <div className="flex items-start justify-between mb-3 mt-2">

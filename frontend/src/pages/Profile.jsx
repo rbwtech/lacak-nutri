@@ -12,6 +12,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [allergens, setAllergens] = useState([]);
   const [userAllergies, setUserAllergies] = useState([]);
+  const [customAllergy, setCustomAllergy] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // State
@@ -94,6 +95,26 @@ const Profile = () => {
     try {
       await api.put("/users/allergies", { allergen_ids: newSelection });
     } catch (e) {}
+  };
+
+  const handleAddCustomAllergy = async (e) => {
+    e.preventDefault();
+    if (!customAllergy.trim()) return;
+
+    try {
+      const { data } = await api.post("/users/allergies/custom", {
+        name: customAllergy,
+      });
+      // Update state lokal agar langsung muncul
+      setAllergens((prev) => [
+        ...prev.filter((a) => a.id !== data.allergen.id),
+        data.allergen,
+      ]);
+      setUserAllergies((prev) => [...prev, data.allergen.id]);
+      setCustomAllergy("");
+    } catch (error) {
+      alert("Gagal menambah alergi.");
+    }
   };
 
   // BMI Logic
@@ -342,7 +363,8 @@ const Profile = () => {
                   Pilih bahan makanan yang ingin Anda hindari (Scanner akan
                   memberi peringatan).
                 </p>
-                <div className="flex flex-wrap gap-2">
+
+                <div className="flex flex-wrap gap-2 mb-4">
                   {allergens.map((a) => (
                     <button
                       key={a.id}
@@ -360,6 +382,27 @@ const Profile = () => {
                     </button>
                   ))}
                 </div>
+
+                {/* Input Custom Alergi */}
+                <form
+                  onSubmit={handleAddCustomAllergy}
+                  className="flex gap-2 mt-2"
+                >
+                  <Input
+                    placeholder="Tambah alergi lain..."
+                    value={customAllergy}
+                    onChange={(e) => setCustomAllergy(e.target.value)}
+                    className="h-10 text-sm"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    disabled={!customAllergy}
+                  >
+                    + Tambah
+                  </Button>
+                </form>
               </Card>
             </div>
 
