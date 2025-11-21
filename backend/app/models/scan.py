@@ -22,7 +22,7 @@ class ScanHistoryOCR(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     session_id = Column(String(100), nullable=False, index=True)
     image_url = Column(Text, nullable=True)
-    ocr_raw_data = Column(JSON) # Menyimpan hasil nutrition dlm JSON
+    ocr_raw_data = Column(JSON) 
     ai_analysis = Column(Text)
     health_score = Column(SmallInteger)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

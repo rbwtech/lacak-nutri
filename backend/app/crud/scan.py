@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR, BPOMCache
 from datetime import datetime, timedelta
+import json
 
 # --- BPOM CACHE ---
 def get_bpom_cache(db: Session, bpom_number: str):
@@ -41,12 +42,21 @@ def create_bpom_history(db: Session, data: dict, session_id: str, user_id: int =
     return history
 
 def create_ocr_history(db: Session, result: dict, session_id: str, user_id: int = None):
+    analysis_data = result.get('analysis', {})
+    
+    if isinstance(analysis_data, dict):
+        analysis_string = json.dumps(analysis_data)
+    else:
+        analysis_string = str(analysis_data)
+
+    health_score = analysis_data.get('health_score', 0) if isinstance(analysis_data, dict) else 0
+
     history = ScanHistoryOCR(
         user_id=user_id,
         session_id=session_id,
         ocr_raw_data=result.get('nutrition'),
-        ai_analysis=result.get('analysis'),
-        health_score=result.get('health_score')
+        ai_analysis=analysis_string,          
+        health_score=health_score
     )
     db.add(history)
     db.commit()
