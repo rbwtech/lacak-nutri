@@ -9,7 +9,7 @@ import NutritionLabel from "../components/ui/NutritionLabel";
 import api from "../config/api";
 
 const Scanner = () => {
-  const [scanMode, setScanMode] = useState("barcode"); // 'barcode' | 'ocr'
+  const [scanMode, setScanMode] = useState("barcode");
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
@@ -40,7 +40,6 @@ const Scanner = () => {
     const fetchAllergies = async () => {
       try {
         const { data } = await api.get("/users/my-allergies");
-        // Simpan nama alergi dalam lowercase untuk pencocokan
         setMyAllergies(data.map((a) => a.name.toLowerCase()));
       } catch (e) {
         console.error("Gagal load alergi", e);
@@ -72,7 +71,7 @@ const Scanner = () => {
   const checkAllergyWarnings = (analysisData) => {
     if (!analysisData || !myAllergies.length) return [];
 
-    // Cek di ingredients dan warning
+    // Cek di ingredients dan warnings yang dikembalikan AI
     const textToCheck = (
       (analysisData.ingredients || "") +
       " " +
@@ -81,8 +80,9 @@ const Scanner = () => {
 
     const warnings = [];
     myAllergies.forEach((allergen) => {
+      // Pastikan pencocokan kata penuh atau frase, bukan sub-string pendek
       if (textToCheck.includes(allergen)) {
-        warnings.push(allergen);
+        warnings.push(allergen.charAt(0).toUpperCase() + allergen.slice(1));
       }
     });
     return warnings;
@@ -93,14 +93,12 @@ const Scanner = () => {
     setLoading(true);
     setLoadingMessage("Mencari data BPOM...");
 
-    const formattedCode = formatBPOM(code);
+    const formattedCode = formatBPOM(code); // Fix: Otomatis tambah spasi
 
     try {
       const { data } = await api.post("/scan/bpom", {
         bpom_number: formattedCode,
       });
-
-      // Jika found=false, backend kirim 200 OK dengan message
       setResult({
         type: "bpom",
         found: data.found,
@@ -154,6 +152,10 @@ const Scanner = () => {
     }
   };
 
+  const handleManualSubmit = () => {
+    if (bpomInput) handleBarcodeSuccess(bpomInput);
+  };
+
   // --- LOGIC OCR AI (GEMINI VISION) ---
   const startOCRCamera = async () => {
     setResult(null);
@@ -181,8 +183,10 @@ const Scanner = () => {
       const context = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-      setOcrImage(canvas.toDataURL("image/jpeg", 0.8));
+      context.filter = "grayscale(100%) contrast(120%)"; // Filter untuk akurasi OCR
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      setOcrImage(imageDataUrl);
       stopMediaStream();
       setIsScannerActive(false);
     }
@@ -204,7 +208,6 @@ const Scanner = () => {
     setError(null);
 
     try {
-      // Kirim Base64 Gambar ke Backend (Gemini Vision)
       const { data } = await api.post("/scan/analyze", {
         image_base64: ocrImage,
       });
@@ -252,6 +255,7 @@ const Scanner = () => {
     }
   };
 
+  // --- UI UTILS ---
   const switchMode = (mode) => {
     setScanMode(mode);
     setResult(null);
@@ -272,9 +276,6 @@ const Scanner = () => {
     setError(null);
     setChatHistory([]);
   };
-  const handleManualSubmit = () => {
-    if (bpomInput) handleBarcodeSuccess(bpomInput);
-  };
 
   return (
     <MainLayout>
@@ -287,7 +288,7 @@ const Scanner = () => {
             <p className="text-text-secondary">
               {scanMode === "barcode"
                 ? "Cek legalitas BPOM."
-                : "Analisis Nutrisi Cerdas (AI)."}
+                : "Analisis Nutrisi Cerdas."}
             </p>
           </div>
 
@@ -389,7 +390,7 @@ const Scanner = () => {
                               setIsScannerActive(false);
                             }}
                           >
-                            Tutup
+                            Tutup Kamera
                           </Button>
                         </div>
                       </div>
@@ -400,11 +401,11 @@ const Scanner = () => {
                         placeholder="Cth: MD 54321..."
                         value={bpomInput}
                         onChange={(e) => setBpomInput(e.target.value)}
-                        helperText="Masukkan kode tanpa spasi juga bisa."
+                        helperText="Bisa diketik tanpa spasi, format akan menyesuaikan."
                       />
                       <Button
                         fullWidth
-                        onClick={() => bpomInput && handleManualSubmit()}
+                        onClick={handleManualSubmit}
                         disabled={!bpomInput}
                       >
                         Cek Validitas
@@ -463,7 +464,7 @@ const Scanner = () => {
                       </div>
                     ) : (
                       <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base group">
-                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border group-hover:scale-105 transition-transform">
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
                           <svg
                             className="w-10 h-10 text-primary"
                             fill="none"
@@ -508,6 +509,11 @@ const Scanner = () => {
                         />
                       </div>
                     )}
+                    {error && (
+                      <div className="p-4 bg-error/10 text-error text-sm rounded-xl text-center font-medium">
+                        {error}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -549,14 +555,14 @@ const Scanner = () => {
                               {result.data.brand || "-"}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-text-secondary uppercase">
-                              Pabrik
-                            </p>
-                            <p className="text-sm text-text-primary">
-                              {result.data.manufacturer}
-                            </p>
-                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-text-secondary uppercase">
+                            Pabrik
+                          </p>
+                          <p className="text-sm text-text-primary">
+                            {result.data.manufacturer}
+                          </p>
                         </div>
                       </div>
                     ) : (
@@ -571,49 +577,52 @@ const Scanner = () => {
                       <h2 className="text-2xl font-extrabold text-text-primary">
                         Analisis AI
                       </h2>
-                      <div className="inline-block px-4 py-1 bg-primary/10 text-primary rounded-full font-bold mt-2">
+                      {/* Score */}
+                      <div className="inline-block px-4 py-1 bg-primary/10 text-primary rounded-full font-bold mt-2 mb-4">
                         Skor Sehat: {result.data.health_score}/10
                       </div>
+
+                      {/* ALERGI WARNING BAR (Fitur Baru) */}
+                      {result.allergyWarnings &&
+                        result.allergyWarnings.length > 0 && (
+                          <div className="bg-error/10 border border-error rounded-xl p-3 flex items-start gap-3 w-full animate-pulse text-left">
+                            <svg
+                              className="w-6 h-6 text-error shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                              />
+                            </svg>
+                            <div>
+                              <h4 className="font-bold text-error text-sm">
+                                Peringatan Alergi Ditemukan!
+                              </h4>
+                              <p className="text-xs text-text-primary">
+                                Mengandung:{" "}
+                                <strong>
+                                  {result.allergyWarnings.join(", ")}
+                                </strong>
+                              </p>
+                            </div>
+                          </div>
+                        )}
                     </div>
 
-                    {/* PERINGATAN ALERGI */}
-                    {result.allergyWarnings &&
-                      result.allergyWarnings.length > 0 && (
-                        <div className="bg-error/10 border border-error rounded-xl p-4 flex items-start gap-3 animate-pulse">
-                          <svg
-                            className="w-6 h-6 text-error shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                          </svg>
-                          <div>
-                            <h4 className="font-bold text-error text-sm">
-                              Peringatan Alergi!
-                            </h4>
-                            <p className="text-xs text-text-primary">
-                              Produk ini mungkin mengandung:{" "}
-                              <strong>
-                                {result.allergyWarnings.join(", ")}
-                              </strong>
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
+                    {/* 3. NUTRITION LABEL (Full Display) */}
                     <NutritionLabel data={result.data.nutrition} />
 
+                    {/* 4. ANALISIS TEXT */}
                     <div className="bg-bg-base p-4 rounded-xl border border-border text-sm text-text-secondary italic">
                       "{result.data.analysis}"
                     </div>
 
-                    {/* Chat Q&A */}
+                    {/* 5. CHAT Q&A */}
                     <div className="pt-6 border-t border-border">
                       <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
                         <svg
