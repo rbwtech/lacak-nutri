@@ -54,7 +54,7 @@ const Products = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.body.style.overflow = "hidden";
     }
   };
 
@@ -127,19 +127,19 @@ const Products = () => {
             </div>
 
             {/* Page Size Selector */}
-            <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-border shadow-sm">
-              <span className="text-xs font-bold text-text-secondary pl-2">
+            <div className="flex items-center gap-2 h-12 shadow-lg border border-primary/20 focus-within:border-primary rounded-xl bg-white dark:bg-neutral-800 px-4 w-full md:w-auto">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
                 Tampil:
               </span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer"
+                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-bg-surface dark:text-white"
               >
                 <option value="12">12</option>
                 <option value="24">24</option>
                 <option value="48">48</option>
-                <option value="60">60</option> {/* Batas wajar */}
+                <option value="60">60</option>
               </select>
             </div>
           </div>
@@ -175,19 +175,21 @@ const Products = () => {
                   >
                     <Card
                       hover
-                      className="border border-border/50 hover:border-primary/50 transition-all h-full flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg"
+                      className="border border-border/50 hover:border-primary/50 transition-all h-full flex flex-col"
                     >
-                      {/* ... (Isi Card SAMA SEPERTI SEBELUMNYA) ... */}
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2 min-h-14">
+                          {" "}
                           <h3 className="font-bold text-text-primary line-clamp-2 text-lg leading-tight">
                             {item.name}
                           </h3>
                         </div>
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded uppercase">
-                            {item.original_code || "GENERIC"}
-                          </span>
+                          {item.original_code && (
+                            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded uppercase">
+                              {item.original_code}
+                            </span>
+                          )}
                           <p className="text-xs text-text-secondary">
                             Per {item.weight_g}g
                           </p>
@@ -220,7 +222,8 @@ const Products = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="pt-3 border-t border-border/50 text-center">
+                      <div className="pt-3 border-t border-border/50 text-center mt-auto">
+                        {" "}
                         <span className="text-xs font-bold text-primary">
                           Lihat Detail Label Gizi →
                         </span>
@@ -231,60 +234,66 @@ const Products = () => {
               </div>
 
               {/* Advanced Pagination Controls */}
-              <div className="flex flex-wrap justify-center items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => handlePageChange(1)}
-                >
-                  First
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => handlePageChange(page - 1)}
-                >
-                  &larr;
-                </Button>
-
-                {/* Page Numbers */}
-                <div className="flex gap-1">{renderPaginationNumbers()}</div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => handlePageChange(page + 1)}
-                >
-                  &rarr;
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => handlePageChange(totalPages)}
-                >
-                  Last
-                </Button>
-              </div>
-
-              {/* Input Jump to Page */}
-              <div className="flex justify-center mt-4 items-center gap-2">
-                <span className="text-xs text-text-secondary">Ke halaman:</span>
-                <input
-                  type="number"
-                  min="1"
-                  max={totalPages}
-                  className="w-16 p-1 text-center border border-border rounded-lg text-xs font-bold"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+              <div className="flex flex-wrap justify-center items-center gap-4 mt-8">
+                {" "}
+                <div className="flex items-center gap-2 order-2 md:order-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(1)}
+                  >
+                    &laquo;
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    &larr;
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3 order-1 md:order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
+                  <span className="text-xs text-text-secondary font-bold">
+                    Halaman
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={page}
+                    onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      if (val) handlePageChange(val);
+                      if (val) setPage(val);
+                    }}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handlePageChange(page)
                     }
-                  }}
-                />
+                    className="w-12 p-1 text-center border-b-2 border-primary/20 focus:border-primary bg-transparent text-sm font-bold outline-none transition-colors"
+                  />
+                  <span className="text-xs text-text-secondary">
+                    dari {totalPages}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 order-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    &rarr;
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(totalPages)}
+                  >
+                    &raquo;
+                  </Button>
+                </div>
               </div>
             </>
           ) : (
@@ -305,15 +314,15 @@ const Products = () => {
             onClick={() => setSelectedProduct(null)}
           >
             <div
-              className="bg-white w-full max-w-md rounded-none md:rounded-xl overflow-hidden shadow-2xl animate-scale-up relative"
+              className="bg-dark w-full max-w-md rounded-none md:rounded-xl overflow-hidden shadow-2xl animate-scale-up relative"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-2 right-2 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10"
+                className="absolute top-2 right-2 p-2 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-full transition-colors z-10"
               >
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-5 h-5 text-gray-600 dark:text-gray-200"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -326,14 +335,16 @@ const Products = () => {
                   />
                 </svg>
               </button>
-              <div className="p-6 bg-white">
-                <h3 className="text-center font-bold text-xl mb-1 text-black font-sans">
+              <div className="p-6 bg-gray-100 dark:bg-neutral-800">
+                <h3 className="text-center font-bold text-xl mb-1 text-black dark:text-white font-sans">
                   {selectedProduct.name}
                 </h3>
-                <p className="text-center text-xs text-gray-500 mb-6">
+                <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-6">
                   Sumber: Database LacakNutri
                 </p>
+
                 <NutritionLabel data={selectedProduct} />
+
                 <div className="mt-6">
                   <Button fullWidth onClick={() => setSelectedProduct(null)}>
                     Tutup

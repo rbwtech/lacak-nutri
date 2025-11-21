@@ -15,7 +15,6 @@ const Profile = () => {
   const [customAllergy, setCustomAllergy] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // State
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -31,7 +30,6 @@ const Profile = () => {
     confirm: "",
   });
 
-  // Logic Data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,12 +98,10 @@ const Profile = () => {
   const handleAddCustomAllergy = async (e) => {
     e.preventDefault();
     if (!customAllergy.trim()) return;
-
     try {
       const { data } = await api.post("/users/allergies/custom", {
         name: customAllergy,
       });
-      // Update state lokal agar langsung muncul
       setAllergens((prev) => [
         ...prev.filter((a) => a.id !== data.allergen.id),
         data.allergen,
@@ -117,7 +113,6 @@ const Profile = () => {
     }
   };
 
-  // BMI Logic
   const bmiValue =
     formData.weight && formData.height
       ? (formData.weight / Math.pow(formData.height / 100, 2)).toFixed(1)
@@ -127,14 +122,14 @@ const Profile = () => {
     if (!val)
       return {
         label: "Belum Ada Data",
-        color: "text-gray-400",
+        color: "text-text-secondary",
         bg: "bg-gray-100",
       };
     const n = parseFloat(val);
     if (n < 18.5)
       return {
         label: "Berat Kurang",
-        color: "text-warning-text",
+        color: "text-warning",
         bg: "bg-warning/10",
       };
     if (n < 25)
@@ -142,16 +137,13 @@ const Profile = () => {
     if (n < 30)
       return {
         label: "Berat Lebih",
-        color: "text-warning-text",
+        color: "text-warning",
         bg: "bg-warning/10",
       };
     return { label: "Obesitas", color: "text-error", bg: "bg-error/10" };
   };
   const bmi = getBMIStatus(bmiValue);
 
-  // Styling Variables (Kunci agar tidak geser)
-  // Input Read-Only: Background abu, border transparan (tetap ada border width agar size sama)
-  // Input Edit: Background putih, border normal
   const inputClass = `w-full px-4 py-3 rounded-xl border transition-all text-sm font-medium outline-none`;
   const readOnlyClass = `bg-gray-50 border-transparent text-text-secondary cursor-default`;
   const editClass = `bg-white border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary`;
@@ -186,10 +178,9 @@ const Profile = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* MAIN COLUMN: Personal Info (8/12) */}
+            {/* MAIN COLUMN (Info & Allergy) */}
             <div className="lg:col-span-8 space-y-6">
               <Card className="relative">
-                {/* Header Card dengan tombol Edit absolut di kanan atas agar layout isi tidak goyang */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
                   <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
                     <span className="p-1.5 bg-primary/10 rounded-lg text-primary">
@@ -286,23 +277,6 @@ const Profile = () => {
                           <option value="male">Pria</option>
                           <option value="female">Wanita</option>
                         </select>
-                        {editing && (
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 9l-7 7-7-7"
-                              />
-                            </svg>
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -363,7 +337,6 @@ const Profile = () => {
                   Pilih bahan makanan yang ingin Anda hindari (Scanner akan
                   memberi peringatan).
                 </p>
-
                 <div className="flex flex-wrap gap-2 mb-4">
                   {allergens.map((a) => (
                     <button
@@ -382,8 +355,6 @@ const Profile = () => {
                     </button>
                   ))}
                 </div>
-
-                {/* Input Custom Alergi */}
                 <form
                   onSubmit={handleAddCustomAllergy}
                   className="flex gap-2 mt-2"
@@ -406,7 +377,6 @@ const Profile = () => {
               </Card>
             </div>
 
-            {/* SIDE COLUMN: Stats & Settings (4/12) */}
             <div className="lg:col-span-4 space-y-6">
               <div className="bg-primary text-white rounded-3xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
@@ -414,7 +384,6 @@ const Profile = () => {
                 <p className="text-primary-100 text-sm mb-4">
                   Berdasarkan tinggi & berat badan.
                 </p>
-
                 <div className="flex items-end gap-2 mb-2">
                   <span className="text-5xl font-extrabold">
                     {bmiValue || "--"}
@@ -478,7 +447,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Modal Ganti Password */}
+          {/* Modal Change Password */}
           {showPasswordModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up">
