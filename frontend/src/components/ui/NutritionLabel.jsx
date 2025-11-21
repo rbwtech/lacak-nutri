@@ -21,21 +21,27 @@ const NutritionLabel = ({ data }) => {
     bold = false,
     indent = false,
     border = true,
-    highlight = false, // Fitur baru: highlight merah jika tinggi
+    highlight = false,
   }) => (
     <div
       className={`flex justify-between items-center py-1 ${
-        border ? "border-b border-gray-300" : ""
-      } ${indent ? "pl-4" : ""} ${highlight && value > 15 ? "bg-red-50" : ""}`}
+        border ? "border-b border-gray-300 dark:border-gray-500" : ""
+      } ${indent ? "pl-4" : ""} ${
+        highlight && value > 15 ? "bg-red-50 dark:bg-red-900/20" : ""
+      }`}
     >
       <span
-        className={`${bold ? "font-extrabold" : "font-medium"} text-gray-800`}
+        className={`${
+          bold ? "font-extrabold" : "font-medium"
+        } text-gray-800 dark:text-gray-200`}
       >
         {label}
       </span>
       <span
         className={`font-medium ${
-          highlight && value > 15 ? "text-red-600 font-bold" : "text-gray-800"
+          highlight && value > 15
+            ? "text-red-600 dark:text-red-400 font-bold"
+            : "text-gray-800 dark:text-gray-200"
         }`}
       >
         {value}
@@ -45,15 +51,15 @@ const NutritionLabel = ({ data }) => {
   );
 
   return (
-    <div className="bg-white p-4 border-2 border-black text-sm font-sans w-full max-w-sm mx-auto shadow-lg rounded-sm">
-      <h2 className="text-3xl font-black border-b-8 border-black pb-1 mb-2 tracking-tighter">
+    <div className="bg-white dark:bg-bg-surface p-4 border-2 border-black dark:border-white text-sm font-sans w-full max-w-sm mx-auto shadow-lg rounded-sm text-black dark:text-white transition-colors">
+      <h2 className="text-3xl font-black border-b-8 border-black dark:border-white pb-1 mb-2 tracking-tighter">
         Informasi Nilai Gizi
       </h2>
 
-      <div className="flex justify-between items-end mb-2 border-b-4 border-black pb-2">
+      <div className="flex justify-between items-end mb-2 border-b-4 border-black dark:border-white pb-2">
         <div>
           <p className="font-bold text-base">Takaran Saji</p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-200">
             {/* Fallback weight jika tidak ada */}
             {getVal("weight_g", "serving_size") > 0
               ? `Per ${getVal("weight_g", "serving_size")}g`
@@ -62,18 +68,18 @@ const NutritionLabel = ({ data }) => {
         </div>
         <div className="text-right">
           {/* Tampilkan Kode Produk jika ada */}
-          <p className="text-xs font-bold text-gray-500">
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-200">
             {data.original_code || data.code || ""}
           </p>
         </div>
       </div>
 
-      <div className="flex justify-between items-center border-b-4 border-black py-3 mb-2">
+      <div className="flex justify-between items-center border-b-4 border-black dark:border-white py-3 mb-2">
         <div>
           <span className="font-black text-xl">Energi Total</span>
           {/* Kalori dari Lemak (Opsional, standar lama tapi kadang berguna) */}
           {getVal("calories_from_fat") > 0 && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-200">
               Energi dari Lemak {getVal("calories_from_fat")}
             </p>
           )}
@@ -85,7 +91,7 @@ const NutritionLabel = ({ data }) => {
       </div>
 
       <p className="text-right text-xs font-bold mb-1">% AKG*</p>
-      <div className="border-b-2 border-black mb-1"></div>
+      <div className="border-b-2 border-black dark:border-white mb-1"></div>
 
       {/* LEMAK SECTION */}
       <Row
@@ -126,7 +132,7 @@ const NutritionLabel = ({ data }) => {
       />
 
       {/* KARBOHIDRAT SECTION */}
-      <div className="border-t-4 border-black mt-1"></div>
+      <div className="border-t-4 border-black dark:border-white mt-1"></div>
       <Row
         label="Karbohidrat Total"
         value={getVal("carbs", "karbohidrat_total", "karbohidrat")}
@@ -156,7 +162,7 @@ const NutritionLabel = ({ data }) => {
       )}
 
       {/* PROTEIN SECTION */}
-      <div className="border-t-4 border-black mt-1"></div>
+      <div className="border-t-4 border-black dark:border-white mt-1"></div>
       <Row
         label="Protein"
         value={getVal("protein")}
@@ -165,8 +171,8 @@ const NutritionLabel = ({ data }) => {
       />
 
       {/* VITAMIN & MINERAL (Grid Layout) */}
-      <div className="border-t-8 border-black mt-4 pt-3">
-        <div className="grid grid-cols-2 gap-y-2 text-xs font-medium text-gray-700">
+      <div className="border-t-8 border-black dark:border-white mt-4 pt-3">
+        <div className="grid grid-cols-2 gap-y-2 text-xs font-medium text-gray-700 dark:text-gray-300">
           {/* Render Vitamin/Mineral jika ada nilainya */}
           {getVal("vit_a") > 0 && <span>Vitamin A {getVal("vit_a")}%</span>}
           {getVal("vit_c", "vitamin_c") > 0 && (
@@ -192,15 +198,15 @@ const NutritionLabel = ({ data }) => {
 
       {/* KOMPOSISI (JIKA ADA DARI OCR) */}
       {(data.ingredients || data.composition) && (
-        <div className="border-t-4 border-black mt-3 pt-2">
+        <div className="border-t-4 border-black dark:border-white mt-3 pt-2">
           <p className="font-bold mb-1">Komposisi:</p>
-          <p className="text-xs leading-relaxed text-gray-600 capitalize">
+          <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-200 capitalize">
             {data.ingredients || data.composition}
           </p>
         </div>
       )}
 
-      <p className="text-[10px] mt-4 leading-tight text-gray-500">
+      <p className="text-[10px] mt-4 leading-tight text-gray-500 dark:text-gray-200">
         *Persen Angka Kecukupan Gizi (AKG) berdasarkan kebutuhan energi 2150
         kkal. Kebutuhan energi Anda mungkin lebih tinggi atau lebih rendah.
       </p>

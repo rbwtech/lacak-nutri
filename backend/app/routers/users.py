@@ -20,9 +20,10 @@ class UpdateAllergyRequest(BaseModel):
     allergen_ids: List[int]
 
 @router.get("/allergens", response_model=List[AllergenOut])
-def get_all_allergens(db: Session = Depends(get_db)):
-    """Mendapatkan daftar semua alergen master"""
-    return db.query(Allergen).all()
+def get_all_allergens(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(Allergen).filter(
+        (Allergen.created_by.is_(None)) | (Allergen.created_by == current_user.id)
+    ).all()
 
 @router.get("/my-allergies", response_model=List[AllergenOut])
 def get_my_allergens(current_user: User = Depends(get_current_user)):
@@ -54,13 +55,17 @@ def add_custom_allergy(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Menambahkan alergi custom dan langsung memilihnya untuk user"""
-    # 1. Cek apakah alergi sudah ada di master (case insensitive)
-    existing = db.query(Allergen).filter(Allergen.name.ilike(request.name)).first()
+    existing = db.query(Allergen).filter(
+        Allergen.name.ilike(request.name),
+        (Allergen.created_by.is_(None)) | (Allergen.created_by == current_user.id)
+    ).first()
     
     if not existing:
-        # Buat baru jika belum ada
-        new_allergen = Allergen(name=request.name.title(), description="Custom user input")
+        new_allergen = Allergen(
+            name=request.name.title(), 
+            description="Custom user input",
+            created_by=current_user.id 
+        )
         db.add(new_allergen)
         db.commit()
         db.refresh(new_allergen)
@@ -68,12 +73,11 @@ def add_custom_allergy(
     else:
         target_allergen = existing
     
-    # 2. Tambahkan ke list user jika belum ada
     if target_allergen not in current_user.allergies:
         current_user.allergies.append(target_allergen)
         db.commit()
         
-    return {"message": "Alergi berhasil ditambahkan", "allergen": {"id": target_allergen.id, "name": target_allergen.name}}
+    return {"message": "Alergi custom berhasil ditambahkan", "allergen": target_allergen}
 
 class DashboardStats(BaseModel):
     scans: int

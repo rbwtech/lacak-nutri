@@ -14,7 +14,7 @@ export const About = () => (
         </p>
       </div>
       <Card className="mb-8">
-        <div className="prose prose-lg max-w-none text-text-primary">
+        <div className="prose prose-lg dark:prose-invert max-w-none text-text-primary">
           <p>
             LacakNutri adalah platform inovatif yang dikembangkan untuk membantu
             masyarakat Indonesia memahami apa yang mereka konsumsi. Dengan
@@ -129,7 +129,7 @@ export const Privacy = () => (
         Kebijakan Privasi
       </h1>
       <Card>
-        <div className="prose max-w-none text-text-secondary">
+        <div className="prose prose-lg dark:prose-invert max-w-none text-text-primary">
           <p>Terakhir diperbarui: November 2025</p>
           <p>
             Kami di LacakNutri menghargai privasi Anda. Kebijakan ini

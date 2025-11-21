@@ -21,19 +21,19 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Dashboard Stats & Recent
         const dashboardRes = await api.get("/users/dashboard");
         setStats(dashboardRes.data.stats);
         setRecentScans(dashboardRes.data.recent);
 
-        // 2. Fetch Tips dari Database (Kategori 'tips')
         const tipsRes = await api.get("/education/articles", {
           params: { category: "tips" },
         });
-        if (tipsRes.data && tipsRes.data.length > 0) {
-          // Ambil random tip dari list
+
+        const articles = tipsRes.data?.data || [];
+
+        if (articles.length > 0) {
           const randomTip =
-            tipsRes.data[Math.floor(Math.random() * tipsRes.data.length)];
+            articles[Math.floor(Math.random() * articles.length)];
           setDailyTip(randomTip);
         }
       } catch (error) {
@@ -354,7 +354,7 @@ const Dashboard = () => {
                   </svg>
                 </div>
                 <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
-                  <span className="text-warning-text">💡</span> Tips Sehat
+                  Tips Sehat
                 </h4>
 
                 {dailyTip ? (
