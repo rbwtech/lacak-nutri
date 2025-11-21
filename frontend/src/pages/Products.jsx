@@ -331,7 +331,7 @@ const Products = () => {
                   {selectedProduct.name}
                 </h3>
                 <p className="text-center text-xs text-gray-500 mb-6">
-                  Sumber: Database Nutricheck Indonesia
+                  Sumber: Database LacakNutri
                 </p>
                 <NutritionLabel data={selectedProduct} />
                 <div className="mt-6">
