@@ -167,16 +167,36 @@ const Profile = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* MAIN COLUMN: Personal Info (8/12) */}
             <div className="lg:col-span-8 space-y-6">
-              <Card title="Informasi Personal" className="relative">
-                {/* Toggle Edit Button (Absolute agar tidak geser layout) */}
-                {!editing && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="absolute top-6 right-6 text-primary font-bold text-sm hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors"
-                  >
-                    Edit Data
-                  </button>
-                )}
+              <Card className="relative">
+                {/* Header Card dengan tombol Edit absolut di kanan atas agar layout isi tidak goyang */}
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                  <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                    <span className="p-1.5 bg-primary/10 rounded-lg text-primary">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </span>
+                    Informasi Personal
+                  </h3>
+                  {!editing && (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="text-primary text-sm font-bold hover:bg-primary/5 px-3 py-1.5 rounded-xl transition-colors"
+                    >
+                      Edit Data
+                    </button>
+                  )}
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 mt-2">
                   <div className="grid md:grid-cols-2 gap-6">
@@ -303,7 +323,7 @@ const Profile = () => {
                   {editing && (
                     <div className="flex gap-3 pt-4 border-t border-border animate-fade-in-up">
                       <Button type="submit" loading={loading} className="px-8">
-                        Simpan
+                        Simpan Perubahan
                       </Button>
                       <button
                         type="button"

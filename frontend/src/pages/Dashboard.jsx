@@ -45,7 +45,7 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Helper Icon Component untuk konsistensi
+  // Helper Icon Component
   const DashboardIcon = ({
     path,
     colorClass = "text-primary",
@@ -363,7 +363,7 @@ const Dashboard = () => {
                       {dailyTip.title}
                     </h5>
                     <p className="text-xs text-text-secondary leading-relaxed line-clamp-4">
-                      {dailyTip.content.replace(/<[^>]+>/g, "")}
+                      {(dailyTip.content || "").replace(/<[^>]+>/g, "")}
                     </p>
                     <Link
                       to={`/articles/${dailyTip.slug}`}
