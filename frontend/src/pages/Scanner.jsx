@@ -183,7 +183,7 @@ const Scanner = () => {
       const context = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.filter = "grayscale(100%) contrast(120%)"; // Filter untuk akurasi OCR
+      context.filter = "contrast(110%)";
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9);
       setOcrImage(imageDataUrl);
