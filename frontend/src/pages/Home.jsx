@@ -1,26 +1,57 @@
 import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Button from "../components/ui/Button";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
+  const { user } = useAuth();
+
   return (
     <MainLayout>
-      <section className="bg-gradient-to-b from-bg-surface to-bg-base py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-linear-to-b from-bg-surface to-bg-base py-20 relative overflow-hidden">
+        {/* Background Decoration */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-h1 font-bold text-text-primary mb-6">
-              Pantau Nutrisi Makanan dengan Mudah
+            <span className="inline-block py-1 px-3 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4">
+              #1 Health Companion
+            </span>
+            <h1 className="text-4xl md:text-6xl font-extrabold text-text-primary mb-6 leading-tight">
+              Pantau Nutrisi Makanan dengan{" "}
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-red-500">
+                Cerdas
+              </span>
             </h1>
-            <p className="text-h4 text-text-secondary mb-8">
-              Scan barcode, analisis nutrisi, dan validasi BPOM untuk pilihan
-              makanan lebih sehat
+            <p className="text-lg md:text-xl text-text-secondary mb-10 leading-relaxed">
+              Scan barcode, analisis nutrisi instan, dan validasi BPOM dalam
+              satu aplikasi. Pilihan cerdas untuk hidup lebih sehat.
             </p>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register">
-                <Button size="lg">Mulai Gratis</Button>
-              </Link>
+              {user ? (
+                <Link to="/dashboard">
+                  <Button size="lg" className="shadow-lg shadow-primary/30">
+                    Buka Dashboard &rarr;
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/register">
+                  <Button size="lg" className="shadow-lg shadow-primary/30">
+                    Mulai Gratis Sekarang
+                  </Button>
+                </Link>
+              )}
+
               <Link to="/scanner">
-                <Button variant="outline" size="lg">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="bg-white/50 backdrop-blur-sm"
+                >
                   Coba Scanner
                 </Button>
               </Link>
@@ -115,23 +146,6 @@ const Home = () => {
                 Rekomendasi nutrisi personal dengan teknologi Gemini AI
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-bg-surface">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-h2 font-bold text-text-primary mb-4">
-              Siap Hidup Lebih Sehat?
-            </h2>
-            <p className="text-base text-text-secondary mb-8">
-              Bergabung dengan ribuan pengguna yang sudah memantau nutrisi
-              makanan mereka
-            </p>
-            <Link to="/register">
-              <Button size="lg">Daftar Sekarang</Button>
-            </Link>
           </div>
         </div>
       </section>
