@@ -80,17 +80,17 @@ class BPOMScraper:
                 print(f"Scraper Exception: {e}")
                 return None
 
-    def _format_product(self, raw: Dict) -> Dict:
+def _format_product(self, raw: Dict) -> Dict:
         return {
             'bpom_number': raw.get('PRODUCT_REGISTER', 'Tidak Diketahui'),
             'product_name': raw.get('PRODUCT_NAME', 'Nama Produk Tidak Tersedia'),
             'brand': raw.get('PRODUCT_BRANDS') or "-",
-            'manufacturer': raw.get('MANUFACTURER_NAME') or "-",
-            'address': raw.get('MANUFACTURER_ADDRESS') or None,
-            'issued_date': raw.get('PRODUCT_DATE') or None,
-            'expired_date': raw.get('PRODUCT_EXPIRED') or None,
+            'manufacturer': raw.get('MANUFACTURER_NAME') or raw.get('REGISTRAR') or "-",
+            'address': raw.get('MANUFACTURER_ADDRESS') or raw.get('REGISTRAR_ADD') or "-",
+            'issued_date': raw.get('PRODUCT_DATE') or raw.get('SUBMIT_DATE') or "-",
+            'expired_date': raw.get('PRODUCT_EXPIRED') or "-",
             'composition': raw.get('INGREDIENTS') or "Komposisi tidak tersedia",
-            'packaging': raw.get('PRODUCT_PACKAGE') or None,
-            'status': raw.get('STATUS') or "Tidak Diketahui",
+            'packaging': raw.get('PRODUCT_PACKAGE') or "-",
+            'status': raw.get('STATUS') or "Berlaku",
             'qr_code': raw.get('PRODUCT_QR') or None
         }

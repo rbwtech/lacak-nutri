@@ -1,122 +1,100 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import Button from "../components/ui/Button";
+import { useNavigate, Link } from "react-router-dom";
 import Input from "../components/ui/Input";
-import { validateEmail } from "../utils/helpers";
+import Button from "../components/ui/Button";
 
 const Login = () => {
-  const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      setErrors({ submit: "Mohon isi semua kolom" });
-      return;
-    }
     setLoading(true);
     try {
-      await login(formData.email, formData.password);
+      await login(email, password);
       navigate("/dashboard");
     } catch (error) {
-      setErrors({
-        submit: error.response?.data?.message || "Email atau password salah",
-      });
+      alert("Login gagal");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 md:p-8">
-      <div className="w-full max-w-md">
-        {/* Logo Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
-            <svg
-              className="w-8 h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-extrabold text-text-primary">
-            LacakNutri
+    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+      <div className="bg-white/80 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+        <div className="text-center mb-8">
+          <img
+            src="/lacaknutri.webp"
+            alt="Logo"
+            className="w-20 h-20 mx-auto mb-4 drop-shadow-lg hover:scale-105 transition-transform duration-300"
+          />
+          <h1 className="text-3xl font-black text-text-primary tracking-tight">
+            Selamat Datang
           </h1>
-          <p className="text-text-secondary mt-2">Selamat datang kembali!</p>
+          <p className="text-text-secondary mt-2 text-sm">
+            Masuk untuk melanjutkan hidup sehatmu
+          </p>
         </div>
 
-        {/* Card Form */}
-        <div className="bg-bg-surface rounded-3xl border border-border p-8 shadow-soft">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            label="Email"
+            type="email"
+            placeholder="nama@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+          />
+
+          <div>
             <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={errors.email}
-              placeholder="contoh@email.com"
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-white/50 border-primary/20 focus:border-primary h-12"
             />
-
-            <div className="space-y-1">
-              <Input
-                label="Password"
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                error={errors.password}
-                placeholder="••••••••"
-              />
-              <div className="text-right">
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-primary font-semibold hover:underline"
-                >
-                  Lupa Password?
-                </Link>
-              </div>
+            <div className="text-right mt-1">
+              <Link
+                to="/forgot-password"
+                class="text-xs font-bold text-primary hover:underline"
+              >
+                Lupa Password?
+              </Link>
             </div>
+          </div>
 
-            {errors.submit && (
-              <div className="p-4 rounded-2xl bg-error/10 text-error text-sm font-medium text-center">
-                {errors.submit}
-              </div>
-            )}
-
-            <Button type="submit" fullWidth loading={loading} size="lg">
-              Masuk Sekarang
-            </Button>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center mt-8 text-text-secondary text-sm">
-          Belum punya akun?{" "}
-          <Link
-            to="/register"
-            className="text-primary font-bold hover:underline"
+          <Button
+            type="submit"
+            fullWidth
+            loading={loading}
+            className="h-12 text-lg shadow-lg shadow-primary/30 mt-4"
           >
-            Daftar Gratis
-          </Link>
-        </p>
+            Masuk Sekarang
+          </Button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-text-secondary">
+            Belum punya akun?{" "}
+            <Link
+              to="/register"
+              className="font-bold text-primary hover:underline"
+            >
+              Daftar Gratis
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
