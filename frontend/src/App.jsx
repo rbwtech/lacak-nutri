@@ -12,6 +12,7 @@ import {
   ProductDetail,
   Profile,
   Scanner,
+  Favorites,
   Articles,
   ArticleDetail,
   About,
@@ -42,6 +43,7 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/scanner" element={<Scanner />} />
+            <Route path="/favorites" element={<Favorites />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetail />} />
 
