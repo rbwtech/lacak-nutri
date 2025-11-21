@@ -24,22 +24,27 @@ class GeminiService:
             image = Image.open(BytesIO(image_bytes))
 
             prompt = """
-            Analisis gambar label nutrisi/komposisi ini secara mendalam.
+            Berperanlah sebagai ahli gizi profesional dan ramah. Analisis gambar ini (Label Gizi/Komposisi/Fisik Produk).
             
-            Output WAJIB JSON valid (tanpa markdown):
+            Ekstrak data dan berikan penilaian kesehatan dalam format JSON valid (tanpa markdown).
+            
+            Struktur JSON Wajib:
             {
                 "nutrition": {
-                    "calories": "angka/0", "protein": "angka/0", "fat": "angka/0",
-                    "sugar": "angka/0", "sodium": "angka/0", "carbs": "angka/0"
+                    "calories": 0, "protein": 0, "fat": 0, "carbs": 0, "sugar": 0, "sodium": 0, "fiber": 0
                 },
-                "micronutrients": ["Vitamin C: 10%", "Kalsium: 20%"], 
-                "ingredients": "Daftar bahan utama...",
-                "additives": ["Pengawet (E202)", "Pewarna (E102)"],
-                "diet_tags": ["Halal?", "Vegan?", "Gluten-Free?"],
-                "analysis": "Analisis kesehatan detail (maks 3 kalimat).",
-                "health_score": 8,
-                "warnings": ["Tinggi Gula", "Mengandung Pemanis Buatan"]
+                "analysis": {
+                    "health_score": 0, // Skala 0-100 (100=Sangat Sehat/Alami)
+                    "grade": "C", // Grade: A (Sangat Sehat), B (Baik), C (Cukup), D (Kurang), E (Hindari)
+                    "summary": "Ringkasan analisis 2 kalimat yang edukatif dan mudah dipahami.",
+                    "pros": ["Poin positif 1", "Poin positif 2"], // Maksimal 2 poin singkat
+                    "cons": ["Poin negatif 1", "Poin negatif 2"], // Maksimal 2 poin singkat
+                    "ingredients": "Daftar bahan utama yang terdeteksi..."
+                },
+                "warnings": ["Peringatan Alergen/Bahan"] // Contoh: "Tinggi Gula", "Mengandung Pemanis Buatan"
             }
+            
+            Jika angka nutrisi tidak terlihat, estimasi berdasarkan jenis produk (misal: "Keripik Kentang" biasanya tinggi lemak/garam).
             """
 
             response = self.client.models.generate_content(
@@ -51,21 +56,29 @@ class GeminiService:
 
         except Exception as e:
             print(f"Gemini Vision Error: {e}")
-            return None
+            return {
+                "nutrition": {"calories": 0},
+                "analysis": {
+                    "health_score": 0, "grade": "?", 
+                    "summary": "Gagal menganalisis gambar. Pastikan koneksi internet lancar atau gambar jelas.",
+                    "pros": [], "cons": []
+                },
+                "error": str(e)
+            }
 
     async def chat_about_product(self, product_context: str, user_question: str):
         """Fitur Tanya Jawab tentang Produk"""
         if not self.client: return "Maaf, layanan AI sedang tidak tersedia."
 
         prompt = f"""
-        Kamu adalah asisten ahli gizi LacakNutri.
+        Kamu adalah asisten gizi LacakNutri.
+        Konteks Produk: {product_context}
+        Pertanyaan: "{user_question}"
         
-        Konteks Produk (Hasil Scan):
-        {product_context}
-        
-        Pertanyaan User: "{user_question}"
-        
-        Jawab dengan ramah, singkat, dan edukatif dalam Bahasa Indonesia.
+        Instruksi:
+        1. Jawab singkat (maks 3 kalimat) dan ramah dalam Bahasa Indonesia.
+        2. JANGAN gunakan format markdown (seperti **teks** atau *teks*). Gunakan teks biasa saja.
+        3. Fokus pada fakta kesehatan.
         """
         
         try:
@@ -73,12 +86,20 @@ class GeminiService:
                 model="gemini-2.5-flash",
                 contents=prompt
             )
-            return response.text.strip()
+            return self._clean_chat_output(response.text)
         except Exception as e:
-            return "Maaf, saya tidak dapat menjawab saat ini."
+            print(f"AI Chat Error: {e}")
+            if "429" in str(e):
+                return "Limit penggunaan AI tercapai. Mohon tunggu 1 menit sebelum bertanya lagi."
+            return "Maaf, saya sedang mengalami gangguan koneksi."
 
     def _clean_response(self, text):
         text = text.strip()
         if text.startswith("```"):
             text = re.sub(r'^```(json)?|```$', '', text, flags=re.MULTILINE).strip()
+        return text
+
+    def _clean_chat_output(self, text):
+        text = text.strip()
+        text = text.replace("**", "").replace("*", "").replace("__", "")
         return text

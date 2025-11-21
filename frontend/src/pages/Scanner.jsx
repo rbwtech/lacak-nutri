@@ -9,6 +9,27 @@ import AnimatedStatus from "../components/ui/AnimatedStatus";
 import NutritionLabel from "../components/ui/NutritionLabel";
 import api from "../config/api";
 
+// Komponen Badge Grade (A, B, C, D, E)
+const GradeBadge = ({ grade }) => {
+  const colors = {
+    A: "bg-green-500 border-green-200",
+    B: "bg-lime-500 border-lime-200",
+    C: "bg-yellow-500 border-yellow-200",
+    D: "bg-orange-500 border-orange-200",
+    E: "bg-red-500 border-red-200",
+    "?": "bg-gray-400 border-gray-200",
+  };
+  const colorClass = colors[grade] || colors["?"];
+
+  return (
+    <div
+      className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black text-white border-4 shadow-lg ${colorClass}`}
+    >
+      {grade}
+    </div>
+  );
+};
+
 const Scanner = () => {
   const [scanMode, setScanMode] = useState("barcode"); // 'barcode' | 'ocr'
   const [bpomInput, setBpomInput] = useState("");
@@ -33,10 +54,8 @@ const Scanner = () => {
 
   // Refs
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const barcodeScannerRef = useRef(null); // Instance Html5Qrcode
-  const animationFrameRef = useRef(null); // Untuk loop scan barcode
 
   useEffect(() => {
     const fetchAllergies = async () => {
@@ -97,8 +116,6 @@ const Scanner = () => {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    if (animationFrameRef.current)
-      cancelAnimationFrame(animationFrameRef.current);
     setIsScannerActive(false);
   };
 
@@ -107,97 +124,46 @@ const Scanner = () => {
     setZoomLevel(level);
     if (streamRef.current) {
       const track = streamRef.current.getVideoTracks()[0];
-      if (track && track.getCapabilities().zoom) {
+      if (track?.getCapabilities().zoom) {
         track.applyConstraints({ advanced: [{ zoom: level }] });
       }
     }
   };
 
-  const handleFocus = async () => {
-    if (!streamRef.current) return;
-    const track = streamRef.current.getVideoTracks()[0];
-    const capabilities = track.getCapabilities();
-    if (capabilities.focusMode && capabilities.focusMode.includes("manual")) {
-      try {
-        await track.applyConstraints({
-          advanced: [{ focusMode: "manual", points: [{ x: 0.5, y: 0.5 }] }],
-        });
-      } catch (e) {}
-    }
-  };
-
   // --- BARCODE LOGIC (Custom Loop) ---
   const startBarcodeScanningLoop = () => {
-    // Inisialisasi engine di background, tanpa UI widget
     if (!barcodeScannerRef.current) {
+      // Inisialisasi engine di background, tanpa UI widget
       barcodeScannerRef.current = new Html5Qrcode("reader-hidden");
     }
 
-    const scanLoop = async () => {
-      if (!videoRef.current || !isScannerActive) return;
-
-      // Kita ambil frame dari video element, kirim ke library
-      try {
-        // Menggunakan file scan dari canvas snapshot video
-        if (videoRef.current.readyState === 2) {
-          // HAVE_ENOUGH_DATA
-          const canvas = document.createElement("canvas");
-          canvas.width = videoRef.current.videoWidth;
-          canvas.height = videoRef.current.videoHeight;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(videoRef.current, 0, 0);
-
-          // Ini metode 'hack' untuk scan frame by frame tanpa widget UI
-          // Tapi lebih performant pakai scanFileV2 dengan blob,
-          // Namun library ini agak ribet kalau tanpa UI.
-          // Kita pakai cara simple: scan dari Canvas Image Data (built-in library jarang expose ini public).
-          // Fallback: Biarkan user "Tap" untuk scan barcode (seperti foto OCR) atau loop lambat.
-
-          // Opsi Alternatif: Gunakan BarcodeDetector API (Native Browser) jika support
-          if ("BarcodeDetector" in window) {
-            const barcodeDetector = new window.BarcodeDetector();
-            const barcodes = await barcodeDetector.detect(videoRef.current);
-            if (barcodes.length > 0) {
-              handleBarcodeSuccess(barcodes[0].rawValue);
-              return; // Stop loop
-            }
-          }
-        }
-      } catch (e) {
-        // Ignore scan error per frame
-      }
-      animationFrameRef.current = requestAnimationFrame(scanLoop);
-    };
-
-    // Fallback: Karena Html5Qrcode agak berat kalau manual loop frame-by-frame di React tanpa widget,
-    // Kita akan menggunakan logika "Scan" via tombol capture saja untuk barcode jika native API tidak ada,
-    // ATAU, gunakan Html5Qrcode secara 'headless' tapi itu kompleks.
-    // SOLUSI TERBAIK UI: Gunakan library scanning tapi mount ke div hidden,
-    // lalu kita gunakan method `scan` manual.
-
-    // KOREKSI: Agar UI konsisten 100%, kita gunakan UI kita sendiri.
-    // Barcode scanning realtime di browser agak berat tanpa WebAssembly yang optimal.
-    // Kita akan gunakan interval scanning.
     const interval = setInterval(async () => {
-      if (videoRef.current && barcodeScannerRef.current && !result) {
+      if (!videoRef.current || !isScannerActive || result) {
+        clearInterval(interval);
+        return;
+      }
+
+      // Menggunakan BarcodeDetector API (Native Browser) jika support
+      if ("BarcodeDetector" in window) {
         try {
-          // Scan frame video (ini butuh setup config scan)
-          // Simplifikasi: Kita gunakan "BarcodeDetector" native browser (Chrome Android support bagus).
-          // Jika tidak support, kita minta user "Foto" barcode (sama kayak OCR).
-          if ("BarcodeDetector" in window) {
-            const detector = new window.BarcodeDetector({
-              formats: ["qr_code", "ean_13", "ean_8"],
-            });
-            const barcodes = await detector.detect(videoRef.current);
-            if (barcodes.length > 0) {
-              clearInterval(interval);
-              handleBarcodeSuccess(barcodes[0].rawValue);
-            }
+          const detector = new window.BarcodeDetector({
+            formats: ["qr_code", "ean_13", "ean_8", "code_128", "upc_a"],
+          });
+          const barcodes = await detector.detect(videoRef.current);
+          if (barcodes.length > 0) {
+            clearInterval(interval);
+            handleBarcodeSuccess(barcodes[0].rawValue);
           }
-        } catch (e) {}
+        } catch (e) {
+          // Ignore scan error per frame
+        }
+      } else {
+        // Jika tidak ada native BarcodeDetector, kita akan mengandalkan captureImage
+        // untuk scan barcode dari gambar statis. Hentikan interval real-time.
+        clearInterval(interval);
       }
     }, 500);
-    // Simpan ID interval di ref untuk cleanup (skip detail implementasi deep cleanup demi brevity)
+    // Tidak perlu simpan ID interval di ref karena logika cleanup sudah di atas
   };
 
   // --- BARCODE SUCCESS HANDLER ---
@@ -220,7 +186,6 @@ const Scanner = () => {
         found: data.found,
         data: data.data,
         code: formattedCode,
-        message: data.message,
       });
     } catch (err) {
       setError("Gagal mengambil data. Cek koneksi.");
@@ -291,7 +256,7 @@ const Scanner = () => {
   // --- API PROCESS (OCR) ---
   const processImageAnalysis = async () => {
     setLoading(true);
-    setLoadingMessage("Analisis AI sedang bekerja...");
+    setLoadingMessage("AI sedang menganalisis nutrisi...");
     setError(null);
     try {
       const { data } = await api.post("/scan/analyze", {
@@ -299,24 +264,28 @@ const Scanner = () => {
       });
       if (!data.success) throw new Error(data.message);
 
-      // Cek Alergi
+      // Mapping data backend baru
+      const analysis = data.data.analysis || {};
+      const warnings = data.data.warnings || [];
+
+      // Cek alergi user vs hasil scan
       const textToCheck = (
-        (data.data.ingredients || "") +
+        (analysis.ingredients || "") +
         " " +
-        (data.data.warnings?.join(" ") || "")
+        (warnings.join(" ") || "")
       ).toLowerCase();
-      const warnings = myAllergies
+      const userAllergyWarnings = myAllergies
         .filter((a) => textToCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
 
       setResult({
         type: "ocr",
         found: true,
-        data: data.data,
-        allergyWarnings: warnings,
+        data: { ...data.data, ...analysis }, // Flatten structure for easier access
+        allergyWarnings: userAllergyWarnings,
       });
     } catch (err) {
-      setError("Gagal memproses gambar.");
+      setError(err.message || "Gagal memproses gambar.");
     } finally {
       setLoading(false);
     }
@@ -327,7 +296,7 @@ const Scanner = () => {
     e.preventDefault();
     if (!chatInput.trim()) return;
     const q = chatInput;
-    setChatHistory([...chatHistory, { role: "user", text: q }]);
+    setChatHistory((prev) => [...prev, { role: "user", text: q }]);
     setChatInput("");
     setChatLoading(true);
     try {
@@ -339,7 +308,7 @@ const Scanner = () => {
     } catch {
       setChatHistory((prev) => [
         ...prev,
-        { role: "ai", text: "Gagal membalas." },
+        { role: "ai", text: "Maaf, terjadi error." },
       ]);
     } finally {
       setChatLoading(false);
@@ -391,7 +360,7 @@ const Scanner = () => {
                 >
                   {mode === "barcode"
                     ? "Barcode / BPOM"
-                    : "Label Gizi (OCR + AI)"}
+                    : "Foto Label Gizi (OCR + AI)"}
                 </button>
               ))}
             </div>
@@ -415,10 +384,7 @@ const Scanner = () => {
               <div className="p-6">
                 {/* CAMERA UI (Unified) */}
                 {isScannerActive ? (
-                  <div
-                    className="relative rounded-3xl overflow-hidden bg-black w-full aspect-9/16 max-h-[70vh] shadow-2xl mx-auto border-4 border-white/20 group"
-                    onClick={handleFocus}
-                  >
+                  <div className="relative rounded-3xl overflow-hidden bg-black w-full aspect-9/16 max-h-[70vh] shadow-2xl mx-auto border-4 border-white/20 group">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -434,7 +400,8 @@ const Scanner = () => {
                           : "Pastikan Teks Terbaca"}
                       </div>
                       {/* Scanning Line Animation */}
-                      <div className="w-full h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(255,153,102,0.8)] animate-scanning-line relative top-1/2"></div>
+                      {/* Tambahkan kembali animasi scanning line jika diinginkan, namun pada implementasi ini sudah dihapus di `startBarcodeScanningLoop` */}
+                      <div className="w-full h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(255,153,102,0.8)] animate-pulse relative top-1/2"></div>
                     </div>
 
                     {/* Controls Overlay */}
@@ -461,7 +428,7 @@ const Scanner = () => {
                       <div className="flex items-center gap-8">
                         <Button
                           variant="ghost"
-                          className="text-white hover:bg-white/10 rounded-full w-12 h-12 p-0! flex items-center justify-center backdrop-blur-sm"
+                          className="text-white bg-black/20 hover:bg-white/10 rounded-full w-12 h-12 p-0! flex items-center justify-center backdrop-blur-sm"
                           onClick={stopCamera}
                         >
                           <svg
@@ -601,6 +568,7 @@ const Scanner = () => {
               // --- RESULT VIEW ---
               <div className="p-8">
                 {result.type === "bpom" ? (
+                  // HASIL SCAN BPOM
                   <div className="text-center animate-fade-in-up">
                     <AnimatedStatus type={result.found ? "success" : "error"} />
                     <h2 className="text-2xl font-extrabold text-text-primary mb-6">
@@ -699,47 +667,107 @@ const Scanner = () => {
                     )}
                   </div>
                 ) : (
+                  // HASIL SCAN OCR (NEW LAYOUT)
                   <div className="space-y-6 animate-fade-in-up">
-                    <div className="text-center">
-                      <h2 className="text-2xl font-extrabold text-text-primary">
-                        Analisis Nutrisi AI
-                      </h2>
-                      <div className="inline-block px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold mt-2 mb-4">
-                        Health Score: {result.data.health_score}/10
-                      </div>
-                      {result.allergyWarnings?.length > 0 && (
-                        <div className="bg-error/10 border border-error rounded-2xl p-4 flex gap-3 text-left">
-                          <svg
-                            className="w-6 h-6 text-error shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                          </svg>
-                          <div>
-                            <h4 className="font-bold text-error text-sm">
-                              Peringatan Alergi!
-                            </h4>
-                            <p className="text-xs text-text-primary mt-1">
-                              Mengandung:{" "}
-                              <strong>
-                                {result.allergyWarnings.join(", ")}
-                              </strong>
-                            </p>
-                          </div>
+                    {/* 1. SCORE CARD HEADER */}
+                    <div className="bg-bg-surface p-6 rounded-3xl border border-border relative overflow-hidden shadow-sm">
+                      <div className="flex items-center justify-between relative z-10">
+                        <div>
+                          <h2 className="text-2xl font-extrabold text-text-primary">
+                            Analisis Gizi
+                          </h2>
+                          <p className="text-sm text-text-secondary">
+                            Health Score:{" "}
+                            <span className="font-bold text-primary">
+                              {result.data.health_score || "-"}/100
+                            </span>
+                          </p>
                         </div>
-                      )}
+                        <GradeBadge grade={result.data.grade || "?"} />
+                      </div>
+
+                      {/* Highlights */}
+                      <div className="mt-6 grid grid-cols-1 gap-2">
+                        {result.data.pros?.length > 0 &&
+                          result.data.pros.map((pro, i) => (
+                            <div
+                              key={`p-${i}`}
+                              className="bg-success/10 text-success text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-2"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              {pro}
+                            </div>
+                          ))}
+                        {result.data.cons?.length > 0 &&
+                          result.data.cons.map((con, i) => (
+                            <div
+                              key={`c-${i}`}
+                              className="bg-error/10 text-error text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-2"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                              </svg>
+                              {con}
+                            </div>
+                          ))}
+                        {result.allergyWarnings?.length > 0 && (
+                          <div className="bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-2 border border-red-200">
+                            <svg
+                              className="w-4 h-4 text-error"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Peringatan Alergi:{" "}
+                            <strong>{result.allergyWarnings.join(", ")}</strong>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <NutritionLabel data={result.data.nutrition} />
+
+                    {/* 2. AI SUMMARY */}
                     <div className="bg-bg-base p-5 rounded-2xl border border-border text-sm text-text-secondary italic leading-relaxed">
-                      "{result.data.analysis}"
+                      "
+                      {result.data.summary ||
+                        "Tidak ada ringkasan analisis tersedia."}
+                      "
                     </div>
+
+                    {/* 3. NUTRITION LABEL */}
+                    {result.data.nutrition && (
+                      <NutritionLabel data={result.data.nutrition} />
+                    )}
+
+                    {/* 4. CHAT */}
                     <div className="pt-6 border-t border-border">
                       <h3 className="font-bold text-text-primary mb-4">
                         Tanya AI
@@ -781,6 +809,7 @@ const Scanner = () => {
                     </div>
                   </div>
                 )}
+
                 <Button
                   variant="outline"
                   fullWidth

@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
-import { validateEmail, validatePassword } from "../utils/helpers";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -19,12 +18,13 @@ const Register = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: null });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Validasi sederhana
+
     if (formData.password !== formData.confirmPassword) {
       setErrors({ confirmPassword: "Password tidak sama" });
       setLoading(false);
@@ -38,7 +38,7 @@ const Register = () => {
         password: formData.password,
       });
       navigate("/dashboard");
-    } catch (error) {
+    } catch {
       setErrors({ submit: "Gagal mendaftar. Coba lagi." });
     } finally {
       setLoading(false);
@@ -46,70 +46,94 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 md:p-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-text-primary">
+    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-300/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+      <div className="bg-white/80 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+        <div className="text-center mb-7">
+          <img
+            src="/lacaknutri.webp"
+            alt="Logo"
+            className="w-20 h-20 mx-auto mb-3 drop-shadow-lg hover:scale-105 transition-transform duration-300"
+          />
+          <h1 className="text-3xl font-black text-text-primary tracking-tight">
             Buat Akun Baru
           </h1>
-          <p className="text-text-secondary mt-2">
-            Mulai perjalanan sehatmu hari ini
+          <p className="text-sm text-text-secondary mt-1">
+            Yuk mulai perjalanan hidup sehatmu!
           </p>
         </div>
 
-        <div className="bg-bg-surface rounded-3xl border border-border p-8 shadow-soft">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label="Nama Lengkap"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Nama Anda"
-            />
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="nama@email.com"
-            />
-            <Input
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Minimal 8 karakter"
-            />
-            <Input
-              label="Ulangi Password"
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              error={errors.confirmPassword}
-            />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            label="Nama Lengkap"
+            name="name"
+            placeholder="Nama Anda"
+            value={formData.name}
+            onChange={handleChange}
+            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+          />
 
-            {errors.submit && (
-              <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-medium">
-                {errors.submit}
-              </div>
-            )}
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            placeholder="nama@email.com"
+            value={formData.email}
+            onChange={handleChange}
+            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+          />
 
-            <Button type="submit" fullWidth loading={loading} size="lg">
-              Daftar
-            </Button>
-          </form>
+          <Input
+            label="Password"
+            type="password"
+            name="password"
+            placeholder="Minimal 8 karakter"
+            value={formData.password}
+            onChange={handleChange}
+            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+          />
+
+          <Input
+            label="Ulangi Password"
+            type="password"
+            name="confirmPassword"
+            placeholder="••••••••"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
+            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+          />
+
+          {errors.submit && (
+            <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">
+              {errors.submit}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            fullWidth
+            loading={loading}
+            className="h-12 text-lg shadow-lg shadow-primary/30 mt-4"
+          >
+            Daftar Sekarang
+          </Button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-text-secondary">
+            Sudah punya akun?{" "}
+            <Link
+              to="/login"
+              className="font-bold text-primary hover:underline"
+            >
+              Masuk
+            </Link>
+          </p>
         </div>
-
-        <p className="text-center mt-8 text-text-secondary text-sm">
-          Sudah punya akun?{" "}
-          <Link to="/login" className="text-primary font-bold hover:underline">
-            Masuk
-          </Link>
-        </p>
       </div>
     </div>
   );
