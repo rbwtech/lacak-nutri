@@ -56,7 +56,7 @@ const Home = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="bg-white/50 backdrop-blur-sm border-border"
+                  className="bg-white/20 backdrop-blur-sm border-border"
                 >
                   Coba Scanner Demo
                 </Button>

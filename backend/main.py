@@ -5,10 +5,7 @@ from app.routers import auth, scan, users, education, food
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
-origins = [
-    "http://localhost:5173",
-    "https://lacaknutri.rbwtech.io"
-]
+origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"]
 
 app.add_middleware(
     CORSMiddleware,

@@ -107,7 +107,9 @@ const Products = () => {
                 placeholder="Cari nama bahan (misal: Beras, Telur)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="shadow-lg border-primary/20 focus:border-primary h-12 text-lg w-full"
+                // FIX: Pastikan className input internal h-12 (ada di komponen Input.jsx default py-3.5 setara h-12)
+                // Disini kita atur container input
+                className="shadow-lg border-primary/20 focus:border-primary text-lg w-full"
                 icon={
                   <svg
                     className="w-6 h-6 text-primary"
@@ -127,14 +129,14 @@ const Products = () => {
             </div>
 
             {/* Page Size Selector */}
-            <div className="flex items-center gap-2 h-12 shadow-lg border border-primary/20 focus-within:border-primary rounded-xl bg-white dark:bg-neutral-800 px-4 w-full md:w-auto">
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 px-4 py-3.5 rounded-2xl border border-border shadow-lg w-full md:w-auto h-[54px]">
+              <span className="text-xs font-bold text-text-secondary whitespace-nowrap">
                 Tampil:
               </span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-bg-surface dark:text-white"
+                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-transparent dark:text-white w-full"
               >
                 <option value="12">12</option>
                 <option value="24">24</option>
@@ -234,9 +236,9 @@ const Products = () => {
               </div>
 
               {/* Advanced Pagination Controls */}
-              <div className="flex flex-wrap justify-center items-center gap-4 mt-8">
-                {" "}
-                <div className="flex items-center gap-2 order-2 md:order-1">
+              <div className="flex flex-wrap justify-center items-center gap-4 mt-12">
+                {/* Tombol kiri */}
+                <div className="flex items-center gap-2 order-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -254,7 +256,9 @@ const Products = () => {
                     &larr;
                   </Button>
                 </div>
-                <div className="flex items-center gap-3 order-1 md:order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
+
+                {/* Input Halaman */}
+                <div className="flex items-center gap-3 order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
                   <span className="text-xs text-text-secondary font-bold">
                     Halaman
                   </span>
@@ -265,7 +269,7 @@ const Products = () => {
                     value={page}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      if (val) setPage(val);
+                      if (val >= 1 && val <= totalPages) setPage(val);
                     }}
                     onKeyDown={(e) =>
                       e.key === "Enter" && handlePageChange(page)
@@ -276,6 +280,8 @@ const Products = () => {
                     dari {totalPages}
                   </span>
                 </div>
+
+                {/* Tombol kanan */}
                 <div className="flex items-center gap-2 order-3">
                   <Button
                     variant="outline"
