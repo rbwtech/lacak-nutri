@@ -10,21 +10,33 @@ class BPOMScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
 
-    async def search_bpom(self, bpom_number: str) -> Optional[Dict]:
-        clean_number = bpom_number.strip().upper()
+    def _get_query_variants(self, bpom_number: str) -> list:
+        clean = re.sub(r'[^a-zA-Z0-9]', '', bpom_number).upper()
         
-        match = re.match(r"^([A-Z]{2}|P-IRT)\s*(\d+)$", clean_number)
-        
+        match = re.match(r'^([A-Z]{2}|PIRT)(\d+)$', clean)
         if match:
-            prefix = match.group(1) 
-            numbers = match.group(2)
-            search_query = f"{prefix} {numbers}"
-        else:
-            search_query = clean_number
+            prefix, number = match.groups()
+            return [
+                f"{prefix} {number}",
+                f"{prefix}{number}",
+                bpom_number.strip().upper()
+            ]
+        
+        return [bpom_number.strip().upper()]
 
+    async def search_bpom(self, bpom_number: str) -> Optional[Dict]:
+        variants = self._get_query_variants(bpom_number)
+        
+        for search_query in variants:
+            result = await self._scrape_single_query(search_query)
+            if result:
+                return result
+        
+        return None
+
+    async def _scrape_single_query(self, search_query: str) -> Optional[Dict]:
         async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
-                # 1. GET Homepage
                 home_response = await client.get(self.base_url, headers=self.headers)
                 soup = BeautifulSoup(home_response.text, 'html.parser')
                 csrf_meta = soup.find('meta', {'name': 'csrf-token'})
@@ -34,7 +46,6 @@ class BPOMScraper:
                 
                 csrf_token = csrf_meta['content']
                 
-                # 2. POST Data
                 post_data = {
                     'draw': '1',
                     'columns[0][data]': 'PRODUCT_ID',
@@ -73,14 +84,14 @@ class BPOMScraper:
                     if result.get('recordsFiltered', 0) > 0:
                         raw = result['data'][0]
                         return self._format_product(raw)
-                    return None
+                
                 return None
 
             except Exception as e:
-                print(f"Scraper Exception: {e}")
+                print(f"Scraper Exception for query '{search_query}': {e}")
                 return None
 
-def _format_product(self, raw: Dict) -> Dict:
+    def _format_product(self, raw: Dict) -> Dict:
         return {
             'bpom_number': raw.get('PRODUCT_REGISTER', 'Tidak Diketahui'),
             'product_name': raw.get('PRODUCT_NAME', 'Nama Produk Tidak Tersedia'),

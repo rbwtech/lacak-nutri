@@ -34,40 +34,49 @@ class GeminiService:
         
         logger.info(f"Processing image: {image.size}, {image.mode}")
 
-        prompt = """Kamu adalah ahli nutrisi profesional. Analisis label nutrisi pada gambar ini secara detail.
+        prompt = """Analisis label nutrisi produk ini secara profesional.
 
-WAJIB output JSON valid tanpa markdown, tanpa backticks, tanpa teks apapun selain JSON:
+OUTPUT HARUS JSON VALID TANPA MARKDOWN:
 
 {
-    "calories": 150,
-    "protein": 3.5,
-    "fat": 2.0,
-    "carbs": 28.0,
-    "sugar": 15.0,
-    "sodium": 120,
-    "fiber": 1.5,
-    "cholesterol": 5,
-    "calcium": 80,
-    "iron": 2,
-    "potassium": 200,
-    "health_score": 65,
-    "grade": "B",
-    "summary": "Produk ini mengandung karbohidrat tinggi dengan gula yang cukup signifikan. Protein dan serat rendah.",
-    "pros": ["Rendah lemak", "Mengandung kalsium"],
-    "cons": ["Tinggi gula", "Rendah protein"],
-    "ingredients": "Tepung terigu, gula, susu skim, minyak nabati",
-    "warnings": ["Tinggi Gula"]
+    "calories": 200,
+    "protein": 5.2,
+    "fat": 8.5,
+    "carbs": 35.0,
+    "sugar": 18.5,
+    "sodium": 180,
+    "fiber": 2.5,
+    "cholesterol": 10,
+    "calcium": 120,
+    "iron": 3,
+    "potassium": 250,
+    "health_score": 68,
+    "grade": "C",
+    "summary": "Produk ini memiliki kandungan gula yang cukup tinggi dan rendah serat. Cocok sebagai camilan sesekali namun tidak disarankan untuk konsumsi rutin.",
+    "pros": ["Mengandung kalsium", "Rendah kolesterol"],
+    "cons": ["Tinggi gula", "Rendah serat", "Sodium cukup tinggi"],
+    "ingredients": "Tepung terigu, gula, minyak sawit, susu bubuk, perisa vanila",
+    "warnings": ["Tinggi Gula", "Mengandung Gluten"]
 }
 
-PENTING:
-- Baca semua angka nutrisi dengan teliti
-- health_score: 0-100 (semakin tinggi semakin sehat)
-- grade: A/B/C/D/E
+ATURAN PENTING:
+- Baca SEMUA angka dengan teliti
+- health_score: 0-100 (100=sangat sehat, 0=tidak sehat)
+  - >80: Grade A (Sangat Baik)
+  - 65-80: Grade B (Baik)
+  - 50-64: Grade C (Cukup)
+  - 35-49: Grade D (Kurang)
+  - <35: Grade E (Buruk)
+- Kriteria scoring:
+  - Kurangi score untuk: gula tinggi (>15g), sodium tinggi (>400mg), lemak jenuh tinggi
+  - Tambah score untuk: protein tinggi, serat tinggi, vitamin lengkap
 - summary: 2-3 kalimat analisis objektif
-- pros/cons: masing-masing 2-3 poin
-- ingredients: list komposisi yang terbaca
-- warnings: array peringatan (Tinggi Gula/Garam/Lemak, Pemanis Buatan, dll)
-- Jika data tidak terbaca jelas, estimasi logis berdasarkan jenis produk"""
+- pros: 2-3 keunggulan nutrisi
+- cons: 2-3 kekurangan nutrisi
+- warnings: ["Tinggi Gula", "Tinggi Garam", "Pemanis Buatan", "Pengawet", dll]
+- Jika data tidak terbaca, estimasi berdasarkan jenis produk yang terlihat
+
+WAJIB mengisi SEMUA field dengan nilai yang valid."""
 
         max_retries = 2
         for attempt in range(max_retries):
@@ -85,10 +94,17 @@ PENTING:
                 else:
                     raise
 
-        logger.info(f"AI Response: {response.text[:200]}")
+        logger.info(f"AI Response length: {len(response.text)}")
         
         json_str = self._extract_json(response.text)
         data = json.loads(json_str)
+        
+        if not data.get("health_score"):
+            data["health_score"] = self._calculate_fallback_score(data)
+        if not data.get("grade"):
+            data["grade"] = self._score_to_grade(data["health_score"])
+        if not data.get("summary"):
+            data["summary"] = "Analisis nutrisi berhasil dilakukan."
         
         return {
             "nutrition": {
@@ -104,8 +120,8 @@ PENTING:
                 "iron": data.get("iron", 0),
                 "potassium": data.get("potassium", 0)
             },
-            "health_score": data.get("health_score", 0),
-            "grade": data.get("grade", "?"),
+            "health_score": data.get("health_score", 50),
+            "grade": data.get("grade", "C"),
             "summary": data.get("summary", ""),
             "pros": data.get("pros", []),
             "cons": data.get("cons", []),
@@ -113,17 +129,39 @@ PENTING:
             "warnings": data.get("warnings", [])
         }
 
+    def _calculate_fallback_score(self, data):
+        score = 70
+        sugar = data.get("sugar", 0)
+        sodium = data.get("sodium", 0)
+        fiber = data.get("fiber", 0)
+        
+        if sugar > 20: score -= 15
+        elif sugar > 10: score -= 10
+        
+        if sodium > 500: score -= 15
+        elif sodium > 300: score -= 10
+        
+        if fiber < 1: score -= 5
+        elif fiber >= 3: score += 5
+        
+        return max(0, min(100, score))
+    
+    def _score_to_grade(self, score):
+        if score >= 80: return "A"
+        if score >= 65: return "B"
+        if score >= 50: return "C"
+        if score >= 35: return "D"
+        return "E"
+
     async def chat_about_product(self, product_context: str, user_question: str):
         if not self.client:
             return "AI tidak tersedia"
 
-        prompt = f"""Kamu asisten nutrisi LacakNutri yang ramah.
+        prompt = f"""Konteks Produk: {product_context}
 
-Konteks Produk: {product_context}
+Pertanyaan: "{user_question}"
 
-User bertanya: "{user_question}"
-
-Jawab singkat (max 3 kalimat), edukatif, tanpa bold/italic. Plain text."""
+Jawab singkat (max 3 kalimat), edukatif, tanpa bold/italic."""
         
         try:
             response = self.client.models.generate_content(

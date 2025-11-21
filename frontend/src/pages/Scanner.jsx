@@ -25,9 +25,19 @@ const Scanner = () => {
   const [hasZoom, setHasZoom] = useState(false);
   const [myAllergies, setMyAllergies] = useState([]);
 
+  const [flashOn, setFlashOn] = useState(false);
+  const [hasFlash, setHasFlash] = useState(false);
+  const [facingMode, setFacingMode] = useState("environment");
+  const [availableCameras, setAvailableCameras] = useState([]);
+  const [qrBoxPosition, setQrBoxPosition] = useState(null);
+  const [liveScanMode, setLiveScanMode] = useState(false);
+  const [liveOcrText, setLiveOcrText] = useState("");
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const scanIntervalRef = useRef(null);
+  const liveScanIntervalRef = useRef(null);
+  const canvasOverlayRef = useRef(null);
 
   useEffect(() => {
     const fetchAllergies = async () => {
@@ -39,8 +49,32 @@ const Scanner = () => {
       }
     };
     fetchAllergies();
-    return () => stopCamera();
+
+    enumerateCameras();
+
+    return () => {
+      stopCamera();
+      stopLiveScan();
+    };
   }, []);
+
+  const enumerateCameras = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter((d) => d.kind === "videoinput");
+      setAvailableCameras(cameras);
+    } catch (e) {
+      console.error("Camera enumeration failed", e);
+    }
+  };
+
+  const cleanBarcodeData = (raw) => {
+    let cleaned = raw.trim();
+    cleaned = cleaned.replace(/^\(\d{2,3}\)/, "");
+    cleaned = cleaned.split(/\(\d{2,3}\)/)[0];
+    cleaned = cleaned.replace(/[^a-zA-Z0-9\s-]/g, "");
+    return cleaned.trim();
+  };
 
   const startCamera = async () => {
     stopCamera();
@@ -50,24 +84,29 @@ const Scanner = () => {
     setIsScannerActive(true);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints = {
         video: {
-          facingMode: "environment",
+          facingMode: facingMode,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
-      });
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
       const track = stream.getVideoTracks()[0];
       const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
       if (capabilities.zoom) setHasZoom(true);
+      if (capabilities.torch) setHasFlash(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
           videoRef.current.play();
           if (scanMode === "barcode") startBarcodeScanLoop();
+          if (liveScanMode) startLiveScan();
         };
       }
     } catch (err) {
@@ -86,6 +125,30 @@ const Scanner = () => {
       scanIntervalRef.current = null;
     }
     setIsScannerActive(false);
+    setQrBoxPosition(null);
+  };
+
+  const toggleFlash = async () => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: !flashOn }],
+      });
+      setFlashOn(!flashOn);
+    } catch (e) {
+      console.error("Flash toggle failed", e);
+    }
+  };
+
+  const switchCamera = async () => {
+    const newMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(newMode);
+    if (isScannerActive) {
+      stopCamera();
+      setTimeout(() => startCamera(), 100);
+    }
   };
 
   const startBarcodeScanLoop = () => {
@@ -99,13 +162,119 @@ const Scanner = () => {
           try {
             const barcodes = await detector.detect(videoRef.current);
             if (barcodes.length > 0) {
+              const barcode = barcodes[0];
+
+              const box = barcode.boundingBox;
+              const videoRect = videoRef.current.getBoundingClientRect();
+              const scaleX = videoRect.width / videoRef.current.videoWidth;
+              const scaleY = videoRect.height / videoRef.current.videoHeight;
+
+              setQrBoxPosition({
+                x: box.x * scaleX,
+                y: box.y * scaleY,
+                width: box.width * scaleX,
+                height: box.height * scaleY,
+              });
+
               clearInterval(scanIntervalRef.current);
-              handleBarcodeSuccess(barcodes[0].rawValue);
+              setTimeout(() => {
+                const cleaned = cleanBarcodeData(barcode.rawValue);
+                handleBarcodeSuccess(cleaned);
+              }, 300);
+            } else {
+              setQrBoxPosition(null);
             }
           } catch (e) {}
         }
       }, 300);
     }
+  };
+
+  const startLiveScan = () => {
+    liveScanIntervalRef.current = setInterval(async () => {
+      if (videoRef.current && videoRef.current.readyState === 4) {
+        const canvas = document.createElement("canvas");
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(videoRef.current, 0, 0);
+
+        const croppedCanvas = autoCropNutritionLabel(canvas);
+        const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.85);
+
+        try {
+          const { data } = await api.post("/scan/ocr-text", {
+            image_base64: dataUrl,
+          });
+
+          if (data.text) {
+            setLiveOcrText((prev) => prev + "\n" + data.text);
+          }
+        } catch (e) {}
+      }
+    }, 2000);
+  };
+
+  const stopLiveScan = () => {
+    if (liveScanIntervalRef.current) {
+      clearInterval(liveScanIntervalRef.current);
+      liveScanIntervalRef.current = null;
+    }
+  };
+
+  const autoCropNutritionLabel = (canvas) => {
+    const ctx = canvas.getContext("2d");
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    let minX = canvas.width,
+      minY = canvas.height,
+      maxX = 0,
+      maxY = 0;
+
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const i = (y * canvas.width + x) * 4;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const brightness = (r + g + b) / 3;
+
+        if (brightness < 200) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    const padding = 20;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(canvas.width, maxX + padding);
+    maxY = Math.min(canvas.height, maxY + padding);
+
+    const cropWidth = maxX - minX;
+    const cropHeight = maxY - minY;
+
+    const croppedCanvas = document.createElement("canvas");
+    croppedCanvas.width = cropWidth;
+    croppedCanvas.height = cropHeight;
+    const croppedCtx = croppedCanvas.getContext("2d");
+    croppedCtx.drawImage(
+      canvas,
+      minX,
+      minY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+
+    return croppedCanvas;
   };
 
   const handleZoom = (e) => {
@@ -127,7 +296,13 @@ const Scanner = () => {
       const ctx = canvas.getContext("2d");
       ctx.filter = "contrast(1.1) brightness(1.05)";
       ctx.drawImage(videoRef.current, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+      let finalCanvas = canvas;
+      if (scanMode === "ocr") {
+        finalCanvas = autoCropNutritionLabel(canvas);
+      }
+
+      const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.92);
 
       stopCamera();
 
@@ -135,7 +310,10 @@ const Scanner = () => {
         const scanner = new Html5Qrcode("reader-hidden");
         scanner
           .scanFileV2(dataUrl, true)
-          .then(handleBarcodeSuccess)
+          .then((raw) => {
+            const cleaned = cleanBarcodeData(raw);
+            handleBarcodeSuccess(cleaned);
+          })
           .catch(() => setError("Barcode tidak terbaca"));
       } else {
         setOcrImage(dataUrl);
@@ -148,17 +326,13 @@ const Scanner = () => {
     setLoading(true);
     setLoadingMessage("Mencari data BPOM...");
 
-    const clean = code.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    const match = clean.match(/^([A-Z]{2}|P-IRT)(\d+)$/);
-    const formatted = match ? `${match[1]} ${match[2]}` : code;
-
     try {
-      const { data } = await api.post("/scan/bpom", { bpom_number: formatted });
+      const { data } = await api.post("/scan/bpom", { bpom_number: code });
       setResult({
         type: "bpom",
         found: data.found,
         data: data.data,
-        code: formatted,
+        code: data.searched_code || code,
       });
     } catch (err) {
       setError("Gagal mengambil data. Cek koneksi.");
@@ -177,7 +351,10 @@ const Scanner = () => {
             const scanner = new Html5Qrcode("reader-hidden");
             scanner
               .scanFile(file, true)
-              .then(handleBarcodeSuccess)
+              .then((raw) => {
+                const cleaned = cleanBarcodeData(raw);
+                handleBarcodeSuccess(cleaned);
+              })
               .catch(() => setError("Barcode tidak terbaca dari file"));
           } else {
             setOcrImage(reader.result);
@@ -262,12 +439,24 @@ const Scanner = () => {
     setOcrImage(null);
     setBpomInput("");
     setChatHistory([]);
+    setLiveOcrText("");
     stopCamera();
+    stopLiveScan();
   };
 
   const switchMode = (mode) => {
     resetScan();
     setScanMode(mode);
+  };
+
+  const toggleLiveScan = () => {
+    if (liveScanMode) {
+      stopLiveScan();
+      setLiveScanMode(false);
+    } else {
+      setLiveScanMode(true);
+      if (isScannerActive) startLiveScan();
+    }
   };
 
   return (
@@ -328,13 +517,111 @@ const Scanner = () => {
                       className="absolute inset-0 w-full h-full object-cover"
                     ></video>
 
+                    {qrBoxPosition && (
+                      <div
+                        className="absolute border-4 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.8)] transition-all duration-200"
+                        style={{
+                          left: `${qrBoxPosition.x}px`,
+                          top: `${qrBoxPosition.y}px`,
+                          width: `${qrBoxPosition.width}px`,
+                          height: `${qrBoxPosition.height}px`,
+                        }}
+                      >
+                        <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-green-400"></div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-green-400"></div>
+                        <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-green-400"></div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-green-400"></div>
+                      </div>
+                    )}
+
                     <div className="absolute inset-0 pointer-events-none border-2 border-white/30 m-6 rounded-2xl flex flex-col justify-between p-4">
                       <div className="text-white/90 text-xs font-bold bg-black/40 backdrop-blur-md py-1.5 px-4 rounded-full self-center">
                         {scanMode === "barcode"
                           ? "Arahkan ke Barcode"
+                          : liveScanMode
+                          ? "Live Scan Aktif"
                           : "Pastikan Teks Terbaca"}
                       </div>
-                      <div className="w-full h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(255,153,102,0.8)] animate-scanning-line"></div>
+                      {!liveScanMode && (
+                        <div className="w-full h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(255,153,102,0.8)] animate-scanning-line"></div>
+                      )}
+                    </div>
+
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+                      {hasFlash && (
+                        <button
+                          onClick={toggleFlash}
+                          className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+                            flashOn
+                              ? "bg-yellow-400 text-black"
+                              : "bg-black/40 text-white"
+                          }`}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                          </svg>
+                        </button>
+                      )}
+                      {availableCameras.length > 1 && (
+                        <button
+                          onClick={switchCamera}
+                          className="w-10 h-10 bg-black/40 backdrop-blur-md text-white rounded-full flex items-center justify-center"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                      {scanMode === "ocr" && (
+                        <button
+                          onClick={toggleLiveScan}
+                          className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+                            liveScanMode
+                              ? "bg-red-500 text-white"
+                              : "bg-black/40 text-white"
+                          }`}
+                        >
+                          {liveScanMode ? (
+                            <svg
+                              className="w-5 h-5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="w-5 h-5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      )}
                     </div>
 
                     <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6 z-20 px-6">
@@ -386,6 +673,12 @@ const Scanner = () => {
                         <div className="w-12 h-12"></div>
                       </div>
                     </div>
+
+                    {liveScanMode && liveOcrText && (
+                      <div className="absolute bottom-32 left-4 right-4 bg-black/80 backdrop-blur-md text-white p-3 rounded-xl max-h-32 overflow-y-auto text-xs">
+                        {liveOcrText}
+                      </div>
+                    )}
                   </div>
                 ) : ocrImage && scanMode === "ocr" ? (
                   <div className="relative bg-black/5 rounded-3xl overflow-hidden border border-border">
@@ -588,11 +881,13 @@ const Scanner = () => {
                       <h2 className="text-2xl font-extrabold text-text-primary">
                         Analisis Nutrisi AI
                       </h2>
-                      <div className="inline-block px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold mt-2 mb-4">
-                        Health Score: {result.data.health_score || 0}/100
-                      </div>
-                      <div className="inline-block ml-2 px-3 py-1 bg-primary/10 text-primary rounded-full font-bold text-sm">
-                        Grade {result.data.grade || "?"}
+                      <div className="flex items-center justify-center gap-3 mt-3">
+                        <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
+                          Health Score: {result.data.health_score || 0}/100
+                        </div>
+                        <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold text-sm">
+                          Grade {result.data.grade || "?"}
+                        </div>
                       </div>
 
                       {result.allergyWarnings?.length > 0 && (

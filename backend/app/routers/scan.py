@@ -67,6 +67,31 @@ async def analyze_ocr(
         
     return {"success": True, "data": result}
 
+@router.post("/ocr-text")
+async def extract_text_only(
+    request: AnalyzeImageRequest,
+    current_user = Depends(get_current_user_optional)
+):
+    try:
+        import pytesseract
+        from PIL import Image
+        import base64
+        from io import BytesIO
+        
+        if "," in request.image_base64:
+            img_data = request.image_base64.split(",")[1]
+        else:
+            img_data = request.image_base64
+        
+        image_bytes = base64.b64decode(img_data)
+        image = Image.open(BytesIO(image_bytes))
+        
+        text = pytesseract.image_to_string(image, lang='ind+eng')
+        
+        return {"success": True, "text": text.strip()}
+    except Exception as e:
+        return {"success": False, "text": ""}
+
 @router.post("/chat")
 async def chat_product(request: ChatRequest):
     service = GeminiService()
