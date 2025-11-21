@@ -371,7 +371,7 @@ const Scanner = () => {
             </h1>
             <p className="text-text-secondary">
               {scanMode === "barcode"
-                ? "Cek legalitas BPOM."
+                ? "Cek Legalitas BPOM."
                 : "Analisis Nutrisi Cerdas."}
             </p>
           </div>
@@ -608,39 +608,82 @@ const Scanner = () => {
                     </h2>
                     {result.found ? (
                       <div className="bg-bg-base p-6 rounded-3xl border border-border mb-6 text-left space-y-4 shadow-sm">
+                        {/* Header Produk */}
                         <div>
                           <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
                             Nama Produk
                           </p>
-                          <p className="font-bold text-xl text-text-primary leading-tight">
+                          <p className="font-bold text-lg text-text-primary leading-tight">
                             {result.data.product_name}
                           </p>
+                          {result.data.brand && result.data.brand !== "-" && (
+                            <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 bg-primary/10 text-primary rounded">
+                              {result.data.brand}
+                            </span>
+                          )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+
+                        <div className="w-full h-px bg-border/50 my-2"></div>
+
+                        {/* Detail Grid */}
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
                               Nomor Registrasi
                             </p>
-                            <p className="font-mono font-medium text-primary">
+                            <p className="font-mono font-bold text-sm text-text-primary">
                               {result.data.bpom_number}
                             </p>
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Merk
+                              Status
                             </p>
-                            <p className="font-medium text-text-primary">
-                              {result.data.brand}
+                            <p className="font-bold text-sm text-success">
+                              {result.data.status}
                             </p>
                           </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-text-secondary uppercase">
-                            Pendaftar
-                          </p>
-                          <p className="text-sm text-text-primary">
-                            {result.data.manufacturer}
-                          </p>
+
+                          <div className="col-span-2">
+                            <p className="text-[10px] font-bold text-text-secondary uppercase">
+                              Pendaftar / Pabrik
+                            </p>
+                            <p className="text-sm font-semibold text-text-primary">
+                              {result.data.manufacturer}
+                            </p>
+                            {result.data.address &&
+                              result.data.address !== "-" && (
+                                <p className="text-xs text-text-secondary mt-0.5 capitalize">
+                                  {result.data.address.toLowerCase()}
+                                </p>
+                              )}
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-bold text-text-secondary uppercase">
+                              Terbit
+                            </p>
+                            <p className="text-xs font-medium">
+                              {result.data.issued_date}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-text-secondary uppercase">
+                              Kedaluwarsa
+                            </p>
+                            <p className="text-xs font-medium text-error">
+                              {result.data.expired_date}
+                            </p>
+                          </div>
+
+                          <div className="col-span-2">
+                            <p className="text-[10px] font-bold text-text-secondary uppercase">
+                              Kemasan
+                            </p>
+                            <p className="text-xs font-medium text-text-primary">
+                              {result.data.packaging}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ) : (

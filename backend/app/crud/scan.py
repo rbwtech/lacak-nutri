@@ -32,6 +32,7 @@ def create_bpom_history(db: Session, data: dict, session_id: str, user_id: int =
         bpom_number=data.get('bpom_number', ''),
         product_name=data.get('product_name', ''),
         brand=data.get('brand', ''),
+        manufacturer=data.get('manufacturer', ''), 
         status=data.get('status', ''),
         raw_response=data
     )

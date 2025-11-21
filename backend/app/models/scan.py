@@ -10,6 +10,7 @@ class ScanHistoryBPOM(Base):
     bpom_number = Column(String(50), nullable=False, index=True)
     product_name = Column(String(255))
     brand = Column(String(255))
+    manufacturer = Column(String(255))
     status = Column(String(50))
     raw_response = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
