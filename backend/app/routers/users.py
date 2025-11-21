@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -7,6 +7,9 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User, Allergen
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
+import shutil
+import uuid
+from pathlib import Path
 
 router = APIRouter(prefix="/api/users", tags=["User Data"])
 
@@ -78,6 +81,95 @@ def add_custom_allergy(
         db.commit()
         
     return {"message": "Alergi custom berhasil ditambahkan", "allergen": target_allergen}
+
+@router.put("/profile")
+async def update_profile(
+    name: str = Form(...),
+    phone: str = Form(None),
+    photo: UploadFile = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_user.name = name
+    if phone:
+        current_user.phone = phone
+    
+    if photo:
+        allowed_types = ["image/jpeg", "image/png", "image/webp"]
+        if photo.content_type not in allowed_types:
+            raise HTTPException(400, "Format tidak didukung")
+        
+        if photo.size > 2 * 1024 * 1024:
+            raise HTTPException(400, "Ukuran file maksimal 2MB")
+        
+        filename = f"{uuid.uuid4()}.{photo.filename.split('.')[-1]}"
+        upload_dir = Path("uploads/profiles")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
+        filepath = upload_dir / filename
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(photo.file, buffer)
+        
+        current_user.photo_url = f"/uploads/profiles/{filename}"
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return {"success": True, "user": {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "photo_url": current_user.photo_url
+    }}
+
+@router.get("/history")
+async def get_history(
+    type: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Query kedua tabel
+    bpom_items = []
+    ocr_items = []
+    
+    if type is None or type == "bpom":
+        bpom_items = db.query(ScanHistoryBPOM).filter(
+            ScanHistoryBPOM.user_id == current_user.id
+        ).order_by(ScanHistoryBPOM.created_at.desc()).limit(50).all()
+    
+    if type is None or type == "ocr":
+        ocr_items = db.query(ScanHistoryOCR).filter(
+            ScanHistoryOCR.user_id == current_user.id
+        ).order_by(ScanHistoryOCR.created_at.desc()).limit(50).all()
+    
+    combined = []
+    
+    for item in bpom_items:
+        combined.append({
+            "id": item.id,
+            "type": "bpom",
+            "title": item.product_name or "Produk BPOM",
+            "subtitle": item.bpom_number,
+            "score": None,
+            "date": item.created_at.isoformat(),
+            "timestamp": item.created_at.timestamp()
+        })
+    
+    for item in ocr_items:
+        combined.append({
+            "id": item.id,
+            "type": "ocr",
+            "title": "Analisis Nutrisi AI",
+            "subtitle": f"Health Score: {item.health_score}/100",
+            "score": item.health_score,
+            "date": item.created_at.isoformat(),
+            "timestamp": item.created_at.timestamp()
+        })
+    
+    combined.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return {"success": True, "data": combined[:50]}
 
 class DashboardStats(BaseModel):
     scans: int

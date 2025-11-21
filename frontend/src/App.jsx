@@ -13,6 +13,7 @@ import {
   Profile,
   Scanner,
   Favorites,
+  History,
   Articles,
   ArticleDetail,
   About,
@@ -44,6 +45,7 @@ function App() {
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/favorites" element={<Favorites />} />
+            <Route path="/history" element={<History />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetail />} />
 

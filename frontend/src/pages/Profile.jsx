@@ -7,13 +7,15 @@ import Input from "../components/ui/Input";
 import api from "../config/api";
 
 const Profile = () => {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, setUser, updateProfile, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allergens, setAllergens] = useState([]);
   const [userAllergies, setUserAllergies] = useState([]);
   const [customAllergy, setCustomAllergy] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -44,21 +46,49 @@ const Profile = () => {
       }
     };
     fetchData();
-  }, []);
+    setPhotoPreview(user?.photo_url || null);
+  }, [user]);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran file maksimal 2MB");
+        return;
+      }
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = {
+      const form = new FormData();
+      form.append("name", formData.name);
+      form.append("phone", formData.phone || "");
+      if (photoFile) {
+        form.append("photo", photoFile);
+      }
+
+      const { data } = await api.put("/users/profile", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setUser(data.user);
+
+      // Update context juga untuk data lainnya
+      await updateProfile({
         name: formData.name,
         gender: formData.gender,
         age: formData.age ? parseInt(formData.age) : null,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         height: formData.height ? parseFloat(formData.height) : null,
-      };
-      await updateProfile(payload);
+      });
+
       setEditing(false);
+      alert("Profil berhasil diperbarui!");
     } catch (error) {
       alert("Gagal menyimpan profil.");
     } finally {
@@ -152,10 +182,45 @@ const Profile = () => {
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Profile Header */}
+          {/* Profile Header dengan Upload Foto */}
           <div className="flex items-center gap-6 mb-10">
-            <div className="w-24 h-24 rounded-full bg-linear-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white shadow-lg border-4 border-white">
-              {user?.name?.charAt(0).toUpperCase()}
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-linear-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {editing && (
+                <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-all shadow-lg">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
@@ -180,7 +245,6 @@ const Profile = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* MAIN COLUMN (Info & Allergy) */}
             <div className="lg:col-span-8 space-y-6 order-1">
-              {" "}
               <Card className="relative">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
                   <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
@@ -323,7 +387,11 @@ const Profile = () => {
                       </Button>
                       <button
                         type="button"
-                        onClick={() => setEditing(false)}
+                        onClick={() => {
+                          setEditing(false);
+                          setPhotoPreview(user?.photo_url || null);
+                          setPhotoFile(null);
+                        }}
                         className="px-6 py-3 text-sm font-bold text-text-secondary hover:bg-gray-100 rounded-xl transition-colors"
                       >
                         Batal
@@ -332,6 +400,7 @@ const Profile = () => {
                   )}
                 </form>
               </Card>
+
               <Card title="Preferensi Alergi">
                 <p className="text-sm text-text-secondary mb-4">
                   Pilih bahan makanan yang ingin Anda hindari (Scanner akan

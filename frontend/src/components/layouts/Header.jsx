@@ -245,22 +245,111 @@ const Header = () => {
 
           {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-1 bg-bg-base/50 p-1.5 rounded-2xl border border-border/50">
-            {[
-              { to: "/products", label: "Katalog" },
-              { to: "/scanner", label: "Scanner" },
-              { to: "/favorites", label: "Favorit" },
-              { to: "/articles", label: "Edukasi" },
-            ].map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`px-5 py-2 rounded-xl text-sm transition-all duration-200 ${isActive(
-                  link.to
-                )}`}
+            <Link
+              to="/products"
+              className={`px-5 py-2 rounded-xl text-sm transition-all duration-200 ${isActive(
+                "/products"
+              )}`}
+            >
+              Katalog
+            </Link>
+            <Link
+              to="/scanner"
+              className={`px-5 py-2 rounded-xl text-sm transition-all duration-200 ${isActive(
+                "/scanner"
+              )}`}
+            >
+              Scanner
+            </Link>
+
+            <div className="relative group">
+              <button
+                className={`px-5 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-1 ${
+                  location.pathname.startsWith("/favorites") ||
+                  location.pathname.startsWith("/history")
+                    ? "text-primary bg-primary/10 font-bold"
+                    : "text-text-secondary hover:text-primary hover:bg-bg-base font-medium"
+                }`}
               >
-                {link.label}
-              </Link>
-            ))}
+                Aktivitas
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-neutral-800 border border-border rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden z-50">
+                <Link
+                  to="/favorites"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-bg-base transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5 text-error"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-bold text-sm text-text-primary">
+                      Favorit
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      Produk tersimpan
+                    </p>
+                  </div>
+                </Link>
+                <div className="h-px bg-border mx-2"></div>
+                <Link
+                  to="/history"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-bg-base transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5 text-accent"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-bold text-sm text-text-primary">
+                      Riwayat
+                    </p>
+                    <p className="text-xs text-text-secondary">Scan terakhir</p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+
+            <Link
+              to="/articles"
+              className={`px-5 py-2 rounded-xl text-sm transition-all duration-200 ${isActive(
+                "/articles"
+              )}`}
+            >
+              Edukasi
+            </Link>
           </nav>
 
           {/* DESKTOP ACTIONS */}

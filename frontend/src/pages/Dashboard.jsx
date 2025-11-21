@@ -134,58 +134,69 @@ const Dashboard = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            <StatCard
-              label="Total Scan"
-              value={stats.scans}
-              color="text-primary"
-              bg="bg-primary/10"
-              iconPath={
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                />
-              }
-            />
-            <StatCard
-              label="Favorit"
-              value={stats.favorites}
-              color="text-error"
-              bg="bg-error/10"
-              iconPath={
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              }
-            />
-            <StatCard
-              label="Riwayat"
-              value={stats.history}
-              color="text-accent"
-              bg="bg-accent/10"
-              iconPath={
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              }
-            />
-            <StatCard
-              label="Saran AI"
-              value={stats.recommendations}
-              color="text-warning-text"
-              bg="bg-warning/10"
-              iconPath={
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              }
-            />
+            <Link to="/history">
+              <StatCard
+                label="Total Scan"
+                value={stats.scans}
+                color="text-primary"
+                bg="bg-primary/10"
+                iconPath={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                  />
+                }
+              />
+            </Link>
+
+            <Link to="/favorites">
+              <StatCard
+                label="Favorit"
+                value={stats.favorites}
+                color="text-error"
+                bg="bg-error/10"
+                iconPath={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                }
+              />
+            </Link>
+
+            <Link to="/history">
+              <StatCard
+                label="Riwayat"
+                value={stats.history}
+                color="text-accent"
+                bg="bg-accent/10"
+                iconPath={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                }
+              />
+            </Link>
+
+            <Link to="/history">
+              <StatCard
+                label="Saran AI"
+                value={stats.recommendations}
+                color="text-warning-text"
+                bg="bg-warning/10"
+                iconPath={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                }
+              />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -197,7 +208,7 @@ const Dashboard = () => {
                     Aktivitas Terakhir
                   </h3>
                   <Link
-                    to="/products"
+                    to="/history"
                     className="text-sm font-bold text-primary hover:underline"
                   >
                     Lihat Semua
