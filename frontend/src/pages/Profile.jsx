@@ -179,7 +179,8 @@ const Profile = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* MAIN COLUMN (Info & Allergy) */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-6 order-1">
+              {" "}
               <Card className="relative">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
                   <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
@@ -331,7 +332,6 @@ const Profile = () => {
                   )}
                 </form>
               </Card>
-
               <Card title="Preferensi Alergi">
                 <p className="text-sm text-text-secondary mb-4">
                   Pilih bahan makanan yang ingin Anda hindari (Scanner akan
@@ -377,7 +377,7 @@ const Profile = () => {
               </Card>
             </div>
 
-            <div className="lg:col-span-4 space-y-6">
+            <div className="lg:col-span-4 space-y-6 order-2">
               <div className="bg-primary text-white rounded-3xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                 <h3 className="font-bold text-lg mb-1">Indeks Massa Tubuh</h3>

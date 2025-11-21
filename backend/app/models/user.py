@@ -20,6 +20,7 @@ class Allergen(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True)
     description = Column(String(255))
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
 
 class User(Base):
     __tablename__ = "users"

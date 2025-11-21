@@ -233,18 +233,30 @@ const Articles = () => {
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-12">
-                <Button
-                  variant="outline"
-                  disabled={page === 1}
-                  onClick={() => handlePageChange(page - 1)}
-                >
-                  &larr; Sebelumnya
-                </Button>
+              <div className="flex flex-wrap justify-center items-center gap-4 mt-12">
+                {/* Tombol kiri */}
+                <div className="flex items-center gap-2 order-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(1)}
+                  >
+                    &laquo;
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    &larr;
+                  </Button>
+                </div>
 
-                {/* Page Indicator */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-text-primary">
+                {/* Input Halaman */}
+                <div className="flex items-center gap-3 order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
+                  <span className="text-xs text-text-secondary font-bold">
                     Halaman
                   </span>
                   <input
@@ -256,20 +268,35 @@ const Articles = () => {
                       const val = parseInt(e.target.value);
                       if (val >= 1 && val <= totalPages) setPage(val);
                     }}
-                    className="w-12 h-8 text-center border border-border rounded-lg text-sm font-bold focus:outline-none focus:border-primary"
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handlePageChange(page)
+                    }
+                    className="w-12 p-1 text-center border-b-2 border-primary/20 focus:border-primary bg-transparent text-sm font-bold outline-none transition-colors"
                   />
-                  <span className="text-sm text-text-secondary">
+                  <span className="text-xs text-text-secondary">
                     dari {totalPages}
                   </span>
                 </div>
 
-                <Button
-                  variant="outline"
-                  disabled={page === totalPages}
-                  onClick={() => handlePageChange(page + 1)}
-                >
-                  Selanjutnya &rarr;
-                </Button>
+                {/* Tombol kanan */}
+                <div className="flex items-center gap-2 order-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    &rarr;
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(totalPages)}
+                  >
+                    &raquo;
+                  </Button>
+                </div>
               </div>
             </>
           ) : (
