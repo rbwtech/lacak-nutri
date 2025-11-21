@@ -374,19 +374,24 @@ const Scanner = () => {
                         />
                       </div>
                     ) : (
-                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
-                        <div id="reader" className="w-full h-64"></div>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
-                          onClick={() => {
-                            scannerRef.current?.clear();
-                            setIsScannerActive(false);
-                          }}
-                        >
-                          Tutup Kamera
-                        </Button>
+                      <div className="bg-black text-white text-center rounded-xl overflow-hidden mb-6">
+                        <div
+                          id="reader"
+                          className="w-full aspect-square max-h-[70vh]"
+                        ></div>
+
+                        <div className="p-4">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              scannerRef.current?.clear();
+                              setIsScannerActive(false);
+                            }}
+                          >
+                            Tutup
+                          </Button>
+                        </div>
                       </div>
                     )}
                     <div className="space-y-4">
