@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
-import Tesseract from "tesseract.js";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -10,7 +9,7 @@ import NutritionLabel from "../components/ui/NutritionLabel";
 import api from "../config/api";
 
 const Scanner = () => {
-  const [scanMode, setScanMode] = useState("barcode");
+  const [scanMode, setScanMode] = useState("barcode"); // 'barcode' | 'ocr'
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
@@ -26,6 +25,9 @@ const Scanner = () => {
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [ocrImage, setOcrImage] = useState(null);
 
+  // User Allergies
+  const [myAllergies, setMyAllergies] = useState([]);
+
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const bpomFileInputRef = useRef(null);
@@ -33,7 +35,19 @@ const Scanner = () => {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
+  // Fetch Allergies on Mount
   useEffect(() => {
+    const fetchAllergies = async () => {
+      try {
+        const { data } = await api.get("/users/my-allergies");
+        // Simpan nama alergi dalam lowercase untuk pencocokan
+        setMyAllergies(data.map((a) => a.name.toLowerCase()));
+      } catch (e) {
+        console.error("Gagal load alergi", e);
+      }
+    };
+    fetchAllergies();
+
     return () => {
       stopMediaStream();
       if (scannerRef.current) scannerRef.current.clear().catch(() => {});
@@ -50,56 +64,31 @@ const Scanner = () => {
   // --- UTILS ---
   const formatBPOM = (code) => {
     let clean = code.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    // Regex: 2 Huruf (atau P-IRT) + Angka
     const match = clean.match(/^([A-Z]{2}|P-IRT)(\d+)$/);
     if (match) return `${match[1]} ${match[2]}`;
     return code;
   };
 
-  // --- LOGIC BARCODE & BPOM ---
-  const startBarcodeCamera = () => {
-    setResult(null);
-    setIsScannerActive(true);
-    setError(null);
+  const checkAllergyWarnings = (analysisData) => {
+    if (!analysisData || !myAllergies.length) return [];
 
-    setTimeout(() => {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        false
-      );
+    // Cek di ingredients dan warning
+    const textToCheck = (
+      (analysisData.ingredients || "") +
+      " " +
+      (analysisData.warnings?.join(" ") || "")
+    ).toLowerCase();
 
-      scanner.render(
-        (decodedText) => {
-          handleBarcodeSuccess(decodedText);
-          scanner.clear();
-          setIsScannerActive(false);
-        },
-        (err) => {}
-      );
-      scannerRef.current = scanner;
-    }, 100);
+    const warnings = [];
+    myAllergies.forEach((allergen) => {
+      if (textToCheck.includes(allergen)) {
+        warnings.push(allergen);
+      }
+    });
+    return warnings;
   };
 
-  const handleBarcodeUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
-    setLoadingMessage("Memindai gambar barcode...");
-    setError(null);
-
-    try {
-      const html5QrCode = new Html5Qrcode("reader-hidden");
-      const decodedText = await html5QrCode.scanFile(file, true);
-      handleBarcodeSuccess(decodedText);
-    } catch (err) {
-      console.error(err);
-      setError("Barcode tidak ditemukan dalam gambar.");
-      setLoading(false);
-    }
-  };
-
+  // --- LOGIC BARCODE ---
   const handleBarcodeSuccess = async (code) => {
     setLoading(true);
     setLoadingMessage("Mencari data BPOM...");
@@ -110,6 +99,8 @@ const Scanner = () => {
       const { data } = await api.post("/scan/bpom", {
         bpom_number: formattedCode,
       });
+
+      // Jika found=false, backend kirim 200 OK dengan message
       setResult({
         type: "bpom",
         found: data.found,
@@ -125,30 +116,60 @@ const Scanner = () => {
     }
   };
 
-  const handleManualSubmit = () => {
-    if (bpomInput) handleBarcodeSuccess(bpomInput);
+  const startBarcodeCamera = () => {
+    setResult(null);
+    setIsScannerActive(true);
+    setError(null);
+    setTimeout(() => {
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        false
+      );
+      scanner.render(
+        (decodedText) => {
+          handleBarcodeSuccess(decodedText);
+          scanner.clear();
+          setIsScannerActive(false);
+        },
+        () => {}
+      );
+      scannerRef.current = scanner;
+    }, 100);
   };
 
-  // --- LOGIC OCR (Tesseract -> Backend Gemini) ---
+  const handleBarcodeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setLoading(true);
+    setLoadingMessage("Memindai gambar barcode...");
+    setError(null);
+    try {
+      const html5 = new Html5Qrcode("reader-hidden");
+      const txt = await html5.scanFile(file, true);
+      handleBarcodeSuccess(txt);
+    } catch {
+      setError("Barcode tidak terbaca.");
+      setLoading(false);
+    }
+  };
+
+  // --- LOGIC OCR AI (GEMINI VISION) ---
   const startOCRCamera = async () => {
     setResult(null);
     setOcrImage(null);
     setIsScannerActive(true);
     setError(null);
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
       streamRef.current = stream;
       setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
       }, 100);
     } catch (err) {
-      console.error(err);
-      setError("Gagal mengakses kamera. Pastikan izin diberikan.");
+      setError("Gagal akses kamera.");
       setIsScannerActive(false);
     }
   };
@@ -158,16 +179,10 @@ const Scanner = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
-
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
-      // IMPROVED: Filter Grayscale & Contrast untuk Tesseract
-      context.filter = "grayscale(100%) contrast(120%)";
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      setOcrImage(imageDataUrl);
+      context.drawImage(video, 0, 0);
+      setOcrImage(canvas.toDataURL("image/jpeg", 0.8));
       stopMediaStream();
       setIsScannerActive(false);
     }
@@ -176,52 +191,36 @@ const Scanner = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setOcrImage(reader.result);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
+      const r = new FileReader();
+      r.onloadend = () => setOcrImage(r.result);
+      r.readAsDataURL(file);
     }
   };
 
   const processImageAnalysis = async () => {
     if (!ocrImage) return;
-
     setLoading(true);
-    setLoadingMessage("Mengekstrak teks (OCR)...");
+    setLoadingMessage("Analisis AI sedang bekerja...");
     setError(null);
 
     try {
-      // 1. Tesseract Extract
-      const worker = await Tesseract.createWorker("ind");
-      const ret = await worker.recognize(ocrImage);
-      const extractedText = ret.data.text;
-      await worker.terminate();
-
-      if (!extractedText || extractedText.length < 5) {
-        throw new Error("Teks tidak terbaca. Pastikan foto jelas.");
-      }
-
-      setLoadingMessage("Analisis Nutrisi AI...");
-
-      // 2. Send Text to Backend
+      // Kirim Base64 Gambar ke Backend (Gemini Vision)
       const { data } = await api.post("/scan/analyze", {
-        raw_text: extractedText,
+        image_base64: ocrImage,
       });
+      if (!data.success) throw new Error(data.message);
 
-      if (!data.success) {
-        throw new Error(data.message || "Gagal menganalisis data.");
-      }
+      const allergyWarnings = checkAllergyWarnings(data.data);
 
       setResult({
         type: "ocr",
         found: true,
-        data: data.data, // { nutrition, analysis, health_score }
+        data: data.data,
+        allergyWarnings: allergyWarnings,
       });
     } catch (err) {
       console.error(err);
-      setError(err.message || "Gagal memproses gambar.");
+      setError("Gagal memproses gambar.");
     } finally {
       setLoading(false);
     }
@@ -231,7 +230,6 @@ const Scanner = () => {
   const handleChatSubmit = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-
     const question = chatInput;
     setChatHistory([...chatHistory, { role: "user", text: question }]);
     setChatInput("");
@@ -254,7 +252,6 @@ const Scanner = () => {
     }
   };
 
-  // --- UTILS UI ---
   const switchMode = (mode) => {
     setScanMode(mode);
     setResult(null);
@@ -263,18 +260,20 @@ const Scanner = () => {
     setBpomInput("");
     setChatHistory([]);
     if (isScannerActive) {
-      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
       stopMediaStream();
       setIsScannerActive(false);
+      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
     }
   };
-
   const resetScan = () => {
     setResult(null);
     setOcrImage(null);
     setBpomInput("");
     setError(null);
     setChatHistory([]);
+  };
+  const handleManualSubmit = () => {
+    if (bpomInput) handleBarcodeSuccess(bpomInput);
   };
 
   return (
@@ -287,8 +286,8 @@ const Scanner = () => {
             </h1>
             <p className="text-text-secondary">
               {scanMode === "barcode"
-                ? "Scan barcode BPOM untuk cek legalitas."
-                : "Foto label gizi untuk analisis nutrisi."}
+                ? "Cek legalitas BPOM."
+                : "Analisis Nutrisi Cerdas (AI)."}
             </p>
           </div>
 
@@ -326,29 +325,13 @@ const Scanner = () => {
                 </p>
               </div>
             )}
-
             <div id="reader-hidden" className="hidden"></div>
 
             {!result && (
               <div className="p-8">
                 {scanMode === "barcode" ? (
                   <>
-                    {isScannerActive ? (
-                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
-                        <div id="reader" className="w-full h-64"></div>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
-                          onClick={() => {
-                            scannerRef.current?.clear();
-                            setIsScannerActive(false);
-                          }}
-                        >
-                          Tutup Kamera
-                        </Button>
-                      </div>
-                    ) : (
+                    {!isScannerActive ? (
                       <div className="text-center p-8 border-2 border-dashed border-border rounded-3xl bg-bg-base mb-6">
                         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
                           <svg
@@ -390,15 +373,29 @@ const Scanner = () => {
                           onChange={handleBarcodeUpload}
                         />
                       </div>
+                    ) : (
+                      <div className="p-0 bg-black text-white text-center rounded-xl overflow-hidden mb-6 relative">
+                        <div id="reader" className="w-full h-64"></div>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="m-4 absolute bottom-0 left-1/2 -translate-x-1/2"
+                          onClick={() => {
+                            scannerRef.current?.clear();
+                            setIsScannerActive(false);
+                          }}
+                        >
+                          Tutup Kamera
+                        </Button>
+                      </div>
                     )}
-
                     <div className="space-y-4">
                       <Input
                         label="Nomor Registrasi / Barcode / Nama Produk"
                         placeholder="Cth: MD 54321..."
                         value={bpomInput}
                         onChange={(e) => setBpomInput(e.target.value)}
-                        helperText="Kode BPOM, barcode, atau nama produk."
+                        helperText="Masukkan kode tanpa spasi juga bisa."
                       />
                       <Button
                         fullWidth
@@ -412,7 +409,7 @@ const Scanner = () => {
                 ) : (
                   <div className="space-y-6">
                     {isScannerActive ? (
-                      <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 shadow-inner border-4 border-white ring-2 ring-border">
+                      <div className="relative rounded-xl overflow-hidden bg-black w-full h-[60vh] md:h-96 border-4 border-white shadow-inner">
                         <video
                           ref={videoRef}
                           autoPlay
@@ -506,11 +503,6 @@ const Scanner = () => {
                         />
                       </div>
                     )}
-                    {error && (
-                      <div className="p-4 bg-error/10 text-error text-sm rounded-xl text-center font-medium">
-                        {error}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -579,6 +571,37 @@ const Scanner = () => {
                       </div>
                     </div>
 
+                    {/* PERINGATAN ALERGI */}
+                    {result.allergyWarnings &&
+                      result.allergyWarnings.length > 0 && (
+                        <div className="bg-error/10 border border-error rounded-xl p-4 flex items-start gap-3 animate-pulse">
+                          <svg
+                            className="w-6 h-6 text-error shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                          </svg>
+                          <div>
+                            <h4 className="font-bold text-error text-sm">
+                              Peringatan Alergi!
+                            </h4>
+                            <p className="text-xs text-text-primary">
+                              Produk ini mungkin mengandung:{" "}
+                              <strong>
+                                {result.allergyWarnings.join(", ")}
+                              </strong>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                     <NutritionLabel data={result.data.nutrition} />
 
                     <div className="bg-bg-base p-4 rounded-xl border border-border text-sm text-text-secondary italic">
@@ -603,7 +626,6 @@ const Scanner = () => {
                         </svg>
                         Tanya AI
                       </h3>
-
                       <div className="space-y-4 mb-4 max-h-48 overflow-y-auto">
                         {chatHistory.map((msg, idx) => (
                           <div
@@ -621,7 +643,6 @@ const Scanner = () => {
                           </div>
                         ))}
                       </div>
-
                       <form onSubmit={handleChatSubmit} className="flex gap-2">
                         <input
                           type="text"
