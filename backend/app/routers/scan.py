@@ -8,7 +8,7 @@ from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, Cha
 from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
-from app.models.user import User, UserAllergy  # ADD UserAllergy
+from app.models.user import User  # ONLY User, no UserAllergy
 import json
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
@@ -59,14 +59,14 @@ async def analyze_ocr(
     service = GeminiService()
     result = await service.analyze_nutrition_image(request.image_base64)
 
-    # Get user allergies
+    # Get user allergies through relationship
     user_allergies = []
-    if user_id:
-        allergies = db.query(UserAllergy).filter(UserAllergy.user_id == user_id).all()
-        user_allergies = [a.name.lower() for a in allergies]
-
+    if current_user:
+        user_allergies = [allergy.name.lower() for allergy in current_user.allergies]
+    
+    # Detect allergens from ingredients
     ingredients = result.get('ingredients') or ""
-    ingredients_text = ingredients.lower()  
+    ingredients_text = ingredients.lower()
     detected_allergens = [
         allergy.capitalize() 
         for allergy in user_allergies 

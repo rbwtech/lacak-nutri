@@ -243,8 +243,9 @@ const HistoryDetail = () => {
                   />
                 )}
               </Card>
-              {detail.warnings && detail.warnings.length > 0 && (
-                <div className="bg-error/10 border border-error rounded-2xl p-4 flex gap-3 text-left mb-6">
+
+              {data.warnings && data.warnings.length > 0 && (
+                <div className="bg-error/10 border border-error rounded-2xl p-4 flex gap-3 text-left">
                   <svg
                     className="w-6 h-6 text-error shrink-0"
                     fill="none"
@@ -263,7 +264,7 @@ const HistoryDetail = () => {
                       Peringatan Alergi!
                     </h4>
                     <p className="text-xs text-text-primary mt-1">
-                      Mengandung: <strong>{detail.warnings.join(", ")}</strong>
+                      Mengandung: <strong>{data.warnings.join(", ")}</strong>
                     </p>
                   </div>
                 </div>
@@ -334,17 +335,18 @@ const HistoryDetail = () => {
                       </ul>
                     </Card>
                   )}
-                  {detail.ingredients && (
-                    <div className="bg-bg-base border border-border rounded-2xl p-4 mt-6">
-                      <h4 className="font-bold text-text-primary text-sm mb-2">
-                        Komposisi
-                      </h4>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {detail.ingredients}
-                      </p>
-                    </div>
-                  )}
                 </div>
+              )}
+
+              {data.ingredients && (
+                <Card className="p-4">
+                  <h4 className="font-bold text-text-primary text-sm mb-2">
+                    Komposisi
+                  </h4>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    {data.ingredients}
+                  </p>
+                </Card>
               )}
             </div>
           )}
