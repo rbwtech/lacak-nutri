@@ -79,13 +79,11 @@ def add_custom_allergy(
 @router.put("/profile")
 async def update_profile(
     name: str = Form(...),
-    phone: str = Form(None),
     photo: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     current_user.name = name
-    current_user.phone = phone if phone else None 
     
     if photo:
         allowed_types = ["image/jpeg", "image/png", "image/webp"]
@@ -112,7 +110,6 @@ async def update_profile(
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "phone": current_user.phone,
         "photo_url": current_user.photo_url
     }}
 

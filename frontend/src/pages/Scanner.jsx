@@ -8,6 +8,7 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import AnimatedStatus from "../components/ui/AnimatedStatus";
 import NutritionLabel from "../components/ui/NutritionLabel";
+import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
 
@@ -18,6 +19,8 @@ const Scanner = () => {
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [chatInput, setChatInput] = useState("");
@@ -457,7 +460,8 @@ const Scanner = () => {
     }
 
     if (!result || !result.scan_id) {
-      alert("Scan ID tidak tersedia. Coba scan ulang.");
+      setSuccessMessage("Scan ID tidak tersedia. Coba scan ulang.");
+      setShowSuccess(true);
       return;
     }
 
@@ -467,15 +471,18 @@ const Scanner = () => {
       );
       setIsFavorited(data.is_favorited);
 
-      if (data.is_favorited) {
-        alert("✓ Berhasil ditambahkan ke favorit!");
-      } else {
-        alert("Dihapus dari favorit");
-      }
+      setSuccessMessage(
+        data.is_favorited
+          ? "✓ Berhasil ditambahkan ke favorit!"
+          : "Dihapus dari favorit"
+      );
+      setShowSuccess(true);
     } catch (e) {
       console.error(e);
-      const errorMsg = e.response?.data?.detail || "Gagal menambahkan favorit";
-      alert(errorMsg);
+      setSuccessMessage(
+        e.response?.data?.detail || "Gagal menambahkan favorit"
+      );
+      setShowSuccess(true);
     }
   };
 
@@ -1138,6 +1145,12 @@ const Scanner = () => {
           </Card>
         </div>
       </div>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        message={successMessage}
+      />
     </MainLayout>
   );
 };

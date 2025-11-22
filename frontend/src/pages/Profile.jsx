@@ -206,7 +206,7 @@ const Profile = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white">
+                  <div className="w-full h-full bg-linear-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white">
                     {user?.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
