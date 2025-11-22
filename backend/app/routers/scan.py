@@ -25,8 +25,14 @@ async def scan_bpom(
 
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
-        crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
-        return {"found": True, "message": "Data ditemukan (Cache)", "data": cached_data}
+        scan_record = crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
+        return {
+            "found": True, 
+            "message": "Data ditemukan (Cache)", 
+            "data": cached_data,
+            "scan_id": scan_record.id if scan_record else None
+        }
+    
     scraper = BPOMScraper()
     result = await scraper.search_bpom(request.bpom_number)
     
@@ -34,12 +40,19 @@ async def scan_bpom(
         return {
             "found": False,
             "message": f"Produk dengan kode {request.bpom_number} tidak ditemukan.",
-            "data": None
+            "data": None,
+            "scan_id": None
         }
-    crud_scan.create_bpom_cache(db, request.bpom_number, result)
-    crud_scan.create_bpom_history(db, user_id, result, session_id)
     
-    return {"found": True, "message": "Data ditemukan", "data": result}
+    crud_scan.create_bpom_cache(db, request.bpom_number, result)
+    scan_record = crud_scan.create_bpom_history(db, user_id, result, session_id)
+    
+    return {
+        "found": True, 
+        "message": "Data ditemukan", 
+        "data": result,
+        "scan_id": scan_record.id if scan_record else None
+    }
 
 @router.post("/analyze")
 async def analyze_ocr(
@@ -63,7 +76,7 @@ async def analyze_ocr(
     
     ocr_data_str = json.dumps(nutrition_data)
 
-    crud_scan.create_ocr_history(
+    scan_record = crud_scan.create_ocr_history(
         db=db, 
         user_id=user_id, 
         health_score=health_score, 
@@ -72,7 +85,11 @@ async def analyze_ocr(
         session_id=session_id 
     )
         
-    return {"success": True, "data": result}
+    return {
+        "success": True, 
+        "data": result,
+        "scan_id": scan_record.id if scan_record else None
+    }
 
 @router.post("/ocr-text")
 async def extract_text_only(

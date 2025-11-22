@@ -24,22 +24,31 @@ def create_bpom_cache(db: Session, bpom_number: str, data: dict):
         db.commit()
 
 def create_bpom_history(db: Session, user_id: int, data: dict, session_id: str = None):
+    if not data:
+        return None
+        
     query = db.query(ScanHistoryBPOM)
     
     if user_id:
         query = query.filter(ScanHistoryBPOM.user_id == user_id)
     else:
         query = query.filter(ScanHistoryBPOM.session_id == session_id)
+    
+    bpom_num = data.get("bpom_number")
+    if not bpom_num:
+        return None
         
     existing_scan = query.filter(
-        ScanHistoryBPOM.bpom_number == data.get("nomor_registrasi")
+        ScanHistoryBPOM.bpom_number == bpom_num
     ).first()
 
     if existing_scan:
         existing_scan.created_at = datetime.now()
-        existing_scan.product_name = data.get("nama_produk")
-        existing_scan.brand = data.get("merk")
-        existing_scan.manufacturer = data.get("pendaftar")
+        existing_scan.product_name = data.get("product_name")
+        existing_scan.brand = data.get("brand")
+        existing_scan.manufacturer = data.get("manufacturer")
+        existing_scan.status = data.get("status", "Berlaku")
+        existing_scan.raw_response = data
         if not existing_scan.session_id and session_id:
             existing_scan.session_id = session_id
             
@@ -47,15 +56,15 @@ def create_bpom_history(db: Session, user_id: int, data: dict, session_id: str =
         db.refresh(existing_scan)
         return existing_scan
 
-    # Insert Baru
     db_scan = ScanHistoryBPOM(
         user_id=user_id,
-        session_id=session_id, 
-        bpom_number=data.get("nomor_registrasi"),
-        product_name=data.get("nama_produk"),
-        brand=data.get("merk"),
-        manufacturer=data.get("pendaftar"),
-        status=data.get("status_registrasi", "Tidak Diketahui")
+        session_id=session_id or "guest", 
+        bpom_number=bpom_num,
+        product_name=data.get("product_name"),
+        brand=data.get("brand"),
+        manufacturer=data.get("manufacturer"),
+        status=data.get("status", "Berlaku"),
+        raw_response=data
     )
     db.add(db_scan)
     db.commit()
@@ -79,7 +88,7 @@ def create_ocr_history(db: Session, user_id: int, health_score: int, ocr_data: s
 
     db_scan = ScanHistoryOCR(
         user_id=user_id,
-        session_id=session_id, 
+        session_id=session_id or "guest", 
         health_score=health_score,
         ocr_raw_data=ocr_data,
         ai_analysis=ai_analysis
