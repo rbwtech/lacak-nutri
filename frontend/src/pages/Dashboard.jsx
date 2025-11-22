@@ -11,9 +11,9 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     scans: 0,
     favorites: 0,
-    history: 0,
     recommendations: 0,
   });
+  const [bmi, setBmi] = useState(null);
   const [recentScans, setRecentScans] = useState([]);
   const [dailyTip, setDailyTip] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,12 +25,18 @@ const Dashboard = () => {
         setStats(dashboardRes.data.stats);
         setRecentScans(dashboardRes.data.recent);
 
+        if (user?.weight && user?.height) {
+          const bmiValue = (
+            user.weight / Math.pow(user.height / 100, 2)
+          ).toFixed(1);
+          setBmi(parseFloat(bmiValue));
+        }
+
         const tipsRes = await api.get("/education/articles", {
           params: { category: "tips" },
         });
 
         const articles = tipsRes.data?.data || [];
-
         if (articles.length > 0) {
           const randomTip =
             articles[Math.floor(Math.random() * articles.length)];
@@ -43,9 +49,34 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
-  // Helper Icon Component
+  const getBMIStatus = (val) => {
+    if (!val)
+      return {
+        label: "Belum Ada Data",
+        color: "text-text-secondary",
+        bg: "bg-gray-100",
+      };
+    if (val < 18.5)
+      return {
+        label: "Kurang",
+        color: "text-warning-text",
+        bg: "bg-warning/10",
+      };
+    if (val < 25)
+      return { label: "Ideal", color: "text-success", bg: "bg-success/10" };
+    if (val < 30)
+      return {
+        label: "Lebih",
+        color: "text-warning-text",
+        bg: "bg-warning/10",
+      };
+    return { label: "Obesitas", color: "text-error", bg: "bg-error/10" };
+  };
+
+  const bmiStatus = getBMIStatus(bmi);
+
   const DashboardIcon = ({
     path,
     colorClass = "text-primary",
@@ -66,32 +97,33 @@ const Dashboard = () => {
     </div>
   );
 
-  const StatCard = ({ label, value, iconPath, color, bg }) => (
-    <div className="bg-bg-surface border border-border rounded-3xl p-6 flex flex-col items-center justify-center text-center hover:shadow-soft transition-all duration-300 group cursor-default h-full relative overflow-hidden">
-      <div
-        className={`absolute top-0 right-0 w-16 h-16 ${bg} rounded-bl-full opacity-20 -mr-4 -mt-4 transition-all group-hover:scale-150`}
-      ></div>
-
-      <DashboardIcon path={iconPath} colorClass={color} bgClass={bg} />
-
-      {loading ? (
-        <div className="h-8 w-12 bg-gray-100 animate-pulse rounded mb-1"></div>
-      ) : (
-        <span className="text-3xl font-extrabold text-text-primary mb-1 tracking-tight">
-          {value}
+  const StatCard = ({ label, value, iconPath, color, bg, to }) => {
+    const content = (
+      <div className="bg-bg-surface border border-border rounded-3xl p-6 flex flex-col items-center justify-center text-center hover:shadow-soft transition-all duration-300 group cursor-pointer h-full relative overflow-hidden">
+        <div
+          className={`absolute top-0 right-0 w-16 h-16 ${bg} rounded-bl-full opacity-20 -mr-4 -mt-4 transition-all group-hover:scale-150`}
+        ></div>
+        <DashboardIcon path={iconPath} colorClass={color} bgClass={bg} />
+        {loading ? (
+          <div className="h-8 w-12 bg-gray-100 animate-pulse rounded mb-1"></div>
+        ) : (
+          <span className="text-3xl font-extrabold text-text-primary mb-1 tracking-tight">
+            {value}
+          </span>
+        )}
+        <span className="text-[11px] font-bold text-text-secondary uppercase tracking-widest">
+          {label}
         </span>
-      )}
-      <span className="text-[11px] font-bold text-text-secondary uppercase tracking-widest">
-        {label}
-      </span>
-    </div>
-  );
+      </div>
+    );
+
+    return to ? <Link to={to}>{content}</Link> : content;
+  };
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-text-primary mb-2">
@@ -132,75 +164,69 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            <Link to="/history">
-              <StatCard
-                label="Total Scan"
-                value={stats.scans}
-                color="text-primary"
-                bg="bg-primary/10"
-                iconPath={
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                  />
-                }
-              />
-            </Link>
+            <StatCard
+              label="Total Scan"
+              value={stats.scans}
+              color="text-primary"
+              bg="bg-primary/10"
+              to="/history"
+              iconPath={
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                />
+              }
+            />
 
-            <Link to="/favorites">
-              <StatCard
-                label="Favorit"
-                value={stats.favorites}
-                color="text-error"
-                bg="bg-error/10"
-                iconPath={
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                }
-              />
-            </Link>
+            <StatCard
+              label="Favorit"
+              value={stats.favorites}
+              color="text-error"
+              bg="bg-error/10"
+              to="/favorites"
+              iconPath={
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              }
+            />
 
-            <Link to="/history">
-              <StatCard
-                label="Riwayat"
-                value={stats.history}
-                color="text-accent"
-                bg="bg-accent/10"
-                iconPath={
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                }
-              />
-            </Link>
+            <StatCard
+              label="BMI"
+              value={bmi ? bmi : "--"}
+              color={bmiStatus.color}
+              bg={bmiStatus.bg}
+              to="/profile"
+              iconPath={
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              }
+            />
 
-            <Link to="/history">
-              <StatCard
-                label="Saran AI"
-                value={stats.recommendations}
-                color="text-warning-text"
-                bg="bg-warning/10"
-                iconPath={
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                }
-              />
-            </Link>
+            <StatCard
+              label="Analisis AI"
+              value={stats.recommendations}
+              color="text-warning-text"
+              bg="bg-warning/10"
+              to="/history"
+              iconPath={
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              }
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Recent Scans */}
             <div className="lg:col-span-2 flex flex-col gap-8">
               <div className="bg-bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -322,7 +348,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right Column: Quick Action & Tips */}
             <div className="space-y-8">
               <div className="bg-linear-to-br from-primary to-orange-500 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-xl"></div>
@@ -353,7 +378,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* DYNAMIC TIPS CARD */}
               <div className="bg-bg-surface border border-border rounded-3xl p-6 relative overflow-hidden">
                 <div className="absolute top-4 right-4 text-warning-text opacity-20">
                   <svg
@@ -367,7 +391,6 @@ const Dashboard = () => {
                 <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
                   Tips Sehat
                 </h4>
-
                 {dailyTip ? (
                   <>
                     <h5 className="font-bold text-sm text-primary mb-2">
