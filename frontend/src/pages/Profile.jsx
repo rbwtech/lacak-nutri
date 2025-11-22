@@ -178,9 +178,20 @@ const Profile = () => {
   };
   const bmi = getBMIStatus(bmiValue);
 
-  const inputClass = `w-full px-4 py-3 rounded-xl border transition-all text-sm font-medium outline-none`;
-  const readOnlyClass = `bg-gray-50 border-transparent text-text-secondary cursor-default`;
-  const editClass = `bg-white border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary`;
+  const inputClass = `
+  w-full px-4 py-3 rounded-xl border transition-all text-sm font-medium outline-none
+  dark:bg-[#1f1f1f] dark:border-[#3a3a3a] dark:text-white dark:placeholder-gray-400
+`;
+
+  const readOnlyClass = `
+  bg-gray-50 border-transparent text-text-secondary cursor-default
+  dark:bg-[#2a2a2a] dark:text-gray-400
+`;
+
+  const editClass = `
+  bg-white border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary
+  dark:bg-[#1f1f1f] dark:border-[#5c5c5c] dark:text-white
+`;
 
   return (
     <MainLayout>
@@ -241,7 +252,6 @@ const Profile = () => {
               <Button onClick={() => setEditing(true)}>Edit Profil</Button>
             )}
           </div>
-
           <div className="grid lg:grid-cols-7 gap-6">
             <div className="lg:col-span-3 space-y-6 order-1">
               <Card title="Informasi Pribadi">
@@ -381,15 +391,14 @@ const Profile = () => {
                     <button
                       key={a.id}
                       onClick={() => toggleAllergy(a.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all duration-200 flex items-center gap-2 ${
-                        userAllergies.includes(a.id)
-                          ? "border-error bg-error/5 text-error shadow-sm"
-                          : "border-transparent bg-gray-100 text-text-secondary hover:bg-gray-200"
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all duration-200 flex items-center gap-2
+    ${
+      userAllergies.includes(a.id)
+        ? "border-error bg-error/5 text-error shadow-sm dark:bg-error/10 dark:border-error dark:text-error"
+        : "border-gray-300 hover:border-primary hover:bg-primary/5 dark:border-gray-600 dark:hover:border-primary"
+    }
+  `}
                     >
-                      {userAllergies.includes(a.id) && (
-                        <span className="text-lg">•</span>
-                      )}
                       {a.name}
                     </button>
                   ))}
@@ -440,10 +449,22 @@ const Profile = () => {
                 <div className="space-y-1">
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="w-full flex items-center justify-between p-4 rounded-xl bg-bg-base hover:bg-gray-100 transition-colors group"
+                    className="
+        w-full flex items-center justify-between p-4 rounded-xl
+        bg-bg-base hover:bg-bg-soft
+        transition-colors group
+        border border-border
+      "
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-text-secondary group-hover:text-primary transition-colors shadow-sm">
+                      <div
+                        className="
+            w-10 h-10 rounded-full flex items-center justify-center
+            bg-bg-soft shadow-sm
+            text-text-secondary group-hover:text-primary
+            transition-colors
+          "
+                      >
                         <svg
                           className="w-5 h-5"
                           fill="none"
@@ -468,7 +489,7 @@ const Profile = () => {
                       </div>
                     </div>
                     <svg
-                      className="w-5 h-5 text-text-secondary"
+                      className="w-5 h-5 text-text-secondary group-hover:text-primary transition-colors"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -485,10 +506,9 @@ const Profile = () => {
               </Card>
             </div>
           </div>
-
           {showPasswordModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-bg-base w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up border border-border">
                 <h3 className="text-xl font-bold text-text-primary mb-6 text-center">
                   Ubah Kata Sandi
                 </h3>
@@ -534,7 +554,6 @@ const Profile = () => {
               </div>
             </div>
           )}
-
           <SuccessModal
             isOpen={showSuccess}
             onClose={() => setShowSuccess(false)}

@@ -136,7 +136,7 @@ const Products = () => {
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-transparent dark:text-white w-full"
+                className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-neutral-800 dark:text-white w-full"
               >
                 <option value="12">12</option>
                 <option value="24">24</option>
