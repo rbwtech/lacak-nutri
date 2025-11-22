@@ -18,6 +18,9 @@ class AllergenOut(BaseModel):
     id: int
     name: str
     description: str | None = None
+    
+    class Config:
+        from_attributes = True
 
 class UpdateAllergyRequest(BaseModel):
     allergen_ids: List[int]
@@ -46,6 +49,10 @@ def update_user_allergies(
 class CustomAllergyRequest(BaseModel):
     name: str
 
+class CustomAllergyResponse(BaseModel):
+    message: str
+    allergen: AllergenOut
+
 def validate_allergy_name(name: str):
     if len(name) < 3:
         raise HTTPException(400, "Nama alergi terlalu pendek (min 3 huruf)")
@@ -57,7 +64,7 @@ def validate_allergy_name(name: str):
     
     return name.title().strip()
 
-@router.post("/allergies/custom")
+@router.post("/allergies/custom", response_model=CustomAllergyResponse)
 def add_custom_allergy(
     request: CustomAllergyRequest,
     db: Session = Depends(get_db),
@@ -86,8 +93,15 @@ def add_custom_allergy(
     if target_allergen not in current_user.allergies:
         current_user.allergies.append(target_allergen)
         db.commit()
-        
-    return {"message": "Alergi berhasil ditambahkan", "allergen": target_allergen}
+    
+    return {
+        "message": "Alergi berhasil ditambahkan",
+        "allergen": {
+            "id": target_allergen.id,
+            "name": target_allergen.name,
+            "description": target_allergen.description
+        }
+    }
 
 @router.delete("/allergens/{allergen_id}")
 def delete_custom_allergy(
