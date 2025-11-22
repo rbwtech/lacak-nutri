@@ -5,11 +5,14 @@ from typing import List, Optional
 from pydantic import BaseModel
 from app.core.database import get_db
 from app.dependencies import get_current_user
-from app.models.user import User, Allergen
+from app.crud import scan as crud_scan 
+from app.models.user import User, Allergen, LocalizationSetting
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 import shutil
 import uuid
 import re
+from datetime import datetime
+import pytz
 from pathlib import Path
 
 router = APIRouter(prefix="/api/users", tags=["User Data"])
@@ -125,13 +128,44 @@ def delete_custom_allergy(
     db.commit()
     return {"message": "Alergi kustom berhasil dihapus permanen"}
 
+@router.get("/localization-settings")
+def get_localization_settings(
+    region: str = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(LocalizationSetting).filter(LocalizationSetting.is_active == True)
+    
+    if region:
+        query = query.filter(LocalizationSetting.region == region)
+    
+    settings = query.order_by(LocalizationSetting.region, LocalizationSetting.timezone_label).all()
+    
+    grouped = {}
+    for setting in settings:
+        if setting.region not in grouped:
+            grouped[setting.region] = []
+        grouped[setting.region].append({
+            "id": setting.id,
+            "timezone": setting.timezone,
+            "timezone_offset": setting.timezone_offset,
+            "timezone_label": setting.timezone_label,
+            "locale": setting.locale,
+            "locale_label": setting.locale_label,
+            "country_code": setting.country_code,
+            "region": setting.region
+        })
+    
+    return {"data": grouped}
+
 @router.put("/profile")
 async def update_profile(
     name: str = Form(...),
     age: Optional[int] = Form(None),      
     weight: Optional[float] = Form(None), 
     height: Optional[float] = Form(None),
-    gender: Optional[str] = Form(None),  
+    gender: Optional[str] = Form(None),
+    timezone: Optional[str] = Form(None),
+    locale: Optional[str] = Form(None),
     photo: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -141,6 +175,8 @@ async def update_profile(
     if weight is not None: current_user.weight = weight
     if height is not None: current_user.height = height
     if gender is not None: current_user.gender = gender
+    if timezone is not None: current_user.timezone = timezone
+    if locale is not None: current_user.locale = locale
     
     if photo:
         allowed_types = ["image/jpeg", "image/png", "image/webp"]
@@ -174,6 +210,8 @@ async def update_profile(
             "weight": current_user.weight,
             "height": current_user.height,
             "gender": current_user.gender,
+            "timezone": current_user.timezone,
+            "locale": current_user.locale,
             "photo_url": current_user.photo_url
         }
     }
@@ -184,48 +222,42 @@ async def get_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    bpom_items = []
-    ocr_items = []
+    # Get user timezone
+    user_tz = pytz.timezone(current_user.timezone or 'Asia/Jakarta')
     
-    if type is None or type == "bpom":
-        bpom_items = db.query(ScanHistoryBPOM).filter(
-            ScanHistoryBPOM.user_id == current_user.id
-        ).order_by(ScanHistoryBPOM.created_at.desc()).limit(50).all()
+    bpom_scans, ocr_scans = crud_scan.get_user_history(db, current_user.id)
     
-    if type is None or type == "ocr":
-        ocr_items = db.query(ScanHistoryOCR).filter(
-            ScanHistoryOCR.user_id == current_user.id
-        ).order_by(ScanHistoryOCR.created_at.desc()).limit(50).all()
-    
-    combined = []
-    
-    for item in bpom_items:
-        combined.append({
-            "id": item.id,
+    history_items = []
+    for scan in bpom_scans:
+        # Convert to user timezone
+        scan_time = scan.created_at.replace(tzinfo=pytz.UTC).astimezone(user_tz)
+        history_items.append({
+            "id": scan.id,
             "type": "bpom",
-            "title": item.product_name or "Produk BPOM",
-            "subtitle": item.bpom_number,
-            "score": None,
-            "is_favorited": item.is_favorited,
-            "date": item.created_at.isoformat(),
-            "timestamp": item.created_at.timestamp()
+            "title": scan.product_name,
+            "subtitle": scan.bpom_number,
+            "date": scan_time.isoformat(),
+            "is_favorited": scan.is_favorited
         })
     
-    for item in ocr_items:
-        combined.append({
-            "id": item.id,
+    for scan in ocr_scans:
+        scan_time = scan.created_at.replace(tzinfo=pytz.UTC).astimezone(user_tz)
+        history_items.append({
+            "id": scan.id,
             "type": "ocr",
-            "title": item.product_name,
-            "subtitle": f"Health Score: {item.health_score}/100",
-            "score": item.health_score,
-            "is_favorited": item.is_favorited,
-            "date": item.created_at.isoformat(),
-            "timestamp": item.created_at.timestamp()
+            "title": scan.product_name or "Analisis Nutrisi AI",
+            "subtitle": f"Scan pada {scan_time.strftime('%d %b %Y')}",
+            "score": scan.health_score,
+            "date": scan_time.isoformat(),
+            "is_favorited": scan.is_favorited
         })
     
-    combined.sort(key=lambda x: x['timestamp'], reverse=True)
+    # Filter & sort
+    if type:
+        history_items = [h for h in history_items if h["type"] == type]
+    history_items.sort(key=lambda x: x["date"], reverse=True)
     
-    return {"success": True, "data": combined[:50]}
+    return {"data": history_items}
 
 class DashboardStats(BaseModel):
     favorites: int

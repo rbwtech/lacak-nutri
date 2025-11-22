@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, func, Float, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Enum, Boolean, DateTime, func, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -22,6 +22,20 @@ class Allergen(Base):
     description = Column(String(255))
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
 
+class LocalizationSetting(Base):
+    __tablename__ = "localization_settings"
+    
+    id = Column(Integer, primary_key=True)
+    timezone = Column(String(50), unique=True, nullable=False)
+    timezone_offset = Column(String(10), nullable=False)
+    timezone_label = Column(String(100), nullable=False)
+    locale = Column(String(10), nullable=False)
+    locale_label = Column(String(50), nullable=False)
+    country_code = Column(String(5), nullable=False)
+    region = Column(String(50), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class User(Base):
     __tablename__ = "users"
 
@@ -31,15 +45,16 @@ class User(Base):
     name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user)
     
-    # Profil
+    # Profile
     age = Column(Integer, nullable=True)
     weight = Column(Float, nullable=True)
     height = Column(Float, nullable=True)
     gender = Column(String(10), nullable=True)
+    timezone = Column(String(50), default='Asia/Jakarta')
+    locale = Column(String(10), default='id-ID')
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relasi Alergi
     allergies = relationship("Allergen", secondary=user_allergies, backref="users")
-    photo_url = Column(String(255)) 
+    photo_url = Column(String(255))

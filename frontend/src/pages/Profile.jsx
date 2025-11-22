@@ -85,6 +85,8 @@ const Profile = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [localizationSettings, setLocalizationSettings] = useState({});
+  const [selectedRegion, setSelectedRegion] = useState("Asia");
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -104,6 +106,19 @@ const Profile = () => {
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  useEffect(() => {
+    fetchLocalizationSettings();
+  }, []);
+
+  const fetchLocalizationSettings = async () => {
+    try {
+      const { data } = await api.get("/users/localization-settings");
+      setLocalizationSettings(data.data);
+    } catch (e) {
+      console.error("Failed to load localization settings", e);
+    }
   };
 
   useEffect(() => {
@@ -473,6 +488,57 @@ const Profile = () => {
                         }`}
                         placeholder="-"
                       />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-bold text-text-primary mb-2 block">
+                        Zona Waktu
+                      </label>
+                      <select
+                        name="timezone"
+                        value={formData.timezone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                      >
+                        {Object.entries(localizationSettings).map(
+                          ([region, settings]) => (
+                            <optgroup key={region} label={region}>
+                              {settings.map((setting) => (
+                                <option
+                                  key={setting.id}
+                                  value={setting.timezone}
+                                >
+                                  {setting.timezone_label} (
+                                  {setting.timezone_offset})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-bold text-text-primary mb-2 block">
+                        Bahasa & Format Tanggal
+                      </label>
+                      <select
+                        name="locale"
+                        value={formData.locale}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                      >
+                        {Object.values(localizationSettings)
+                          .flat()
+                          .map((setting) => (
+                            <option
+                              key={`${setting.locale}-${setting.id}`}
+                              value={setting.locale}
+                            >
+                              {setting.locale_label}
+                            </option>
+                          ))}
+                      </select>
                     </div>
                   </div>
 

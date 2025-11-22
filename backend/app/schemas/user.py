@@ -1,8 +1,6 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime
 
-# --- Base Schemas ---
 class UserBase(BaseModel):
     email: EmailStr
     name: str
@@ -14,31 +12,30 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# --- Profile Update ---
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     age: Optional[int] = None
     weight: Optional[float] = None
     height: Optional[float] = None
     gender: Optional[str] = None
+    timezone: Optional[str] = None
+    locale: Optional[str] = None
 
-class PasswordChange(BaseModel):
-    current_password: str
-    new_password: str
-
-# --- Responses ---
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    email: str
+    name: str
     role: str
-    age: Optional[int] = None
-    weight: Optional[float] = None
-    height: Optional[float] = None
-    gender: Optional[str] = None
-    created_at: datetime
-    photo_url: Optional[str] = None
+    age: Optional[int]
+    weight: Optional[float]
+    height: Optional[float]
+    gender: Optional[str]
+    timezone: str
+    locale: str
+    photo_url: Optional[str]
     
-    # Config Pydantic v2
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
