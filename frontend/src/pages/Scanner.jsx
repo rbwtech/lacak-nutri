@@ -19,6 +19,7 @@ const Scanner = () => {
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState(null);
@@ -433,6 +434,7 @@ const Scanner = () => {
     }
 
     setLoading(true);
+    setLoadingProgress(0);
     setLoadingMessage("Mengoptimalkan gambar...");
     setError(null);
 
@@ -444,6 +446,11 @@ const Scanner = () => {
         throw new Error("Gambar terlalu besar. Coba ambil gambar lebih dekat.");
       }
 
+      setLoadingProgress(25);
+      setLoadingMessage("Mengirim ke server...");
+      await new Promise((r) => setTimeout(r, 300));
+
+      setLoadingProgress(50);
       setLoadingMessage("Analisis AI sedang bekerja...");
 
       const { data } = await api.post("/scan/analyze", {
@@ -451,12 +458,18 @@ const Scanner = () => {
         image_base64: ocrImage,
       });
 
+      setLoadingProgress(75);
+      setLoadingMessage("Memproses hasil...");
+
       if (!data.success) throw new Error(data.message || "Gagal analisis");
 
       const textCheck = (data.data.ingredients || "").toLowerCase();
       const allergyWarnings = myAllergies
         .filter((a) => textCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
+
+      setLoadingProgress(100);
+      setLoadingMessage("Selesai!");
 
       setResult({
         type: "ocr",
@@ -481,6 +494,7 @@ const Scanner = () => {
       setResult(null);
     } finally {
       setLoading(false);
+      setLoadingProgress(0);
     }
   };
 
@@ -609,13 +623,28 @@ const Scanner = () => {
             </div>
           )}
 
-          <Card className="shadow-lg relative overflow-hidden p-0">
+          <Card className="relative">
             {loading && (
-              <div className="inset-0 bg-bg-surface/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-primary font-bold animate-pulse">
-                  {loadingMessage}
-                </p>
+              <div className="absolute inset-0 bg-bg-surface/95 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4 rounded-3xl">
+                <div className="w-full max-w-xs space-y-4">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-primary font-bold text-center animate-pulse">
+                    {loadingMessage}
+                  </p>
+                  {loadingProgress > 0 && (
+                    <>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${loadingProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-center text-xs text-text-secondary font-medium">
+                        {loadingProgress}%
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -869,16 +898,15 @@ const Scanner = () => {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 justify-center mt-6">
-                  <span className="h-px w-10 bg-border" />
-                  <span className="text-xs font-semibold text-text-secondary tracking-wider">
-                    ATAU INPUT MANUAL
-                  </span>
-                  <span className="h-px w-10 bg-border" />
-                </div>
-
                 {scanMode === "barcode" && !isScannerActive && !ocrImage && (
                   <div className="mt-6">
+                    <div className="flex items-center gap-3 justify-center mt-6 mb-4">
+                      <span className="h-px w-15 bg-border" />
+                      <span className="text-xs font-semibold text-text-secondary tracking-wider">
+                        ATAU INPUT MANUAL
+                      </span>
+                      <span className="h-px w-15 bg-border" />
+                    </div>
                     <label className="text-sm font-semibold text-text-primary mb-1 block">
                       Kode BPOM / Nama Produk
                     </label>
