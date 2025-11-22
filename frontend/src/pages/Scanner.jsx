@@ -407,14 +407,12 @@ const Scanner = () => {
         .filter((a) => textCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
 
-      const resultid = data.id || data.data?.id;
-
       setResult({
         type: "ocr",
         found: true,
         data: data.data,
         allergyWarnings: warnings,
-        scan_id: resultId,
+        scan_id: data.data?.id,
       });
       setIsFavorited(false);
     } catch (err) {

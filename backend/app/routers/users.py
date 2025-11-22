@@ -79,11 +79,19 @@ def add_custom_allergy(
 @router.put("/profile")
 async def update_profile(
     name: str = Form(...),
+    age: Optional[int] = Form(None),      
+    weight: Optional[float] = Form(None), 
+    height: Optional[float] = Form(None),
+    gender: Optional[str] = Form(None),  
     photo: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     current_user.name = name
+    if age is not None: current_user.age = age
+    if weight is not None: current_user.weight = weight
+    if height is not None: current_user.height = height
+    if gender is not None: current_user.gender = gender
     
     if photo:
         allowed_types = ["image/jpeg", "image/png", "image/webp"]
@@ -93,12 +101,11 @@ async def update_profile(
         if photo.size and photo.size > 2 * 1024 * 1024:
             raise HTTPException(400, "Ukuran file maksimal 2MB")
         
+        filename = f"user_{current_user.id}_{uuid.uuid4().hex[:6]}.{photo.filename.split('.')[-1]}"
         upload_dir = Path("uploads/profiles")
         upload_dir.mkdir(parents=True, exist_ok=True)
-
-        filename = f"{uuid.uuid4()}.{photo.filename.split('.')[-1]}"
-        filepath = upload_dir / filename
         
+        filepath = upload_dir / filename
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(photo.file, buffer)
         
@@ -107,12 +114,20 @@ async def update_profile(
     db.commit()
     db.refresh(current_user)
     
-    return {"success": True, "user": {
-        "id": current_user.id,
-        "name": current_user.name,
-        "email": current_user.email,
-        "photo_url": current_user.photo_url
-    }}
+    return {
+        "success": True, 
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "role": current_user.role,
+            "age": current_user.age,
+            "weight": current_user.weight,
+            "height": current_user.height,
+            "gender": current_user.gender,
+            "photo_url": current_user.photo_url
+        }
+    }
 
 @router.get("/history")
 async def get_history(

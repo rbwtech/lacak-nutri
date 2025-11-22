@@ -8,7 +8,7 @@ import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 
 const Profile = () => {
-  const { user, setUser, updateProfile, changePassword } = useAuth();
+  const { user, setUser, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allergens, setAllergens] = useState([]);
@@ -70,6 +70,11 @@ const Profile = () => {
     try {
       const form = new FormData();
       form.append("name", formData.name);
+      if (formData.age) form.append("age", formData.age);
+      if (formData.weight) form.append("weight", formData.weight);
+      if (formData.height) form.append("height", formData.height);
+      if (formData.gender) form.append("gender", formData.gender);
+
       if (photoFile) {
         form.append("photo", photoFile);
       }
@@ -79,20 +84,14 @@ const Profile = () => {
       });
 
       setUser(data.user);
-
-      await updateProfile({
-        name: formData.name,
-        gender: formData.gender,
-        age: formData.age ? parseInt(formData.age) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        height: formData.height ? parseFloat(formData.height) : null,
-      });
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       setEditing(false);
       setSuccessMessage("Profil berhasil diperbarui!");
       setShowSuccess(true);
     } catch (error) {
-      alert("Gagal menyimpan profil.");
+      console.error(error);
+      alert("Gagal menyimpan profil. Cek koneksi atau input Anda.");
     } finally {
       setLoading(false);
     }
