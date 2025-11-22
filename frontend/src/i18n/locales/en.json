@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "title": "My Profile",
+    "edit": "Edit Profile",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "personalInfo": "Personal Information",
+    "fullName": "Full Name",
+    "email": "Email",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "age": "Age",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "timezone": "Timezone",
+    "locale": "Language & Format",
+    "bmi": "Body Mass Index",
+    "bmiDesc": "Based on height & weight",
+    "allergies": "Allergy Preferences",
+    "myAllergies": "My Allergies",
+    "allOptions": "All Options",
+    "addCustom": "Add custom allergy...",
+    "security": "Account Security",
+    "password": "Password",
+    "changePassword": "Change account password"
+  },
+  "common": {
+    "loading": "Loading...",
+    "success": "Success!",
+    "error": "An error occurred"
+  }
+}

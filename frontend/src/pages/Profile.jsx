@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "../components/layouts";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
@@ -70,23 +71,21 @@ const parseErrorMessage = (error, fallback = "Terjadi kesalahan") => {
 };
 
 const Profile = () => {
+  const { t, i18n } = useTranslation();
   const { user, setUser, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
-
   const [masterAllergens, setMasterAllergens] = useState([]);
   const [userAllergies, setUserAllergies] = useState([]);
   const [customAllergy, setCustomAllergy] = useState("");
   const [allergyView, setAllergyView] = useState("active");
-
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [localizationSettings, setLocalizationSettings] = useState({});
-  const [selectedRegion, setSelectedRegion] = useState("Asia");
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -114,15 +113,6 @@ const Profile = () => {
     fetchLocalizationSettings();
   }, []);
 
-  const fetchLocalizationSettings = async () => {
-    try {
-      const { data } = await api.get("/users/localization-settings");
-      setLocalizationSettings(data.data);
-    } catch (e) {
-      console.error("Failed to load localization settings", e);
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -139,6 +129,15 @@ const Profile = () => {
     fetchData();
     setPhotoPreview(user?.photo_url || null);
   }, [user]);
+
+  const fetchLocalizationSettings = async () => {
+    try {
+      const { data } = await api.get("/users/localization-settings");
+      setLocalizationSettings(data.data);
+    } catch (e) {
+      console.error("Failed to load localization", e);
+    }
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -172,11 +171,16 @@ const Profile = () => {
 
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      if (formData.locale !== user?.locale) {
+        i18n.changeLanguage(formData.locale);
+      }
+
       setEditing(false);
-      setSuccessMessage("Profil berhasil diperbarui!");
+      setSuccessMessage(t("profile.successUpdate"));
       setShowSuccess(true);
     } catch (error) {
-      showToast(parseErrorMessage(error, "Gagal menyimpan profil"), "error");
+      showToast(parseErrorMessage(error, t("profile.errorSave")), "error");
     } finally {
       setLoading(false);
     }
@@ -185,7 +189,7 @@ const Profile = () => {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passData.new !== passData.confirm) {
-      showToast("Konfirmasi password tidak cocok", "error");
+      showToast(t("profile.passwordMismatch"), "error");
       return;
     }
     setLoading(true);
@@ -196,7 +200,7 @@ const Profile = () => {
       });
       setShowPasswordModal(false);
       setPassData({ current: "", new: "", confirm: "" });
-      setSuccessMessage("Password berhasil diubah. Silakan login kembali.");
+      setSuccessMessage(t("profile.passwordChanged"));
       setShowSuccess(true);
       setTimeout(() => {
         localStorage.removeItem("token");
@@ -204,7 +208,7 @@ const Profile = () => {
         window.location.href = "/login";
       }, 2000);
     } catch (e) {
-      showToast(parseErrorMessage(e, "Password lama salah"), "error");
+      showToast(parseErrorMessage(e, t("profile.wrongPassword")), "error");
     } finally {
       setLoading(false);
     }
@@ -221,14 +225,11 @@ const Profile = () => {
     try {
       await api.put("/users/allergies", { allergen_ids: newSelection });
       showToast(
-        isSelected ? "Alergi dihapus dari daftar Anda" : "Alergi ditambahkan",
+        isSelected ? t("profile.allergyRemoved") : t("profile.allergyAdded"),
         "success"
       );
     } catch (e) {
-      showToast(
-        parseErrorMessage(e, "Gagal update preferensi alergi"),
-        "error"
-      );
+      showToast(parseErrorMessage(e, t("profile.allergyError")), "error");
       setUserAllergies(userAllergies);
     }
   };
@@ -243,15 +244,19 @@ const Profile = () => {
       });
 
       const newAllergen = data.allergen;
-
       setMasterAllergens((prev) => [...prev, newAllergen]);
       setUserAllergies((prev) => [...prev, newAllergen.id]);
-
       setCustomAllergy("");
       setAllergyView("active");
-      showToast(`Alergi "${newAllergen.name}" berhasil ditambahkan`, "success");
+      showToast(
+        `${t("profile.allergyAdded")}: "${newAllergen.name}"`,
+        "success"
+      );
     } catch (error) {
-      showToast(parseErrorMessage(error, "Gagal menambah alergi"), "error");
+      showToast(
+        parseErrorMessage(error, t("profile.allergyAddError")),
+        "error"
+      );
     }
   };
 
@@ -261,12 +266,12 @@ const Profile = () => {
       await api.delete(`/users/allergens/${allergenId}`);
       setMasterAllergens((prev) => prev.filter((a) => a.id !== allergenId));
       setUserAllergies((prev) => prev.filter((id) => id !== allergenId));
-      showToast(`"${allergenName}" dihapus permanen`, "success");
-    } catch (error) {
       showToast(
-        parseErrorMessage(error, "Hanya alergi custom yang bisa dihapus"),
-        "error"
+        `"${allergenName}" ${t("profile.deletedPermanent")}`,
+        "success"
       );
+    } catch (error) {
+      showToast(parseErrorMessage(error, t("profile.deleteError")), "error");
     }
   };
 
@@ -278,43 +283,40 @@ const Profile = () => {
   const getBMIStatus = (val) => {
     if (!val)
       return {
-        label: "Belum Ada Data",
+        label: t("profile.noData"),
         color: "text-text-secondary",
         bg: "bg-border/30",
       };
     const n = parseFloat(val);
     if (n < 18.5)
       return {
-        label: "Berat Kurang",
+        label: t("profile.underweight"),
         color: "text-warning",
         bg: "bg-warning/10",
       };
     if (n < 25)
-      return { label: "Ideal", color: "text-secondary", bg: "bg-secondary/10" };
+      return {
+        label: t("profile.ideal"),
+        color: "text-secondary",
+        bg: "bg-secondary/10",
+      };
     if (n < 30)
       return {
-        label: "Berat Lebih",
+        label: t("profile.overweight"),
         color: "text-warning",
         bg: "bg-warning/10",
       };
-    return { label: "Obesitas", color: "text-error", bg: "bg-error/10" };
+    return {
+      label: t("profile.obese"),
+      color: "text-error",
+      bg: "bg-error/10",
+    };
   };
   const bmi = getBMIStatus(bmiValue);
 
-  const inputClass = `
-    w-full px-4 py-3 rounded-xl border transition-all text-sm font-medium outline-none
-    dark:bg-[#1f1f1f] dark:border-[#3a3a3a] dark:text-white dark:placeholder-gray-400
-  `;
-
-  const readOnlyClass = `
-    bg-bg-surface border-border text-text-secondary cursor-default
-    dark:bg-[#2a2a2a] dark:text-gray-400
-  `;
-
-  const editClass = `
-    bg-bg-surface border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary
-    dark:bg-[#1f1f1f] dark:border-[#5c5c5c] dark:text-white
-  `;
+  const inputClass = `w-full px-4 py-3.5 rounded-2xl border transition-all text-sm font-medium outline-none`;
+  const readOnlyClass = `bg-bg-surface/50 border-border text-text-secondary cursor-not-allowed`;
+  const editClass = `bg-bg-surface border-border hover:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary`;
 
   const activeAllergies = masterAllergens.filter((a) =>
     userAllergies.includes(a.id)
@@ -325,296 +327,408 @@ const Profile = () => {
 
   return (
     <MainLayout>
-      <div className="bg-bg-base min-h-screen py-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="bg-linear-to-br from-bg-base via-bg-base to-primary/5 min-h-screen py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {toast && <Toast {...toast} onClose={() => setToast(null)} />}
 
-          <div className="flex items-center gap-6 mb-10">
-            <div className="relative group">
-              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-surface shadow-xl">
-                {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary flex items-center justify-center text-5xl font-extrabold text-white">
-                    {user?.name?.charAt(0).toUpperCase()}
+          {/* Header Section */}
+          <div className="relative mb-12">
+            <div className="absolute inset-0 bg-linear-to-r from-primary/10 to-secondary/10 rounded-3xl blur-3xl"></div>
+            <Card className="relative overflow-hidden border-2">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32"></div>
+              <div className="relative p-8 flex flex-col md:flex-row items-center gap-8">
+                <div className="relative group">
+                  <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-white shadow-2xl ring-4 ring-primary/10">
+                    {photoPreview ? (
+                      <img
+                        src={photoPreview}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-linear-to-br from-primary to-secondary flex items-center justify-center text-5xl font-black text-white">
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
+                  {editing && (
+                    <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-linear-to-br from-primary to-primary/80 text-white rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-xl">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoChange}
+                      />
+                    </label>
+                  )}
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="text-4xl md:text-5xl font-black text-text-primary mb-2 bg-linear-to-r from-primary to-secondary bg-clip-text">
+                    {user?.name}
+                  </h1>
+                  <p className="text-text-secondary text-lg">{user?.email}</p>
+                  <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
+                    <span className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-sm font-bold flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {user?.role === "admin" ? "Admin" : "User"}
+                    </span>
+                    {bmiValue && (
+                      <span
+                        className={`px-4 py-2 ${bmi.bg} ${bmi.color} rounded-xl text-sm font-bold`}
+                      >
+                        BMI: {bmiValue}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {!editing && (
+                  <Button
+                    onClick={() => setEditing(true)}
+                    className="px-8 py-4 text-lg shadow-xl"
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                    {t("profile.edit")}
+                  </Button>
                 )}
               </div>
-              {editing && (
-                <label className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-all shadow-xl hover:scale-110">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhotoChange}
-                  />
-                </label>
-              )}
-            </div>
-            <div className="flex-1">
-              <h1 className="text-4xl font-extrabold text-text-primary mb-1">
-                {user?.name}
-              </h1>
-              <p className="text-text-secondary">{user?.email}</p>
-            </div>
-            {!editing && (
-              <Button
-                onClick={() => setEditing(true)}
-                className="px-6 shadow-lg"
-              >
-                Edit Profil
-              </Button>
-            )}
+            </Card>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <Card title="Informasi Pribadi">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-2">
-                      Nama Lengkap
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      disabled={!editing}
-                      className={`${inputClass} ${
-                        editing ? editClass : readOnlyClass
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      disabled
-                      className={`${inputClass} ${readOnlyClass}`}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-bold text-text-primary mb-2">
-                        Jenis Kelamin
-                      </label>
-                      <select
-                        value={formData.gender}
-                        onChange={(e) =>
-                          setFormData({ ...formData, gender: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
+          {/* Main Content Grid */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left Column - Forms */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Personal Info Card */}
+              <Card className="border-2">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-bg-surface/10 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-primary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
-                        <option value="male">Laki-laki</option>
-                        <option value="female">Perempuan</option>
-                      </select>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
                     </div>
-                    <div>
-                      <label className="block text-sm font-bold text-text-primary mb-2">
-                        Usia
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.age}
-                        onChange={(e) =>
-                          setFormData({ ...formData, age: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
-                        placeholder="-"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-bold text-text-primary mb-2">
-                        Berat (kg)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.weight}
-                        onChange={(e) =>
-                          setFormData({ ...formData, weight: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
-                        placeholder="-"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-text-primary mb-2">
-                        Tinggi (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.height}
-                        onChange={(e) =>
-                          setFormData({ ...formData, height: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
-                        placeholder="-"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-sm font-bold text-text-primary mb-2 block">
-                        Zona Waktu
-                      </label>
-                      <select
-                        name="timezone"
-                        value={formData.timezone}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            timezone: e.target.value,
-                          })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
-                      >
-                        {Object.entries(localizationSettings).map(
-                          ([region, settings]) => (
-                            <optgroup key={region} label={region}>
-                              {settings.map((setting) => (
-                                <option
-                                  key={setting.id}
-                                  value={setting.timezone}
-                                >
-                                  {setting.timezone_label} (
-                                  {setting.timezone_offset})
-                                </option>
-                              ))}
-                            </optgroup>
-                          )
-                        )}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-bold text-text-primary mb-2 block">
-                        Bahasa & Format
-                      </label>
-                      <select
-                        name="locale"
-                        value={formData.locale}
-                        onChange={(e) =>
-                          setFormData({ ...formData, locale: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={`${inputClass} ${
-                          editing ? editClass : readOnlyClass
-                        }`}
-                      >
-                        {Object.values(localizationSettings)
-                          .flat()
-                          .filter(
-                            (setting, index, self) =>
-                              index ===
-                              self.findIndex((s) => s.locale === setting.locale)
-                          )
-                          .map((setting) => (
-                            <option key={setting.locale} value={setting.locale}>
-                              {setting.locale_label}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                    <h2 className="text-2xl font-bold text-text-primary">
+                      {t("profile.personalInfo")}
+                    </h2>
                   </div>
 
-                  {editing && (
-                    <div className="flex gap-3 pt-4 border-t border-border">
-                      <Button type="submit" loading={loading} className="px-8">
-                        Simpan Perubahan
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditing(false);
-                          setPhotoPreview(user?.photo_url || null);
-                          setPhotoFile(null);
-                        }}
-                        className="px-6 py-3 text-sm font-bold text-text-secondary hover:bg-bg-surface rounded-xl transition-colors"
-                      >
-                        Batal
-                      </button>
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.fullName")}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.email")}
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          disabled
+                          className={`${inputClass} ${readOnlyClass}`}
+                        />
+                      </div>
                     </div>
-                  )}
-                </form>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.gender")}
+                        </label>
+                        <select
+                          value={formData.gender}
+                          onChange={(e) =>
+                            setFormData({ ...formData, gender: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                        >
+                          <option value="male">{t("profile.male")}</option>
+                          <option value="female">{t("profile.female")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.age")}
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.age}
+                          onChange={(e) =>
+                            setFormData({ ...formData, age: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                          placeholder="-"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.weight")}
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.weight}
+                          onChange={(e) =>
+                            setFormData({ ...formData, weight: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                          placeholder="-"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.height")}
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.height}
+                          onChange={(e) =>
+                            setFormData({ ...formData, height: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                          placeholder="-"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.timezone")}
+                        </label>
+                        <select
+                          value={formData.timezone}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              timezone: e.target.value,
+                            })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                        >
+                          {Object.entries(localizationSettings).map(
+                            ([region, settings]) => (
+                              <optgroup key={region} label={region}>
+                                {settings.map((setting) => (
+                                  <option
+                                    key={setting.id}
+                                    value={setting.timezone}
+                                  >
+                                    {setting.timezone_label} (
+                                    {setting.timezone_offset})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )
+                          )}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-primary mb-2">
+                          {t("profile.locale")}
+                        </label>
+                        <select
+                          value={formData.locale}
+                          onChange={(e) =>
+                            setFormData({ ...formData, locale: e.target.value })
+                          }
+                          disabled={!editing}
+                          className={`${inputClass} ${
+                            editing ? editClass : readOnlyClass
+                          }`}
+                        >
+                          {Object.values(localizationSettings)
+                            .flat()
+                            .filter(
+                              (setting, index, self) =>
+                                index ===
+                                self.findIndex(
+                                  (s) => s.locale === setting.locale
+                                )
+                            )
+                            .map((setting) => (
+                              <option
+                                key={setting.locale}
+                                value={setting.locale}
+                              >
+                                {setting.locale_label}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {editing && (
+                      <div className="flex gap-3 pt-6 border-t border-border">
+                        <Button
+                          type="submit"
+                          loading={loading}
+                          className="flex-1"
+                        >
+                          <svg
+                            className="w-5 h-5 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          {t("profile.save")}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(false);
+                            setPhotoPreview(user?.photo_url || null);
+                            setPhotoFile(null);
+                          }}
+                          className="flex-1 px-6 py-3.5 text-sm font-bold text-text-secondary hover:bg-bg-surface rounded-2xl transition-all border-2 border-border hover:border-text-secondary"
+                        >
+                          {t("profile.cancel")}
+                        </button>
+                      </div>
+                    )}
+                  </form>
+                </div>
               </Card>
 
-              <Card title="Preferensi Alergi">
-                <div className="mb-6">
-                  <div className="flex gap-2 p-1 bg-bg-surface rounded-xl mb-4 border border-border">
+              {/* Allergies Card */}
+              <Card className="border-2">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-error"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-text-primary">
+                      {t("profile.allergies")}
+                    </h2>
+                  </div>
+
+                  <div className="flex gap-2 p-1.5 bg-bg-base rounded-2xl mb-6 border-2 border-border">
                     <button
                       onClick={() => setAllergyView("active")}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      className={`flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                         allergyView === "active"
-                          ? "bg-primary text-white shadow-md"
+                          ? "bg-primary text-white shadow-lg"
                           : "text-text-secondary hover:text-text-primary"
                       }`}
                     >
-                      Alergi Saya ({activeAllergies.length})
+                      {t("profile.myAllergies")} ({activeAllergies.length})
                     </button>
                     <button
                       onClick={() => setAllergyView("available")}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      className={`flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                         allergyView === "available"
-                          ? "bg-primary text-white shadow-md"
+                          ? "bg-primary text-white shadow-lg"
                           : "text-text-secondary hover:text-text-primary"
                       }`}
                     >
-                      Semua Pilihan ({availableAllergies.length})
+                      {t("profile.allOptions")} ({availableAllergies.length})
                     </button>
                   </div>
 
                   {allergyView === "active" && (
-                    <div className="space-y-3">
+                    <div className="space-y-3 mb-6">
                       {activeAllergies.length === 0 ? (
-                        <div className="text-center py-12 bg-bg-surface rounded-xl border border-border">
-                          <div className="w-16 h-16 bg-border/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <div className="text-center py-16 bg-bg-base rounded-2xl border-2 border-dashed border-border">
+                          <div className="w-20 h-20 bg-border/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <svg
-                              className="w-8 h-8 text-text-secondary"
+                              className="w-10 h-10 text-text-secondary"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -627,11 +741,11 @@ const Profile = () => {
                               />
                             </svg>
                           </div>
-                          <p className="text-text-secondary font-medium">
-                            Belum ada alergi yang dipilih
+                          <p className="text-text-primary font-bold mb-2">
+                            {t("profile.noAllergies")}
                           </p>
-                          <p className="text-sm text-text-secondary mt-1">
-                            Klik tab "Semua Pilihan" untuk menambah
+                          <p className="text-sm text-text-secondary">
+                            {t("profile.addAllergyHint")}
                           </p>
                         </div>
                       ) : (
@@ -641,15 +755,15 @@ const Profile = () => {
                           return (
                             <div
                               key={allergen.id}
-                              className="group flex items-center justify-between p-4 bg-error/5 border-2 border-error rounded-xl hover:bg-error/10 transition-all"
+                              className="group flex items-center justify-between p-4 bg-error/5 border-2 border-error/20 rounded-2xl hover:bg-error/10 hover:border-error transition-all"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 bg-error rounded-full"></div>
+                                <div className="w-3 h-3 bg-error rounded-full"></div>
                                 <span className="font-bold text-text-primary">
                                   {allergen.name}
                                 </span>
                                 {isCustom && (
-                                  <span className="px-2 py-0.5 bg-accent/20 text-accent text-xs font-bold rounded-lg">
+                                  <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-bold rounded-lg">
                                     Custom
                                   </span>
                                 )}
@@ -657,9 +771,9 @@ const Profile = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => toggleAllergy(allergen.id)}
-                                  className="px-3 py-1.5 bg-error/10 text-error text-xs font-bold rounded-lg hover:bg-error hover:text-white transition-all"
+                                  className="px-4 py-2 bg-error/10 text-error text-xs font-bold rounded-lg hover:bg-error hover:text-white transition-all"
                                 >
-                                  Hapus
+                                  {t("profile.remove")}
                                 </button>
                                 {isCustom && (
                                   <button
@@ -670,8 +784,8 @@ const Profile = () => {
                                         e
                                       )
                                     }
-                                    className="p-1.5 text-text-secondary hover:text-error transition-colors"
-                                    title="Hapus Permanen"
+                                    className="p-2 text-text-secondary hover:text-error transition-colors"
+                                    title={t("profile.deletePermanent")}
                                   >
                                     <svg
                                       className="w-5 h-5"
@@ -697,7 +811,7 @@ const Profile = () => {
                   )}
 
                   {allergyView === "available" && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3 mb-6">
                       {availableAllergies.map((allergen) => {
                         const isCustom =
                           allergen.description === "Custom user input";
@@ -705,77 +819,102 @@ const Profile = () => {
                           <button
                             key={allergen.id}
                             onClick={() => toggleAllergy(allergen.id)}
-                            className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-border bg-bg-surface hover:border-primary hover:text-primary transition-all flex items-center gap-2"
+                            className="px-5 py-3 rounded-2xl text-sm font-bold border-2 border-border bg-bg-surface hover:border-primary hover:bg-primary/5 hover:text-primary transition-all flex items-center gap-2"
                           >
                             <span className="text-text-primary">
                               {allergen.name}
                             </span>
                             {isCustom && (
-                              <span className="w-1.5 h-1.5 bg-accent rounded-full"></span>
+                              <span className="w-2 h-2 bg-accent rounded-full"></span>
                             )}
                           </button>
                         );
                       })}
                     </div>
                   )}
-                </div>
 
-                <form
-                  onSubmit={handleAddCustomAllergy}
-                  className="flex gap-2 pt-4 border-t border-border"
-                >
-                  <Input
-                    placeholder="Tambah alergi custom..."
-                    value={customAllergy}
-                    onChange={(e) => setCustomAllergy(e.target.value)}
-                    className="h-11 text-sm"
-                    containerClass="flex-1"
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="outline"
-                    disabled={!customAllergy}
-                    className="h-11 px-5"
+                  <form
+                    onSubmit={handleAddCustomAllergy}
+                    className="flex gap-3 pt-6 border-t-2 border-border"
                   >
-                    + Tambah
-                  </Button>
-                </form>
+                    <Input
+                      placeholder={t("profile.addCustom")}
+                      value={customAllergy}
+                      onChange={(e) => setCustomAllergy(e.target.value)}
+                      className="h-12 text-sm"
+                      containerClass="flex-1"
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="outline"
+                      disabled={!customAllergy}
+                      className="h-12 px-6"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      {t("profile.add")}
+                    </Button>
+                  </form>
+                </div>
               </Card>
             </div>
 
-            <div className="space-y-6">
-              <div className="bg-primary text-white rounded-3xl p-8 shadow-2xl shadow-primary/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-12 -mb-12"></div>
-                <div className="relative z-10">
-                  <h3 className="font-bold text-xl mb-1">Indeks Massa Tubuh</h3>
-                  <p className="text-white/80 text-sm mb-6">
-                    Berdasarkan tinggi & berat badan
+            {/* Right Column - Stats & Security */}
+            <div className="space-y-8">
+              {/* BMI Card */}
+              <div className="relative overflow-hidden rounded-3xl border-2 border-primary/20">
+                <div className="absolute inset-0 bg-linear-to-br from-primary via-primary to-secondary"></div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-bg-surface/10 rounded-full -mr-24 -mt-24"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-bg-surface/5 rounded-full -ml-20 -mb-20"></div>
+                <div className="relative z-10 p-8 text-white">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-bg-surface/20 backdrop-blur-sm flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                      </svg>
+                    </div>
+                    <h3 className="font-bold text-xl">{t("profile.bmi")}</h3>
+                  </div>
+                  <p className="text-white/90 text-sm mb-8">
+                    {t("profile.bmiDesc")}
                   </p>
-                  <div className="flex items-end gap-3 mb-4">
-                    <span className="text-6xl font-extrabold">
+                  <div className="flex items-end gap-3 mb-6">
+                    <span className="text-7xl font-black">
                       {bmiValue || "--"}
                     </span>
-                    <span className="text-xl font-medium opacity-80 mb-2">
+                    <span className="text-2xl font-medium opacity-80 mb-3">
                       kg/m²
                     </span>
                   </div>
-                  <div className="inline-block px-4 py-2 bg-white/20 rounded-xl text-sm font-bold backdrop-blur-sm">
+                  <div className="inline-block px-5 py-2.5 bg-bg-surface/20 rounded-2xl text-sm font-bold backdrop-blur-sm">
                     {bmi.label}
                   </div>
                 </div>
               </div>
 
-              <Card title="Keamanan Akun">
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="w-full flex items-center justify-between p-5 rounded-2xl bg-bg-surface hover:bg-bg-surface transition-all group border-2 border-transparent hover:border-primary/20"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+              {/* Security Card */}
+              <Card className="border-2">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                       <svg
-                        className="w-6 h-6"
+                        className="w-5 h-5 text-primary"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -788,42 +927,85 @@ const Profile = () => {
                         />
                       </svg>
                     </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-text-primary">
-                        Kata Sandi
-                      </h4>
-                      <p className="text-sm text-text-secondary">
-                        Ubah password akun
-                      </p>
-                    </div>
+                    <h2 className="text-xl font-bold text-text-primary">
+                      {t("profile.security")}
+                    </h2>
                   </div>
-                  <svg
-                    className="w-6 h-6 text-text-secondary group-hover:text-primary group-hover:translate-x-1 transition-all"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full flex items-center justify-between p-5 rounded-2xl bg-bg-base hover:bg-primary/5 transition-all group border-2 border-border hover:border-primary/30"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <h4 className="font-bold text-text-primary">
+                          {t("profile.password")}
+                        </h4>
+                        <p className="text-sm text-text-secondary">
+                          {t("profile.changePassword")}
+                        </p>
+                      </div>
+                    </div>
+                    <svg
+                      className="w-6 h-6 text-text-secondary group-hover:text-primary group-hover:translate-x-1 transition-all"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </Card>
             </div>
           </div>
 
+          {/* Password Modal */}
           {showPasswordModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-bg-surface w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up border border-border">
-                <h3 className="text-2xl font-bold text-text-primary mb-6 text-center">
-                  Ubah Kata Sandi
-                </h3>
-                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="bg-bg-surface w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up border-2 border-border">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-text-primary">
+                    {t("profile.changePasswordTitle")}
+                  </h3>
+                </div>
+                <form onSubmit={handlePasswordSubmit} className="space-y-5">
                   <Input
-                    label="Password Lama"
+                    label={t("profile.currentPassword")}
                     type="password"
                     value={passData.current}
                     onChange={(e) =>
@@ -831,7 +1013,7 @@ const Profile = () => {
                     }
                   />
                   <Input
-                    label="Password Baru"
+                    label={t("profile.newPassword")}
                     type="password"
                     value={passData.new}
                     onChange={(e) =>
@@ -839,7 +1021,7 @@ const Profile = () => {
                     }
                   />
                   <Input
-                    label="Konfirmasi Password"
+                    label={t("profile.confirmPassword")}
                     type="password"
                     value={passData.confirm}
                     onChange={(e) =>
@@ -848,7 +1030,7 @@ const Profile = () => {
                   />
                   <div className="flex gap-3 pt-4">
                     <Button type="submit" fullWidth loading={loading}>
-                      Simpan
+                      {t("profile.save")}
                     </Button>
                     <Button
                       type="button"
@@ -856,7 +1038,7 @@ const Profile = () => {
                       fullWidth
                       onClick={() => setShowPasswordModal(false)}
                     >
-                      Batal
+                      {t("profile.cancel")}
                     </Button>
                   </div>
                 </form>
