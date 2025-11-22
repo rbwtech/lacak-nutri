@@ -9,7 +9,7 @@ from app.models.user import User, Allergen
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 import shutil
 import uuid
-import json
+import re
 from pathlib import Path
 
 router = APIRouter(prefix="/api/users", tags=["User Data"])
@@ -46,20 +46,33 @@ def update_user_allergies(
 class CustomAllergyRequest(BaseModel):
     name: str
 
+def validate_allergy_name(name: str):
+    if len(name) < 3:
+        raise HTTPException(400, "Nama alergi terlalu pendek (min 3 huruf)")
+    if len(name) > 50:
+        raise HTTPException(400, "Nama alergi terlalu panjang")
+        
+    if not re.match(r"^[a-zA-Z\s\-\(\)]+$", name):
+        raise HTTPException(400, "Nama alergi tidak valid. Gunakan huruf saja.")
+    
+    return name.title().strip()
+
 @router.post("/allergies/custom")
 def add_custom_allergy(
     request: CustomAllergyRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    clean_name = validate_allergy_name(request.name)
+
     existing = db.query(Allergen).filter(
-        Allergen.name.ilike(request.name),
+        Allergen.name.ilike(clean_name),
         (Allergen.created_by.is_(None)) | (Allergen.created_by == current_user.id)
     ).first()
     
     if not existing:
         new_allergen = Allergen(
-            name=request.name.title(), 
+            name=clean_name, 
             description="Custom user input",
             created_by=current_user.id 
         )
@@ -74,7 +87,29 @@ def add_custom_allergy(
         current_user.allergies.append(target_allergen)
         db.commit()
         
-    return {"message": "Alergi custom berhasil ditambahkan", "allergen": target_allergen}
+    return {"message": "Alergi berhasil ditambahkan", "allergen": target_allergen}
+
+@router.delete("/allergens/{allergen_id}")
+def delete_custom_allergy(
+    allergen_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    allergen = db.query(Allergen).filter(Allergen.id == allergen_id).first()
+    if not allergen:
+        raise HTTPException(404, "Alergi tidak ditemukan")
+
+    if allergen.created_by != current_user.id:
+        if allergen in current_user.allergies:
+            current_user.allergies.remove(allergen)
+            db.commit()
+            return {"message": "Alergi dihapus dari preferensi Anda"}
+        else:
+             raise HTTPException(403, "Anda tidak dapat menghapus alergi sistem permanen")
+
+    db.delete(allergen)
+    db.commit()
+    return {"message": "Alergi kustom berhasil dihapus permanen"}
 
 @router.put("/profile")
 async def update_profile(
@@ -109,7 +144,7 @@ async def update_profile(
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(photo.file, buffer)
         
-        current_user.photo_url = f"/uploads/profiles/{filename}"
+        current_user.photo_url = f"/api/uploads/profiles/{filename}"
     
     db.commit()
     db.refresh(current_user)

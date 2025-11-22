@@ -239,6 +239,14 @@ const Header = () => {
     </svg>
   );
 
+  const getPhotoUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+
+    const baseUrl = import.meta.env.VITE_API_URL.replace("/api", "");
+    return `${baseUrl}${path}`;
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-bg-surface/80 backdrop-blur-xl border-b border-border shadow-soft transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -389,8 +397,22 @@ const Header = () => {
 
                   <Link to="/profile" className="relative group">
                     <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary to-orange-400 p-0.5 shadow-md cursor-pointer hover:shadow-primary/30 transition-all">
-                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-primary font-extrabold text-sm border-2 border-white">
-                        {user.name?.charAt(0).toUpperCase() || "U"}
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-white">
+                        {user.photo_url ? (
+                          <img
+                            src={getPhotoUrl(user.photo_url)}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://ui-avatars.com/api/?name=${user.name}&background=FF9966&color=fff`;
+                            }}
+                          />
+                        ) : (
+                          <span className="text-primary font-extrabold text-sm">
+                            {user.name?.charAt(0).toUpperCase() || "U"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Link>

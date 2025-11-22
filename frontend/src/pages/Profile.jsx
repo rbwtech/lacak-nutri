@@ -11,8 +11,11 @@ const Profile = () => {
   const { user, setUser, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [allergens, setAllergens] = useState([]);
-  const [userAllergies, setUserAllergies] = useState([]);
+
+  // State Alergi
+  const [masterAllergens, setMasterAllergens] = useState([]); // Semua opsi alergi (template + custom user lain jika ada)
+  const [userAllergies, setUserAllergies] = useState([]); // ID alergi yang dimiliki user saat ini
+
   const [customAllergy, setCustomAllergy] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
@@ -38,11 +41,11 @@ const Profile = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [masterRes, myRes] = await Promise.all([
-          api.get("/users/allergens"),
-          api.get("/users/my-allergies"),
+        const [allRes, myRes] = await Promise.all([
+          api.get("/users/allergens"), // Ambil semua template alergi + custom public
+          api.get("/users/my-allergies"), // Ambil alergi user saat ini
         ]);
-        setAllergens(masterRes.data);
+        setMasterAllergens(allRes.data);
         setUserAllergies(myRes.data.map((a) => a.id));
       } catch (e) {
         console.error("Gagal load alergi", e);
@@ -108,25 +111,43 @@ const Profile = () => {
       });
       setShowPasswordModal(false);
       setPassData({ current: "", new: "", confirm: "" });
-      setSuccessMessage("Password berhasil diubah. Silakan login ulang.");
+
+      setSuccessMessage("Password berhasil diubah. Silakan login kembali.");
       setShowSuccess(true);
+
+      setTimeout(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }, 2000);
     } catch (e) {
-      alert(e.response?.data?.detail || "Gagal.");
+      alert(e.response?.data?.detail || "Gagal mengganti password.");
     } finally {
       setLoading(false);
     }
   };
 
+  // --- LOGIC ALERGI BARU ---
+
+  // 1. Toggle Alergi (Aktifkan/Nonaktifkan)
+  // Ini hanya mengubah relasi di tabel user_allergies, TIDAK MENGHAPUS MASTER DATA
   const toggleAllergy = async (id) => {
-    const newSelection = userAllergies.includes(id)
-      ? userAllergies.filter((a) => a !== id)
-      : [...userAllergies, id];
+    const isSelected = userAllergies.includes(id);
+    const newSelection = isSelected
+      ? userAllergies.filter((a) => a !== id) // Hapus dari list saya
+      : [...userAllergies, id]; // Tambah ke list saya
+
     setUserAllergies(newSelection);
+
     try {
+      // Kirim list ID terbaru ke backend untuk disimpan
       await api.put("/users/allergies", { allergen_ids: newSelection });
-    } catch (e) {}
+    } catch (e) {
+      console.error("Gagal update preferensi alergi", e);
+    }
   };
 
+  // 2. Tambah Alergi Custom
   const handleAddCustomAllergy = async (e) => {
     e.preventDefault();
     if (!customAllergy.trim()) return;
@@ -134,14 +155,45 @@ const Profile = () => {
       const { data } = await api.post("/users/allergies/custom", {
         name: customAllergy,
       });
-      setAllergens((prev) => [
-        ...prev.filter((a) => a.id !== data.allergen.id),
-        data.allergen,
-      ]);
-      setUserAllergies((prev) => [...prev, data.allergen.id]);
+
+      // Tambahkan ke master list (agar muncul di UI)
+      const newAllergen = data.allergen;
+      // Cek duplikasi di master list visual
+      setMasterAllergens((prev) => {
+        if (prev.find((a) => a.id === newAllergen.id)) return prev;
+        return [...prev, newAllergen];
+      });
+
+      // Otomatis select alergi yang baru dibuat
+      if (!userAllergies.includes(newAllergen.id)) {
+        const newSelection = [...userAllergies, newAllergen.id];
+        setUserAllergies(newSelection);
+      }
+
       setCustomAllergy("");
     } catch (error) {
-      alert("Gagal menambah alergi.");
+      alert(error.response?.data?.detail || "Gagal menambah alergi.");
+    }
+  };
+
+  // 3. Hapus Permanen (Hanya untuk Custom Alergi)
+  // Jika user click tombol 'X' kecil di alergi custom
+  const handleDeleteCustomAllergy = async (allergenId, e) => {
+    e.stopPropagation(); // Jangan trigger toggle
+    if (!window.confirm("Hapus permanen alergi custom ini dari database?"))
+      return;
+
+    try {
+      await api.delete(`/users/allergens/${allergenId}`);
+
+      // Hapus dari tampilan master list
+      setMasterAllergens((prev) => prev.filter((a) => a.id !== allergenId));
+      // Hapus dari seleksi user
+      setUserAllergies((prev) => prev.filter((id) => id !== allergenId));
+    } catch (error) {
+      alert(
+        "Gagal menghapus. Mungkin ini alergi template sistem yang tidak bisa dihapus."
+      );
     }
   };
 
@@ -195,6 +247,7 @@ const Profile = () => {
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* --- HEADER PROFIL --- */}
           <div className="flex items-center gap-6 mb-10">
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
@@ -253,6 +306,7 @@ const Profile = () => {
 
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="space-y-6">
+              {/* --- CARD INFORMASI PRIBADI --- */}
               <Card title="Informasi Pribadi">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -271,7 +325,6 @@ const Profile = () => {
                       }`}
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-bold text-text-primary mb-2">
                       Email
@@ -283,7 +336,6 @@ const Profile = () => {
                       className={`${inputClass} ${readOnlyClass}`}
                     />
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-bold text-text-primary mb-2">
@@ -321,7 +373,6 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-bold text-text-primary mb-2">
@@ -380,37 +431,64 @@ const Profile = () => {
                 </form>
               </Card>
 
+              {/* --- CARD PREFERENSI ALERGI --- */}
               <Card title="Preferensi Alergi">
                 <p className="text-sm text-text-secondary mb-4">
-                  Pilih bahan makanan yang ingin Anda hindari (Scanner akan
-                  memberi peringatan).
+                  Klik untuk mengaktifkan (merah) alergi yang ingin Anda
+                  hindari.
                 </p>
+
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {allergens.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => toggleAllergy(a.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all duration-200 flex items-center gap-2
-    ${
-      userAllergies.includes(a.id)
-        ? "border-error bg-error/5 text-error shadow-sm dark:bg-error/10 dark:border-error dark:text-error"
-        : "border-gray-300 hover:border-primary hover:bg-primary/5 dark:border-gray-600 dark:hover:border-primary"
-    }
-  `}
-                    >
-                      {a.name}
-                    </button>
-                  ))}
+                  {masterAllergens.map((allergen) => {
+                    const isActive = userAllergies.includes(allergen.id);
+                    // Asumsi backend kirim field 'created_by' di AllergenOut, kalau tidak ada anggap template
+                    const isCustom =
+                      allergen.description === "Custom user input";
+
+                    return (
+                      <div key={allergen.id} className="relative group">
+                        <button
+                          onClick={() => toggleAllergy(allergen.id)}
+                          className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all duration-200 flex items-center gap-2
+                            ${
+                              isActive
+                                ? "border-error bg-error/10 text-error shadow-sm" // Merah = Aktif
+                                : "border-gray-200 bg-gray-50 text-text-secondary hover:border-gray-300" // Abu = Nonaktif
+                            }
+                            ${isCustom ? "pr-8" : ""} 
+                          `}
+                        >
+                          {isActive && <span className="text-lg">•</span>}
+                          {allergen.name}
+                        </button>
+
+                        {/* Tombol Hapus Permanen (Hanya untuk Custom) */}
+                        {isCustom && (
+                          <button
+                            onClick={(e) =>
+                              handleDeleteCustomAllergy(allergen.id, e)
+                            }
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Hapus Permanen"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+
                 <form
                   onSubmit={handleAddCustomAllergy}
-                  className="flex gap-2 mt-2"
+                  className="flex gap-2 mt-4 pt-4 border-t border-border"
                 >
                   <Input
                     placeholder="Tambah alergi lain..."
                     value={customAllergy}
                     onChange={(e) => setCustomAllergy(e.target.value)}
                     className="h-10 text-sm"
+                    containerClass="flex-1"
                   />
                   <Button
                     type="submit"
@@ -425,6 +503,7 @@ const Profile = () => {
             </div>
 
             <div className="space-y-6">
+              {/* --- CARD BMI --- */}
               <div className="bg-primary text-white rounded-3xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                 <h3 className="font-bold text-lg mb-1">Indeks Massa Tubuh</h3>
@@ -444,6 +523,7 @@ const Profile = () => {
                 </div>
               </div>
 
+              {/* --- CARD PASSWORD --- */}
               <Card title="Keamanan Akun">
                 <div className="space-y-1">
                   <button
@@ -494,6 +574,7 @@ const Profile = () => {
             </div>
           </div>
 
+          {/* --- MODAL PASSWORD --- */}
           {showPasswordModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-bg-base w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up border border-border">
@@ -542,6 +623,7 @@ const Profile = () => {
               </div>
             </div>
           )}
+
           <SuccessModal
             isOpen={showSuccess}
             onClose={() => setShowSuccess(false)}
