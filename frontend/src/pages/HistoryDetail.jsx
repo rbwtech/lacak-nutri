@@ -12,6 +12,7 @@ const HistoryDetail = () => {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showImage, setShowImage] = useState(false);
 
   useEffect(() => {
     fetchDetail();
@@ -198,7 +199,7 @@ const HistoryDetail = () => {
             <div className="space-y-6 animate-fade-in-up">
               <div className="text-center">
                 <h2 className="text-2xl font-extrabold text-text-primary mb-3">
-                  Analisis Nutrisi AI
+                  {data.product_name || "Analisis Nutrisi AI"}
                 </h2>
                 <div className="flex items-center justify-center gap-3">
                   <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
@@ -213,12 +214,21 @@ const HistoryDetail = () => {
                 </p>
               </div>
 
-              <Card className="p-4 mb-4">
-                <img
-                  src={data.image_data}
-                  alt="Scanned"
-                  className="w-full rounded-lg"
-                />
+              <Card className="p-4 mb-4 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImage(!showImage)}
+                >
+                  {showImage ? "Sembunyikan" : "Lihat"} Gambar Scan
+                </Button>
+                {showImage && (
+                  <img
+                    src={data.image_data}
+                    alt="Scanned"
+                    className="w-full rounded-lg mt-3"
+                  />
+                )}
               </Card>
               <NutritionLabel data={data.nutrition_data} />
 
@@ -281,6 +291,27 @@ const HistoryDetail = () => {
                       <ul className="space-y-1 text-xs text-text-primary">
                         {data.cons.map((con, i) => (
                           <li key={i}>• {con}</li>
+                        ))}
+                      </ul>
+                    </Card>
+                  )}
+                  {data.ingredients && (
+                    <Card className="p-5">
+                      <h4 className="font-bold text-text-primary mb-2">
+                        Komposisi
+                      </h4>
+                      <p className="text-xs text-text-secondary leading-relaxed">
+                        {data.ingredients}
+                      </p>
+                    </Card>
+                  )}
+
+                  {data.warnings?.length > 0 && (
+                    <Card className="p-5 bg-error/5 border-error/20">
+                      <h4 className="font-bold text-error mb-2">Peringatan</h4>
+                      <ul className="text-xs space-y-1">
+                        {data.warnings.map((w, i) => (
+                          <li key={i}>• {w}</li>
                         ))}
                       </ul>
                     </Card>

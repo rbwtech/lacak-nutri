@@ -557,7 +557,7 @@ const Scanner = () => {
 
           <Card className="shadow-lg relative overflow-hidden p-0">
             {loading && (
-              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+              <div className="absolute inset-0 bg-bg-surface/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-primary font-bold animate-pulse">
                   {loadingMessage}
@@ -748,31 +748,27 @@ const Scanner = () => {
                       className="w-full max-h-[60vh] object-contain mx-auto"
                       alt="Captured"
                     />
-                    <div className="absolute top-4 left-4 right-4">
+
+                    <div className="p-4 space-y-3 bg-bg-surface">
                       <Input
-                        placeholder="Nama Produk *"
+                        placeholder="Nama Produk (wajib) *"
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
-                        className="bg-white/95 backdrop-blur"
+                        className="border-2 border-primary/50 focus:border-primary"
                         required
                       />
-                    </div>
-                    <div className="absolute bottom-4 left-4 right-4 flex gap-3">
-                      <Button
-                        variant="outline"
-                        fullWidth
-                        onClick={() => setOcrImage(null)}
-                        className="bg-white/90"
-                      >
-                        Ulangi
-                      </Button>
-                      <Button
-                        fullWidth
-                        onClick={processImageAnalysis}
-                        className="shadow-lg"
-                      >
-                        Analisis AI
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          fullWidth
+                          onClick={() => setOcrImage(null)}
+                        >
+                          Ulangi
+                        </Button>
+                        <Button fullWidth onClick={processImageAnalysis}>
+                          Analisis AI
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -971,7 +967,7 @@ const Scanner = () => {
                   <div className="space-y-6 animate-fade-in-up">
                     <div className="text-center">
                       <h2 className="text-2xl font-extrabold text-text-primary">
-                        Analisis Nutrisi AI
+                        {productName || "Analisis Nutrisi AI"}
                       </h2>
                       <div className="flex items-center justify-center gap-3 mt-3">
                         <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
