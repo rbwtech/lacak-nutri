@@ -298,36 +298,50 @@ const Scanner = () => {
     }
   };
 
-  const captureImage = () => {
+  const captureImage = async () => {
     if (videoRef.current) {
       const canvas = document.createElement("canvas");
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+      const maxWidth = 1024;
+      const videoWidth = videoRef.current.videoWidth;
+      const videoHeight = videoRef.current.videoHeight;
+      const scaleFactor = videoWidth > maxWidth ? maxWidth / videoWidth : 1;
+
+      canvas.width = videoWidth * scaleFactor;
+      canvas.height = videoHeight * scaleFactor;
+
       const ctx = canvas.getContext("2d");
       ctx.filter = "contrast(1.1) brightness(1.05)";
-      ctx.drawImage(videoRef.current, 0, 0);
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
       let finalCanvas = canvas;
       if (scanMode === "ocr") {
         finalCanvas = autoCropNutritionLabel(canvas);
       }
 
-      const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.92);
+      const blob = await new Promise((resolve) =>
+        finalCanvas.toBlob(resolve, "image/webp", 0.8)
+      );
 
-      stopCamera();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result;
 
-      if (scanMode === "barcode") {
-        const scanner = new Html5Qrcode("reader-hidden");
-        scanner
-          .scanFileV2(dataUrl, true)
-          .then((raw) => {
-            const cleaned = cleanBarcodeData(raw);
-            handleBarcodeSuccess(cleaned);
-          })
-          .catch(() => setError("Barcode tidak terbaca"));
-      } else {
-        setOcrImage(dataUrl);
-      }
+        stopCamera();
+
+        if (scanMode === "barcode") {
+          const scanner = new Html5Qrcode("reader-hidden");
+          scanner
+            .scanFileV2(dataUrl, true)
+            .then((raw) => {
+              const cleaned = cleanBarcodeData(raw);
+              handleBarcodeSuccess(cleaned);
+            })
+            .catch(() => setError("Barcode tidak terbaca"));
+        } else {
+          setOcrImage(dataUrl);
+        }
+      };
+      reader.readAsDataURL(blob);
     }
   };
 
@@ -357,23 +371,48 @@ const Scanner = () => {
     (acceptedFiles) => {
       const file = acceptedFiles[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (scanMode === "barcode") {
-            const scanner = new Html5Qrcode("reader-hidden");
-            scanner
-              .scanFile(file, true)
-              .then((raw) => {
-                const cleaned = cleanBarcodeData(raw);
-                handleBarcodeSuccess(cleaned);
-              })
-              .catch(() => setError("Barcode tidak terbaca dari file"));
-          } else {
-            setOcrImage(reader.result);
-            stopCamera();
-          }
-        };
-        reader.readAsDataURL(file);
+        if (scanMode === "barcode") {
+          const scanner = new Html5Qrcode("reader-hidden");
+          scanner
+            .scanFile(file, true)
+            .then((raw) => {
+              const cleaned = cleanBarcodeData(raw);
+              handleBarcodeSuccess(cleaned);
+            })
+            .catch(() => setError("Barcode tidak terbaca dari file"));
+        } else {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const maxWidth = 1024;
+              const scaleFactor =
+                img.width > maxWidth ? maxWidth / img.width : 1;
+
+              canvas.width = img.width * scaleFactor;
+              canvas.height = img.height * scaleFactor;
+
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              canvas.toBlob(
+                (blob) => {
+                  const reader2 = new FileReader();
+                  reader2.onloadend = () => {
+                    setOcrImage(reader2.result);
+                    stopCamera();
+                  };
+                  reader2.readAsDataURL(blob);
+                },
+                "image/webp",
+                0.8
+              );
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
       }
     },
     [scanMode]
@@ -388,29 +427,37 @@ const Scanner = () => {
   const [productName, setProductName] = useState("");
 
   const processImageAnalysis = async () => {
+    if (!productName.trim()) {
+      setError("Nama produk wajib diisi");
+      return;
+    }
+
     setLoading(true);
-    setLoadingMessage("Analisis AI sedang bekerja...");
+    setLoadingMessage("Mengoptimalkan gambar...");
     setError(null);
 
     try {
-      if (!productName.trim()) {
-        setError("Nama produk wajib diisi");
-        return;
+      const base64Length = ocrImage.length;
+      const sizeInMB = (base64Length * 0.75) / (1024 * 1024);
+
+      if (sizeInMB > 5) {
+        throw new Error("Gambar terlalu besar. Coba ambil gambar lebih dekat.");
       }
+
+      setLoadingMessage("Analisis AI sedang bekerja...");
 
       const { data } = await api.post("/scan/analyze", {
         product_name: productName,
         image_base64: ocrImage,
       });
 
-      if (!data.success) throw new Error(data.message);
+      if (!data.success) throw new Error(data.message || "Gagal analisis");
 
       const textCheck = (
         (data.data.ingredients || "") +
         " " +
         (data.data.warnings?.join(" ") || "")
       ).toLowerCase();
-
       const warnings = myAllergies
         .filter((a) => textCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
@@ -423,8 +470,19 @@ const Scanner = () => {
         scan_id: data.data?.id,
       });
       setIsFavorited(false);
+      setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Gagal memproses gambar");
+      console.error("Analysis error:", err);
+      const errorMsg =
+        err.response?.status === 413
+          ? "Gambar terlalu besar"
+          : err.response?.status === 500
+          ? "Server error, coba lagi"
+          : err.message ||
+            err.response?.data?.detail ||
+            "Gagal memproses gambar";
+      setError(errorMsg);
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -814,6 +872,14 @@ const Scanner = () => {
                     </Button>
                   </div>
                 )}
+
+                <div className="flex items-center gap-3 justify-center mt-6">
+                  <span className="h-px w-10 bg-border" />
+                  <span className="text-xs font-semibold text-text-secondary tracking-wider">
+                    ATAU INPUT MANUAL
+                  </span>
+                  <span className="h-px w-10 bg-border" />
+                </div>
 
                 {scanMode === "barcode" && !isScannerActive && !ocrImage && (
                   <div className="mt-6">

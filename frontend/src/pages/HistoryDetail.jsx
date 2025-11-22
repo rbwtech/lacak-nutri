@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -13,18 +18,27 @@ const HistoryDetail = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showImage, setShowImage] = useState(false);
+  const [searchParams] = useSearchParams();
+  const fromSource = searchParams.get("from");
+  const getBackLink = () => {
+    if (fromSource === "favorites")
+      return { url: "/favorites", text: "Favorit" };
+    if (fromSource === "dashboard")
+      return { url: "/dashboard", text: "Dashboard" };
+    return { url: "/history", text: "Riwayat" };
+  };
+
+  const backLink = getBackLink();
 
   useEffect(() => {
     fetchDetail();
   }, [id, type]);
 
   const fetchDetail = async () => {
-    // Ubah endpoint dari /users/history/{type}/{id} ke /scan/{type}/{id}
     const endpoint = `/scan/${type}/${id}`;
 
     try {
       const { data: result } = await api.get(endpoint);
-      console.log("API Response:", result);
 
       let processedData = result.data || result;
 
@@ -56,7 +70,6 @@ const HistoryDetail = () => {
         processedData.scanned_at = processedData.created_at;
       }
 
-      console.log("Processed Data:", processedData);
       setData(processedData);
     } catch (e) {
       console.error(e);
@@ -93,7 +106,7 @@ const HistoryDetail = () => {
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4">
           <Link
-            to="/history"
+            to={backLink.url}
             className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary mb-6 font-bold"
           >
             <svg
@@ -109,7 +122,7 @@ const HistoryDetail = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Kembali ke Riwayat
+            Kembali ke {backLink.text}
           </Link>
 
           {type === "bpom" ? (
@@ -307,9 +320,11 @@ const HistoryDetail = () => {
                   )}
 
                   {data.warnings?.length > 0 && (
-                    <Card className="p-5 bg-error/5 border-error/20">
-                      <h4 className="font-bold text-error mb-2">Peringatan</h4>
-                      <ul className="text-xs space-y-1">
+                    <Card className="p-5">
+                      <h4 className="font-boldtext-text-primary mb-2">
+                        Peringatan Nutrisi
+                      </h4>
+                      <ul className="text-xs text-text-secondary leading-relaxed">
                         {data.warnings.map((w, i) => (
                           <li key={i}>• {w}</li>
                         ))}

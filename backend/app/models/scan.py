@@ -1,10 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, SmallInteger, func
-from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 class ScanHistoryBPOM(Base):
     __tablename__ = "scan_history_bpom"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True, index=True)
     session_id = Column(String(100), nullable=False, index=True)
@@ -19,7 +17,6 @@ class ScanHistoryBPOM(Base):
 
 class ScanHistoryOCR(Base):
     __tablename__ = "scan_history_ocr"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True, index=True)
     session_id = Column(String(100), nullable=False, index=True)
@@ -31,6 +28,7 @@ class ScanHistoryOCR(Base):
     cons = Column(JSON, nullable=True)
     ingredients = Column(Text, nullable=True)
     warnings = Column(JSON, nullable=True)
+    detected_allergens = Column(JSON, nullable=True)
     health_score = Column(SmallInteger, nullable=True)
     grade = Column(String(2), nullable=True)
     is_favorited = Column(Boolean, default=False, index=True)
@@ -38,7 +36,6 @@ class ScanHistoryOCR(Base):
 
 class BPOMCache(Base):
     __tablename__ = "bpom_cache"
-
     id = Column(Integer, primary_key=True, index=True)
     bpom_number = Column(String(50), unique=True, nullable=False, index=True)
     data = Column(JSON, nullable=False)

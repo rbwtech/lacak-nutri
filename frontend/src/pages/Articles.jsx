@@ -88,9 +88,7 @@ const Articles = () => {
             </p>
           </div>
 
-          {/* Search & Filter Bar */}
           <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-end md:items-center">
-            {/* Category Buttons */}
             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
               {categories.map((cat) => (
                 <Button
@@ -105,8 +103,7 @@ const Articles = () => {
               ))}
             </div>
 
-            {/* Search Input */}
-            <div className="w-full md:w-1/3">
+            <div className="w-full md:w-1/3 flex items-center gap-3">
               <Input
                 placeholder="Cari artikel..."
                 value={searchQuery}
@@ -127,27 +124,33 @@ const Articles = () => {
                   </svg>
                 }
               />
+
+              <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 px-4 py-3.5 rounded-2xl border border-border shadow-lg h-[54px] w-auto">
+                <span className="text-xs font-bold text-text-secondary whitespace-nowrap">
+                  Tampil:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="bg-transparent font-bold text-primary text-sm focus:outline-none cursor-pointer dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="9">9</option>
+                  <option value="18">18</option>
+                  <option value="27">27</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Data Count & Page Size */}
-          <div className="flex justify-between items-center mb-6 text-sm text-text-secondary">
-            <span className="font-bold">{totalItems} Artikel Ditemukan</span>
-            <div className="flex items-center gap-2">
-              <span>Tampil:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-bg-surface border border-border rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="9">9</option>
-                <option value="18">18</option>
-                <option value="27">27</option>
-              </select>
-            </div>
+          <div className="mb-6 flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-bold text-text-secondary">
+              {totalItems} Artikel Ditemukan
+            </span>
+            <span className="text-xs text-text-secondary">
+              Halaman {page} dari {totalPages}
+            </span>
           </div>
 
-          {/* Content Grid */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (

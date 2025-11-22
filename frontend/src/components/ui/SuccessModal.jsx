@@ -5,7 +5,7 @@ export default function SuccessModal({
   onClose,
   title = "Berhasil!",
   message = "Operasi berhasil dilakukan",
-  type = "success", // success, favorite
+  type = "success",
 }) {
   useEffect(() => {
     if (isOpen) {
@@ -48,11 +48,11 @@ export default function SuccessModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl p-8 max-w-sm w-full mx-4 shadow-lg animate-scale-in">
+      <div className="relative bg-bg-surface rounded-xl p-8 max-w-sm w-full mx-4 shadow-lg animate-scale-in">
         <div className="flex flex-col items-center text-center gap-4">
           {icons[type]}
           <div>
-            <h3 className="text-xl font-semibold text-[#333333] mb-2">
+            <h3 className="text-xl font-semibold text-[#333333] dark:text-white mb-2">
               {title}
             </h3>
             <p className="text-[#8C8C8C]">{message}</p>

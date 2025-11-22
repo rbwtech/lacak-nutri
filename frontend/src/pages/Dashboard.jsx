@@ -3,7 +3,7 @@ import { MainLayout } from "../components/layouts";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../config/api";
 
 const Dashboard = () => {
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [recentScans, setRecentScans] = useState([]);
   const [dailyTip, setDailyTip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -255,7 +256,12 @@ const Dashboard = () => {
                     {recentScans.map((item) => (
                       <div
                         key={item.id}
-                        className="group flex items-center p-4 rounded-2xl border border-border hover:border-primary/30 hover:bg-bg-base transition-all cursor-default"
+                        className="group flex items-center p-4 rounded-2xl border border-border hover:border-primary/30 hover:bg-bg-base transition-all cursor-pointer"
+                        onClick={() =>
+                          navigate(
+                            `/history/${item.type}/${item.id}?from=dashboard`
+                          )
+                        }
                       >
                         <div
                           className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${
@@ -294,26 +300,53 @@ const Dashboard = () => {
                             </svg>
                           )}
                         </div>
+
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-text-primary text-sm truncate">
+                          <h4 className="font-bold text-text-primary text-sm truncate group-hover:text-primary transition-colors">
                             {item.title}
                           </h4>
                           <p className="text-xs text-text-secondary truncate">
                             {item.subtitle}
                           </p>
                         </div>
-                        <div className="text-right pl-4">
+
+                        <div className="flex items-center gap-3 pl-4">
                           {item.score && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-primary/10 text-primary mb-1">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-primary/10 text-primary">
                               {item.score}/100
                             </span>
                           )}
-                          <p className="text-[10px] text-text-secondary font-medium">
-                            {new Date(item.date).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </p>
+                          <div className="text-right">
+                            <p className="text-[10px] text-text-secondary font-medium">
+                              {new Date(item.date).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(
+                                `/history/${item.type}/${item.id}?from=dashboard`
+                              );
+                            }}
+                            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                          >
+                            <svg
+                              className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     ))}

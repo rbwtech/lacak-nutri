@@ -215,7 +215,7 @@ async def get_history(
         combined.append({
             "id": item.id,
             "type": "ocr",
-            "title": "Analisis Nutrisi AI",
+            "title": item.product_name,
             "subtitle": f"Health Score: {item.health_score}/100",
             "score": item.health_score,
             "is_favorited": item.is_favorited,
