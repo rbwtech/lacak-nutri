@@ -95,6 +95,8 @@ const Profile = () => {
     weight: user?.weight || "",
     height: user?.height || "",
     gender: user?.gender || "male",
+    timezone: user?.timezone || "Asia/Jakarta",
+    locale: user?.locale || "id-ID",
   });
 
   const [passData, setPassData] = useState({
@@ -160,6 +162,8 @@ const Profile = () => {
       if (formData.weight) form.append("weight", formData.weight);
       if (formData.height) form.append("height", formData.height);
       if (formData.gender) form.append("gender", formData.gender);
+      if (formData.timezone) form.append("timezone", formData.timezone);
+      if (formData.locale) form.append("locale", formData.locale);
       if (photoFile) form.append("photo", photoFile);
 
       const { data } = await api.put("/users/profile", form, {
@@ -489,7 +493,8 @@ const Profile = () => {
                         placeholder="-"
                       />
                     </div>
-
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-bold text-text-primary mb-2 block">
                         Zona Waktu
@@ -497,8 +502,16 @@ const Profile = () => {
                       <select
                         name="timezone"
                         value={formData.timezone}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            timezone: e.target.value,
+                          })
+                        }
+                        disabled={!editing}
+                        className={`${inputClass} ${
+                          editing ? editClass : readOnlyClass
+                        }`}
                       >
                         {Object.entries(localizationSettings).map(
                           ([region, settings]) => (
@@ -520,21 +533,28 @@ const Profile = () => {
 
                     <div>
                       <label className="text-sm font-bold text-text-primary mb-2 block">
-                        Bahasa & Format Tanggal
+                        Bahasa & Format
                       </label>
                       <select
                         name="locale"
                         value={formData.locale}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                        onChange={(e) =>
+                          setFormData({ ...formData, locale: e.target.value })
+                        }
+                        disabled={!editing}
+                        className={`${inputClass} ${
+                          editing ? editClass : readOnlyClass
+                        }`}
                       >
                         {Object.values(localizationSettings)
                           .flat()
+                          .filter(
+                            (setting, index, self) =>
+                              index ===
+                              self.findIndex((s) => s.locale === setting.locale)
+                          )
                           .map((setting) => (
-                            <option
-                              key={`${setting.locale}-${setting.id}`}
-                              value={setting.locale}
-                            >
+                            <option key={setting.locale} value={setting.locale}>
                               {setting.locale_label}
                             </option>
                           ))}
