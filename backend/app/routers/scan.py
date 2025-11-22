@@ -23,16 +23,17 @@ async def scan_bpom(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
+    # 1. Cek Cache
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
-        scan_record = crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
-        return {
-            "found": True, 
-            "message": "Data ditemukan (Cache)", 
-            "data": cached_data,
-            "scan_id": scan_record.id if scan_record else None
-        }
-    
+        history = crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
+        
+        response_data = cached_data.copy()
+        response_data['id'] = history.id 
+        
+        return {"found": True, "message": "Data ditemukan (Cache)", "data": response_data}
+
+    # 2. Scrape BPOM
     scraper = BPOMScraper()
     result = await scraper.search_bpom(request.bpom_number)
     
@@ -40,19 +41,17 @@ async def scan_bpom(
         return {
             "found": False,
             "message": f"Produk dengan kode {request.bpom_number} tidak ditemukan.",
-            "data": None,
-            "scan_id": None
+            "data": None
         }
     
+    # 3. Simpan Cache & History
     crud_scan.create_bpom_cache(db, request.bpom_number, result)
-    scan_record = crud_scan.create_bpom_history(db, user_id, result, session_id)
+    history = crud_scan.create_bpom_history(db, user_id, result, session_id)
     
-    return {
-        "found": True, 
-        "message": "Data ditemukan", 
-        "data": result,
-        "scan_id": scan_record.id if scan_record else None
-    }
+    # Inject ID ke dalam dictionary result
+    result['id'] = history.id 
+    
+    return {"found": True, "message": "Data ditemukan", "data": result}
 
 @router.post("/analyze")
 async def analyze_ocr(
@@ -64,19 +63,15 @@ async def analyze_ocr(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
-    if not request.image_base64:
-        return {"success": False, "message": "Gambar tidak ditemukan."}
-
     service = GeminiService()
     result = await service.analyze_nutrition_image(request.image_base64)
-    
+
     nutrition_data = result.get('nutrition')
     ai_analysis = result.get('summary')
     health_score = result.get('health_score')
-    
     ocr_data_str = json.dumps(nutrition_data)
 
-    scan_record = crud_scan.create_ocr_history(
+    history = crud_scan.create_ocr_history(
         db=db, 
         user_id=user_id, 
         health_score=health_score, 
@@ -84,12 +79,11 @@ async def analyze_ocr(
         ai_analysis=ai_analysis,
         session_id=session_id 
     )
+    
+    # Inject ID ke dalam data result
+    result['id'] = history.id
         
-    return {
-        "success": True, 
-        "data": result,
-        "scan_id": scan_record.id if scan_record else None
-    }
+    return {"success": True, "data": result}
 
 @router.post("/ocr-text")
 async def extract_text_only(

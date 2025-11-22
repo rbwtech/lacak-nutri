@@ -5,6 +5,7 @@ class BPOMRequest(BaseModel):
     bpom_number: str
 
 class BPOMData(BaseModel):
+    id: Optional[int] = None
     bpom_number: str
     product_name: str
     brand: Optional[str] = None

@@ -35,6 +35,7 @@ class UserResponse(UserBase):
     height: Optional[float] = None
     gender: Optional[str] = None
     created_at: datetime
+    photo_url: Optional[str] = None
     
     # Config Pydantic v2
     model_config = ConfigDict(from_attributes=True)

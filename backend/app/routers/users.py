@@ -93,11 +93,12 @@ async def update_profile(
         if photo.size and photo.size > 2 * 1024 * 1024:
             raise HTTPException(400, "Ukuran file maksimal 2MB")
         
-        filename = f"{uuid.uuid4()}.{photo.filename.split('.')[-1]}"
         upload_dir = Path("uploads/profiles")
         upload_dir.mkdir(parents=True, exist_ok=True)
-        
+
+        filename = f"{uuid.uuid4()}.{photo.filename.split('.')[-1]}"
         filepath = upload_dir / filename
+        
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(photo.file, buffer)
         

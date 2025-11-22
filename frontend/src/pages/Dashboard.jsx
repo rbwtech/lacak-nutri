@@ -305,7 +305,7 @@ const Dashboard = () => {
                         <div className="text-right pl-4">
                           {item.score && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-primary/10 text-primary mb-1">
-                              {item.score}/10
+                              {item.score}/100
                             </span>
                           )}
                           <p className="text-[10px] text-text-secondary font-medium">

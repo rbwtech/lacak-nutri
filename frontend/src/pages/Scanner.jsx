@@ -343,7 +343,7 @@ const Scanner = () => {
         found: data.found,
         data: data.data,
         code: data.searched_code || code,
-        scan_id: data.scan_id,
+        scan_id: data.data?.id,
       });
       setIsFavorited(false);
     } catch (err) {
@@ -407,12 +407,14 @@ const Scanner = () => {
         .filter((a) => textCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
 
+      const resultid = data.id || data.data?.id;
+
       setResult({
         type: "ocr",
         found: true,
         data: data.data,
         allergyWarnings: warnings,
-        scan_id: data.scan_id,
+        scan_id: resultId,
       });
       setIsFavorited(false);
     } catch (err) {
@@ -460,8 +462,7 @@ const Scanner = () => {
     }
 
     if (!result || !result.scan_id) {
-      setSuccessMessage("Scan ID tidak tersedia. Coba scan ulang.");
-      setShowSuccess(true);
+      alert("Scan ID tidak tersedia. Data mungkin belum tersimpan.");
       return;
     }
 
