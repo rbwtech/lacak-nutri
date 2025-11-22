@@ -385,13 +385,21 @@ const Scanner = () => {
     maxFiles: 1,
   });
 
+  const [productName, setProductName] = useState("");
+
   const processImageAnalysis = async () => {
     setLoading(true);
     setLoadingMessage("Analisis AI sedang bekerja...");
     setError(null);
 
     try {
+      if (!productName.trim()) {
+        setError("Nama produk wajib diisi");
+        return;
+      }
+
       const { data } = await api.post("/scan/analyze", {
+        product_name: productName,
         image_base64: ocrImage,
       });
 
@@ -740,6 +748,15 @@ const Scanner = () => {
                       className="w-full max-h-[60vh] object-contain mx-auto"
                       alt="Captured"
                     />
+                    <div className="absolute top-4 left-4 right-4">
+                      <Input
+                        placeholder="Nama Produk *"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        className="bg-white/95 backdrop-blur"
+                        required
+                      />
+                    </div>
                     <div className="absolute bottom-4 left-4 right-4 flex gap-3">
                       <Button
                         variant="outline"

@@ -23,10 +23,12 @@ class ScanHistoryOCR(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True, index=True)
     session_id = Column(String(100), nullable=False, index=True)
-    image_url = Column(Text, nullable=True)
+    product_name = Column(String(255), nullable=True)
+    image_data = Column(Text, nullable=True)
     ocr_raw_data = Column(JSON, nullable=True)
     ai_analysis = Column(Text, nullable=True)
     health_score = Column(SmallInteger, nullable=True)
+    grade = Column(String(2), nullable=True)
     is_favorited = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

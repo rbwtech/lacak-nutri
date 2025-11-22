@@ -24,6 +24,7 @@ class ScanResponse(BaseModel):
     data: Optional[BPOMData] = None
 
 class AnalyzeImageRequest(BaseModel):
+    product_name: str
     image_base64: str
 
 class ChatRequest(BaseModel):

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import HistoryDetailModal from "../components/ui/HistoryDetailModal";
 import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
@@ -11,8 +10,6 @@ const History = () => {
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [showDetail, setShowDetail] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
@@ -59,8 +56,7 @@ const History = () => {
   };
 
   const viewDetail = (item) => {
-    setSelectedItem(item);
-    setShowDetail(true);
+    navigate(`/history/${item.type}/${item.id}`);
   };
 
   return (
@@ -202,19 +198,27 @@ const History = () => {
                         </p>
                       </div>
 
-                      <svg
-                        className="w-5 h-5 text-text-secondary group-hover:text-primary transition-colors"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          viewDetail(item);
+                        }}
+                        className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                        <svg
+                          className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </Card>
@@ -223,13 +227,6 @@ const History = () => {
           )}
         </div>
       </div>
-
-      <HistoryDetailModal
-        isOpen={showDetail}
-        onClose={() => setShowDetail(false)}
-        scanId={selectedItem?.id}
-        scanType={selectedItem?.type}
-      />
 
       <SuccessModal
         isOpen={showSuccess}

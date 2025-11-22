@@ -68,13 +68,19 @@ async def analyze_ocr(
 
     nutrition_data = result.get('nutrition')
     ai_analysis = result.get('summary')
+    product_name = request.product_name
+    image_data = request.image_base64
     health_score = result.get('health_score')
+    grade = result.get('grade')
     ocr_data_str = json.dumps(nutrition_data)
 
     history = crud_scan.create_ocr_history(
         db=db, 
-        user_id=user_id, 
-        health_score=health_score, 
+        user_id=user_id,
+        product_name=product_name,
+        image_data=image_data,
+        health_score=health_score,
+        grade=grade, 
         ocr_data=ocr_data_str, 
         ai_analysis=ai_analysis,
         session_id=session_id 
@@ -165,10 +171,12 @@ def get_ocr_detail(
         "data": {
             "id": scan.id,
             "type": "ocr",
-            "image_url": scan.image_url,
+            "product_name": scan.product_name,
+            "image_data": scan.image_data,  
             "ocr_raw_data": scan.ocr_raw_data,
             "ai_analysis": scan.ai_analysis,
             "health_score": scan.health_score,
+            "grade": scan.grade,  
             "is_favorited": scan.is_favorited,
             "created_at": scan.created_at.isoformat()
         }

@@ -18,9 +18,45 @@ const HistoryDetail = () => {
   }, [id, type]);
 
   const fetchDetail = async () => {
+    // Ubah endpoint dari /users/history/{type}/{id} ke /scan/{type}/{id}
+    const endpoint = `/scan/${type}/${id}`;
+
     try {
-      const { data: result } = await api.get(`/users/history/${type}/${id}`);
-      setData(result.data);
+      const { data: result } = await api.get(endpoint);
+      console.log("API Response:", result);
+
+      let processedData = result.data || result;
+
+      if (type === "bpom" && processedData.raw_response) {
+        // raw_response sudah object dari backend (JSON column)
+        if (typeof processedData.raw_response === "object") {
+          processedData = { ...processedData, ...processedData.raw_response };
+        }
+      }
+
+      if (type === "ocr") {
+        // OCR mapping
+        if (processedData.ocr_raw_data) {
+          if (typeof processedData.ocr_raw_data === "string") {
+            processedData.nutrition_data = JSON.parse(
+              processedData.ocr_raw_data
+            );
+          } else {
+            processedData.nutrition_data = processedData.ocr_raw_data;
+          }
+        }
+
+        if (processedData.ai_analysis) {
+          processedData.summary = processedData.ai_analysis;
+        }
+      }
+
+      if (processedData.created_at && !processedData.scanned_at) {
+        processedData.scanned_at = processedData.created_at;
+      }
+
+      console.log("Processed Data:", processedData);
+      setData(processedData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -150,7 +186,9 @@ const HistoryDetail = () => {
                       Tanggal Scan
                     </p>
                     <p className="text-xs font-medium text-text-primary">
-                      {new Date(data.scanned_at).toLocaleString("id-ID")}
+                      {new Date(
+                        data.created_at || data.scanned_at
+                      ).toLocaleString("id-ID")}
                     </p>
                   </div>
                 </div>
@@ -175,6 +213,13 @@ const HistoryDetail = () => {
                 </p>
               </div>
 
+              <Card className="p-4 mb-4">
+                <img
+                  src={data.image_data}
+                  alt="Scanned"
+                  className="w-full rounded-lg"
+                />
+              </Card>
               <NutritionLabel data={data.nutrition_data} />
 
               {data.summary && (

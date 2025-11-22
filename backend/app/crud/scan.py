@@ -71,7 +71,7 @@ def create_bpom_history(db: Session, user_id: int, data: dict, session_id: str =
     db.refresh(db_scan)
     return db_scan
 
-def create_ocr_history(db: Session, user_id: int, health_score: int, ocr_data: str, ai_analysis: str, session_id: str = None):
+def create_ocr_history(db: Session, user_id: int, product_name: str, image_data: str, health_score: int, grade: str, ocr_data: str, ai_analysis: str, session_id: str = None):
     query = db.query(ScanHistoryOCR)
     if user_id:
         query = query.filter(ScanHistoryOCR.user_id == user_id)
@@ -88,8 +88,11 @@ def create_ocr_history(db: Session, user_id: int, health_score: int, ocr_data: s
 
     db_scan = ScanHistoryOCR(
         user_id=user_id,
-        session_id=session_id or "guest", 
+        session_id=session_id or "guest",
+        product_name=product_name,
+        image_data=image_data,
         health_score=health_score,
+        grade=grade,
         ocr_raw_data=ocr_data,
         ai_analysis=ai_analysis
     )
