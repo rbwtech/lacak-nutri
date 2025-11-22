@@ -2,14 +2,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useDropzone } from "react-dropzone";
 import { MainLayout } from "../components/layouts";
+import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import AnimatedStatus from "../components/ui/AnimatedStatus";
 import NutritionLabel from "../components/ui/NutritionLabel";
 import api from "../config/api";
+import { useNavigate } from "react-router-dom";
 
 const Scanner = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [scanMode, setScanMode] = useState("barcode");
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,6 +28,7 @@ const Scanner = () => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hasZoom, setHasZoom] = useState(false);
   const [myAllergies, setMyAllergies] = useState([]);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const [flashOn, setFlashOn] = useState(false);
   const [hasFlash, setHasFlash] = useState(false);
@@ -47,7 +52,10 @@ const Scanner = () => {
         console.error("Gagal load alergi", e);
       }
     };
-    fetchAllergies();
+
+    if (user) {
+      fetchAllergies();
+    }
 
     enumerateCameras();
 
@@ -55,7 +63,7 @@ const Scanner = () => {
       stopCamera();
       stopLiveScan();
     };
-  }, []);
+  }, [user]);
 
   const enumerateCameras = async () => {
     try {
@@ -334,6 +342,7 @@ const Scanner = () => {
         code: data.searched_code || code,
         scan_id: data.scan_id,
       });
+      setIsFavorited(false);
     } catch (err) {
       setError("Gagal mengambil data. Cek koneksi.");
     } finally {
@@ -402,6 +411,7 @@ const Scanner = () => {
         allergyWarnings: warnings,
         scan_id: data.scan_id,
       });
+      setIsFavorited(false);
     } catch (err) {
       setError(err.response?.data?.message || "Gagal memproses gambar");
     } finally {
@@ -435,17 +445,37 @@ const Scanner = () => {
   };
 
   const handleAddToFavorites = async () => {
+    if (!user) {
+      if (
+        window.confirm(
+          "Anda harus login untuk menambah favorit. Login sekarang?"
+        )
+      ) {
+        navigate("/login");
+      }
+      return;
+    }
+
     if (!result || !result.scan_id) {
-      alert("Scan ID tidak tersedia");
+      alert("Scan ID tidak tersedia. Coba scan ulang.");
       return;
     }
 
     try {
-      await api.post(`/favorites/${result.type}/${result.scan_id}/toggle`);
-      alert("Berhasil ditambahkan ke favorit!");
+      const { data } = await api.post(
+        `/favorites/${result.type}/${result.scan_id}/toggle`
+      );
+      setIsFavorited(data.is_favorited);
+
+      if (data.is_favorited) {
+        alert("✓ Berhasil ditambahkan ke favorit!");
+      } else {
+        alert("Dihapus dari favorit");
+      }
     } catch (e) {
       console.error(e);
-      alert("Gagal menambahkan favorit");
+      const errorMsg = e.response?.data?.detail || "Gagal menambahkan favorit";
+      alert(errorMsg);
     }
   };
 
@@ -456,6 +486,7 @@ const Scanner = () => {
     setBpomInput("");
     setChatHistory([]);
     setLiveOcrText("");
+    setIsFavorited(false);
     stopCamera();
     stopLiveScan();
   };
@@ -882,16 +913,23 @@ const Scanner = () => {
                         <Button
                           fullWidth
                           onClick={handleAddToFavorites}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white mt-4 flex items-center justify-center gap-2"
+                          className={`${
+                            isFavorited
+                              ? "bg-gray-400 hover:bg-gray-500"
+                              : "bg-yellow-500 hover:bg-yellow-600"
+                          } text-white mt-4 flex items-center justify-center gap-2`}
                         >
                           <svg
                             className="w-5 h-5"
-                            fill="currentColor"
+                            fill={isFavorited ? "currentColor" : "none"}
+                            stroke="currentColor"
                             viewBox="0 0 20 20"
                           >
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
-                          Tambah ke Favorit
+                          {isFavorited
+                            ? "Sudah Difavoritkan"
+                            : "Tambah ke Favorit"}
                         </Button>
                       </div>
                     ) : (
@@ -1029,16 +1067,21 @@ const Scanner = () => {
                     <Button
                       fullWidth
                       onClick={handleAddToFavorites}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center gap-2"
+                      className={`${
+                        isFavorited
+                          ? "bg-gray-400 hover:bg-gray-500"
+                          : "bg-yellow-500 hover:bg-yellow-600"
+                      } text-white flex items-center justify-center gap-2`}
                     >
                       <svg
                         className="w-5 h-5"
-                        fill="currentColor"
+                        fill={isFavorited ? "currentColor" : "none"}
+                        stroke="currentColor"
                         viewBox="0 0 20 20"
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      Tambah ke Favorit
+                      {isFavorited ? "Sudah Difavoritkan" : "Tambah ke Favorit"}
                     </Button>
 
                     <div className="pt-6 border-t border-border">

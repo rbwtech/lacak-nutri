@@ -70,7 +70,6 @@ const Profile = () => {
     try {
       const form = new FormData();
       form.append("name", formData.name);
-      form.append("phone", formData.phone || "");
       if (photoFile) {
         form.append("photo", photoFile);
       }
@@ -207,7 +206,7 @@ const Profile = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-linear-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white">
+                  <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-4xl font-extrabold text-white">
                     {user?.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -252,8 +251,9 @@ const Profile = () => {
               <Button onClick={() => setEditing(true)}>Edit Profil</Button>
             )}
           </div>
-          <div className="grid lg:grid-cols-7 gap-6">
-            <div className="lg:col-span-3 space-y-6 order-1">
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <Card title="Informasi Pribadi">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -425,7 +425,7 @@ const Profile = () => {
               </Card>
             </div>
 
-            <div className="lg:col-span-4 space-y-6 order-2">
+            <div className="space-y-6">
               <div className="bg-primary text-white rounded-3xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                 <h3 className="font-bold text-lg mb-1">Indeks Massa Tubuh</h3>
@@ -449,22 +449,10 @@ const Profile = () => {
                 <div className="space-y-1">
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="
-        w-full flex items-center justify-between p-4 rounded-xl
-        bg-bg-base hover:bg-bg-soft
-        transition-colors group
-        border border-border
-      "
+                    className="w-full flex items-center justify-between p-4 rounded-xl bg-bg-base hover:bg-bg-soft transition-colors group border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className="
-            w-10 h-10 rounded-full flex items-center justify-center
-            bg-bg-soft shadow-sm
-            text-text-secondary group-hover:text-primary
-            transition-colors
-          "
-                      >
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-bg-soft shadow-sm text-text-secondary group-hover:text-primary transition-colors">
                         <svg
                           className="w-5 h-5"
                           fill="none"
@@ -506,6 +494,7 @@ const Profile = () => {
               </Card>
             </div>
           </div>
+
           {showPasswordModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-bg-base w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up border border-border">
