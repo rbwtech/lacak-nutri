@@ -8,7 +8,7 @@ from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, Cha
 from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
-from app.models.user import User
+from app.models.user import User, UserAllergy  # ADD UserAllergy
 import json
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
@@ -23,17 +23,13 @@ async def scan_bpom(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
-    # 1. Cek Cache
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
         history = crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
-        
         response_data = cached_data.copy()
         response_data['id'] = history.id 
-        
         return {"found": True, "message": "Data ditemukan (Cache)", "data": response_data}
 
-    # 2. Scrape BPOM
     scraper = BPOMScraper()
     result = await scraper.search_bpom(request.bpom_number)
     
@@ -44,11 +40,8 @@ async def scan_bpom(
             "data": None
         }
     
-    # 3. Simpan Cache & History
     crud_scan.create_bpom_cache(db, request.bpom_number, result)
     history = crud_scan.create_bpom_history(db, user_id, result, session_id)
-    
-    # Inject ID ke dalam dictionary result
     result['id'] = history.id 
     
     return {"found": True, "message": "Data ditemukan", "data": result}
@@ -66,14 +59,27 @@ async def analyze_ocr(
     service = GeminiService()
     result = await service.analyze_nutrition_image(request.image_base64)
 
+    # Get user allergies
+    user_allergies = []
+    if user_id:
+        allergies = db.query(UserAllergy).filter(UserAllergy.user_id == user_id).all()
+        user_allergies = [a.name.lower() for a in allergies]
+
+    ingredients = result.get('ingredients') or ""
+    ingredients_text = ingredients.lower()  
+    detected_allergens = [
+        allergy.capitalize() 
+        for allergy in user_allergies 
+        if allergy in ingredients_text
+    ]
+
     nutrition_data = result.get('nutrition')
     ai_analysis = result.get('summary')
     product_name = request.product_name
     image_data = request.image_base64
-    pros=result.get('pros')
-    cons=result.get('cons')
-    ingredients=result.get('ingredients')
-    warnings=result.get('warnings');
+    pros = result.get('pros')
+    cons = result.get('cons')
+    warnings = detected_allergens
     health_score = result.get('health_score')
     grade = result.get('grade')
     ocr_data_str = json.dumps(nutrition_data)
@@ -94,8 +100,8 @@ async def analyze_ocr(
         session_id=session_id 
     )
     
-    # Inject ID ke dalam data result
     result['id'] = history.id
+    result['warnings'] = warnings
         
     return {"success": True, "data": result}
 
@@ -117,7 +123,6 @@ async def extract_text_only(
         
         image_bytes = base64.b64decode(img_data)
         image = Image.open(BytesIO(image_bytes))
-        
         text = pytesseract.image_to_string(image, lang='ind+eng')
         
         return {"success": True, "text": text.strip()}

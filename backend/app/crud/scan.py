@@ -74,7 +74,7 @@ def create_bpom_history(db: Session, user_id: int, data: dict, session_id: str =
 def create_ocr_history(db: Session, user_id: int, product_name: str, image_data: str, 
                        health_score: int, grade: str, ocr_data: str, ai_analysis: str, 
                        pros: list = None, cons: list = None, ingredients: str = None, 
-                       warnings: list = None, detected_allergens: list = None, session_id: str = None):
+                       warnings: list = None, session_id: str = None):
     query = db.query(ScanHistoryOCR)
     if user_id:
         query = query.filter(ScanHistoryOCR.user_id == user_id)
@@ -97,8 +97,7 @@ def create_ocr_history(db: Session, user_id: int, product_name: str, image_data:
         pros=pros,
         cons=cons,
         ingredients=ingredients,
-        warnings=warnings,
-        detected_allergens=detected_allergens,
+        warnings=warnings, 
         health_score=health_score,
         grade=grade,
         ocr_raw_data=ocr_data,

@@ -243,6 +243,32 @@ const HistoryDetail = () => {
                   />
                 )}
               </Card>
+              {detail.warnings && detail.warnings.length > 0 && (
+                <div className="bg-error/10 border border-error rounded-2xl p-4 flex gap-3 text-left mb-6">
+                  <svg
+                    className="w-6 h-6 text-error shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <div>
+                    <h4 className="font-bold text-error text-sm">
+                      Peringatan Alergi!
+                    </h4>
+                    <p className="text-xs text-text-primary mt-1">
+                      Mengandung: <strong>{detail.warnings.join(", ")}</strong>
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <NutritionLabel data={data.nutrition_data} />
 
               {data.summary && (
@@ -308,28 +334,15 @@ const HistoryDetail = () => {
                       </ul>
                     </Card>
                   )}
-                  {data.ingredients && (
-                    <Card className="p-5">
-                      <h4 className="font-bold text-text-primary mb-2">
+                  {detail.ingredients && (
+                    <div className="bg-bg-base border border-border rounded-2xl p-4 mt-6">
+                      <h4 className="font-bold text-text-primary text-sm mb-2">
                         Komposisi
                       </h4>
                       <p className="text-xs text-text-secondary leading-relaxed">
-                        {data.ingredients}
+                        {detail.ingredients}
                       </p>
-                    </Card>
-                  )}
-
-                  {data.warnings?.length > 0 && (
-                    <Card className="p-5">
-                      <h4 className="font-boldtext-text-primary mb-2">
-                        Peringatan Nutrisi
-                      </h4>
-                      <ul className="text-xs text-text-secondary leading-relaxed">
-                        {data.warnings.map((w, i) => (
-                          <li key={i}>• {w}</li>
-                        ))}
-                      </ul>
-                    </Card>
+                    </div>
                   )}
                 </div>
               )}

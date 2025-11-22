@@ -453,12 +453,8 @@ const Scanner = () => {
 
       if (!data.success) throw new Error(data.message || "Gagal analisis");
 
-      const textCheck = (
-        (data.data.ingredients || "") +
-        " " +
-        (data.data.warnings?.join(" ") || "")
-      ).toLowerCase();
-      const warnings = myAllergies
+      const textCheck = (data.data.ingredients || "").toLowerCase();
+      const allergyWarnings = myAllergies
         .filter((a) => textCheck.includes(a))
         .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
 
@@ -466,7 +462,7 @@ const Scanner = () => {
         type: "ocr",
         found: true,
         data: data.data,
-        allergyWarnings: warnings,
+        allergyWarnings: allergyWarnings,
         scan_id: data.data?.id,
       });
       setIsFavorited(false);
@@ -615,7 +611,7 @@ const Scanner = () => {
 
           <Card className="shadow-lg relative overflow-hidden p-0">
             {loading && (
-              <div className="absolute inset-0 bg-bg-surface/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+              <div className="inset-0 bg-bg-surface/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-primary font-bold animate-pulse">
                   {loadingMessage}
