@@ -223,6 +223,22 @@ const Header = () => {
     </svg>
   );
 
+  const HistoryIcon = (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+
   return (
     <header className="sticky top-0 z-50 bg-bg-surface/80 backdrop-blur-xl border-b border-border shadow-soft transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -433,6 +449,7 @@ const Header = () => {
             { to: "/products", label: "Katalog Produk", icon: CatalogIcon },
             { to: "/scanner", label: "Scanner AI", icon: ScannerIcon },
             { to: "/favorites", label: "Favorit Saya", icon: FavoriteIcon },
+            { to: "/history", label: "Riwayat Scan", icon: HistoryIcon },
             { to: "/articles", label: "Pusat Edukasi", icon: EduIcon },
           ].map((link) => (
             <Link

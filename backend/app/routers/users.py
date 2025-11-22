@@ -7,8 +7,10 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User, Allergen
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
+from app.models.favorite import Favorite 
 import shutil
 import uuid
+import json
 from pathlib import Path
 
 router = APIRouter(prefix="/api/users", tags=["User Data"])
@@ -91,15 +93,14 @@ async def update_profile(
     current_user: User = Depends(get_current_user)
 ):
     current_user.name = name
-    if phone:
-        current_user.phone = phone
+    current_user.phone = phone if phone else None 
     
     if photo:
         allowed_types = ["image/jpeg", "image/png", "image/webp"]
         if photo.content_type not in allowed_types:
             raise HTTPException(400, "Format tidak didukung")
         
-        if photo.size > 2 * 1024 * 1024:
+        if photo.size and photo.size > 2 * 1024 * 1024:
             raise HTTPException(400, "Ukuran file maksimal 2MB")
         
         filename = f"{uuid.uuid4()}.{photo.filename.split('.')[-1]}"
@@ -122,7 +123,6 @@ async def update_profile(
         "phone": current_user.phone,
         "photo_url": current_user.photo_url
     }}
-
 @router.get("/history")
 async def get_history(
     type: str = None,
@@ -189,6 +189,55 @@ class DashboardData(BaseModel):
     stats: DashboardStats
     recent: List[ScanHistoryItem]
 
+@router.get("/history/{type}/{id}")
+async def get_history_detail(
+    type: str,
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if type == "bpom":
+        item = db.query(ScanHistoryBPOM).filter(
+            ScanHistoryBPOM.id == id,
+            ScanHistoryBPOM.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(404, "Data tidak ditemukan")
+        
+        return {"success": True, "data": {
+            "product_name": item.product_name,
+            "bpom_number": item.bpom_number,
+            "brand": item.brand,
+            "manufacturer": item.manufacturer,
+            "issued_date": item.issued_date,
+            "expired_date": item.expired_date,
+            "packaging": item.packaging,
+            "status": item.status,
+            "scanned_at": item.created_at.isoformat()
+        }}
+    
+    elif type == "ocr":
+        item = db.query(ScanHistoryOCR).filter(
+            ScanHistoryOCR.id == id,
+            ScanHistoryOCR.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(404, "Data tidak ditemukan")
+        
+        return {"success": True, "data": {
+            "health_score": item.health_score,
+            "grade": item.grade,
+            "nutrition_data": json.loads(item.nutrition_data) if item.nutrition_data else {},
+            "summary": item.summary,
+            "pros": json.loads(item.pros) if item.pros else [],
+            "cons": json.loads(item.cons) if item.cons else [],
+            "scanned_at": item.created_at.isoformat()
+        }}
+    
+    raise HTTPException(400, "Tipe tidak valid")
+
 @router.get("/dashboard", response_model=DashboardData)
 def get_dashboard_data(
     db: Session = Depends(get_db),
@@ -197,6 +246,8 @@ def get_dashboard_data(
     count_bpom = db.query(ScanHistoryBPOM).filter(ScanHistoryBPOM.user_id == current_user.id).count()
     count_ocr = db.query(ScanHistoryOCR).filter(ScanHistoryOCR.user_id == current_user.id).count()
     total_scans = count_bpom + count_ocr
+    
+    count_favorites = db.query(Favorite).filter(Favorite.user_id == current_user.id).count()
 
     recent_bpom = db.query(ScanHistoryBPOM).filter(ScanHistoryBPOM.user_id == current_user.id)\
                     .order_by(ScanHistoryBPOM.created_at.desc()).limit(5).all()
@@ -227,15 +278,14 @@ def get_dashboard_data(
             "timestamp": item.created_at.timestamp()
         })
     
-    # Sort by time desc
     combined.sort(key=lambda x: x['timestamp'], reverse=True)
     
     return {
         "stats": {
             "scans": total_scans,
-            "favorites": 0, # Belum implementasi favorit
+            "favorites": count_favorites,  # FIX INI
             "history": total_scans,
             "recommendations": count_ocr 
         },
-        "recent": combined[:5] # Ambil 5 teratas
+        "recent": combined[:5]
     }

@@ -29,11 +29,7 @@ const History = () => {
   };
 
   const viewDetail = (item) => {
-    if (item.type === "bpom") {
-      navigate(`/history/${item.id}`);
-    } else {
-      navigate(`/history/${item.id}`);
-    }
+    navigate(`/history/${item.type}/${item.id}`);
   };
 
   return (

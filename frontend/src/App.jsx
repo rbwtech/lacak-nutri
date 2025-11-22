@@ -14,6 +14,7 @@ import {
   Scanner,
   Favorites,
   History,
+  HistoryDetail,
   Articles,
   ArticleDetail,
   About,
@@ -46,6 +47,7 @@ function App() {
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/history" element={<History />} />
+            <Route path="/history/:type/:id" element={<HistoryDetail />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetail />} />
 

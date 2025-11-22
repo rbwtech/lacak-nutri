@@ -42,3 +42,5 @@ class User(Base):
 
     # Relasi Alergi
     allergies = relationship("Allergen", secondary=user_allergies, backref="users")
+    phone = Column(String(20))  
+    photo_url = Column(String(255)) 
