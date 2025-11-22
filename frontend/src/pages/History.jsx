@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import HistoryDetailModal from "../components/ui/HistoryDetailModal";
+import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
 
@@ -9,6 +11,10 @@ const History = () => {
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,8 +34,33 @@ const History = () => {
     }
   };
 
+  const toggleFavorite = async (item, e) => {
+    e.stopPropagation();
+    try {
+      const { data } = await api.post(
+        `/favorites/${item.type}/${item.id}/toggle`
+      );
+
+      setHistory((prev) =>
+        prev.map((h) =>
+          h.id === item.id && h.type === item.type
+            ? { ...h, is_favorited: data.is_favorited }
+            : h
+        )
+      );
+
+      setSuccessMessage(
+        data.is_favorited ? "Ditambahkan ke favorit" : "Dihapus dari favorit"
+      );
+      setShowSuccess(true);
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+    }
+  };
+
   const viewDetail = (item) => {
-    navigate(`/history/${item.type}/${item.id}`);
+    setSelectedItem(item);
+    setShowDetail(true);
   };
 
   return (
@@ -91,8 +122,8 @@ const History = () => {
             <div className="space-y-4">
               {history.map((item) => (
                 <Card
-                  key={item.id}
-                  className="p-4 hover:shadow-lg transition-all cursor-pointer"
+                  key={`${item.type}-${item.id}`}
+                  className="p-4 hover:shadow-lg transition-all cursor-pointer group"
                   onClick={() => viewDetail(item)}
                 >
                   <div className="flex items-center gap-4">
@@ -128,7 +159,7 @@ const History = () => {
                     </div>
 
                     <div className="flex-1">
-                      <h3 className="font-bold text-text-primary">
+                      <h3 className="font-bold text-text-primary group-hover:text-primary transition-colors">
                         {item.title}
                       </h3>
                       <p className="text-sm text-text-secondary">
@@ -136,30 +167,55 @@ const History = () => {
                       </p>
                     </div>
 
-                    <div className="text-right">
+                    <div className="flex items-center gap-3">
                       {item.score && (
-                        <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold mb-1">
+                        <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
                           {item.score}/100
                         </span>
                       )}
-                      <p className="text-xs text-text-secondary">
-                        {new Date(item.date).toLocaleDateString("id-ID")}
-                      </p>
-                    </div>
 
-                    <svg
-                      className="w-5 h-5 text-text-secondary"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                      <button
+                        onClick={(e) => toggleFavorite(item, e)}
+                        className="p-2 hover:bg-bg-base rounded-lg transition-colors"
+                      >
+                        <svg
+                          className={`w-6 h-6 transition-colors ${
+                            item.is_favorited
+                              ? "fill-primary text-primary"
+                              : "fill-none text-text-secondary"
+                          }`}
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                      </button>
+
+                      <div className="text-right">
+                        <p className="text-xs text-text-secondary">
+                          {new Date(item.date).toLocaleDateString("id-ID")}
+                        </p>
+                      </div>
+
+                      <svg
+                        className="w-5 h-5 text-text-secondary group-hover:text-primary transition-colors"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -167,6 +223,20 @@ const History = () => {
           )}
         </div>
       </div>
+
+      <HistoryDetailModal
+        isOpen={showDetail}
+        onClose={() => setShowDetail(false)}
+        scanId={selectedItem?.id}
+        scanType={selectedItem?.type}
+      />
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        message={successMessage}
+        type="favorite"
+      />
     </MainLayout>
   );
 };

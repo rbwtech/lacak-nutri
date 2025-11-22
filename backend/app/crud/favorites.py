@@ -1,58 +1,80 @@
 from sqlalchemy.orm import Session
-from app.models.favorite import Favorite
-import json
+from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 
-def add_favorite(db: Session, user_id: int, product_type: str, product_name: str, bpom_number: str = None, product_data: dict = None):
-    existing = db.query(Favorite).filter(
-        Favorite.user_id == user_id,
-        Favorite.product_type == product_type,
-        Favorite.bpom_number == bpom_number
-    ).first()
+def toggle_favorite(db: Session, user_id: int, scan_type: str, scan_id: int):
+    if scan_type == "bpom":
+        scan = db.query(ScanHistoryBPOM).filter(
+            ScanHistoryBPOM.id == scan_id,
+            ScanHistoryBPOM.user_id == user_id
+        ).first()
+    elif scan_type == "ocr":
+        scan = db.query(ScanHistoryOCR).filter(
+            ScanHistoryOCR.id == scan_id,
+            ScanHistoryOCR.user_id == user_id
+        ).first()
+    else:
+        return None
     
-    if existing:
-        return existing
+    if not scan:
+        return None
     
-    fav = Favorite(
-        user_id=user_id,
-        product_type=product_type,
-        bpom_number=bpom_number,
-        product_name=product_name,
-        product_data=json.dumps(product_data) if product_data else None
-    )
-    db.add(fav)
+    scan.is_favorited = not scan.is_favorited
     db.commit()
-    db.refresh(fav)
-    return fav
-
-def remove_favorite(db: Session, user_id: int, favorite_id: int):
-    fav = db.query(Favorite).filter(
-        Favorite.id == favorite_id,
-        Favorite.user_id == user_id
-    ).first()
-    
-    if fav:
-        db.delete(fav)
-        db.commit()
-        return True
-    return False
+    db.refresh(scan)
+    return scan
 
 def get_favorites(db: Session, user_id: int):
-    favs = db.query(Favorite).filter(Favorite.user_id == user_id).order_by(Favorite.created_at.desc()).all()
-    return [
-        {
-            "id": f.id,
-            "product_type": f.product_type,
-            "bpom_number": f.bpom_number,
-            "product_name": f.product_name,
-            "product_data": json.loads(f.product_data) if f.product_data else None,
-            "created_at": f.created_at.isoformat()
-        }
-        for f in favs
-    ]
+    bpom_favs = db.query(ScanHistoryBPOM).filter(
+        ScanHistoryBPOM.user_id == user_id,
+        ScanHistoryBPOM.is_favorited == True
+    ).order_by(ScanHistoryBPOM.created_at.desc()).all()
+    
+    ocr_favs = db.query(ScanHistoryOCR).filter(
+        ScanHistoryOCR.user_id == user_id,
+        ScanHistoryOCR.is_favorited == True
+    ).order_by(ScanHistoryOCR.created_at.desc()).all()
+    
+    result = []
+    
+    for item in bpom_favs:
+        result.append({
+            "id": item.id,
+            "type": "bpom",
+            "product_name": item.product_name or "Produk BPOM",
+            "bpom_number": item.bpom_number,
+            "brand": item.brand,
+            "manufacturer": item.manufacturer,
+            "status": item.status,
+            "raw_response": item.raw_response,
+            "created_at": item.created_at.isoformat(),
+            "is_favorited": True
+        })
+    
+    for item in ocr_favs:
+        result.append({
+            "id": item.id,
+            "type": "ocr",
+            "product_name": "Scan Label Gizi",
+            "image_url": item.image_url,
+            "ocr_raw_data": item.ocr_raw_data,
+            "ai_analysis": item.ai_analysis,
+            "health_score": item.health_score,
+            "created_at": item.created_at.isoformat(),
+            "is_favorited": True
+        })
+    
+    result.sort(key=lambda x: x['created_at'], reverse=True)
+    return result
 
-def is_favorited(db: Session, user_id: int, product_type: str, bpom_number: str = None):
-    return db.query(Favorite).filter(
-        Favorite.user_id == user_id,
-        Favorite.product_type == product_type,
-        Favorite.bpom_number == bpom_number
-    ).first() is not None
+def get_favorite_count(db: Session, user_id: int):
+    bpom_count = db.query(ScanHistoryBPOM).filter(
+        ScanHistoryBPOM.user_id == user_id,
+        ScanHistoryBPOM.is_favorited == True
+    ).count()
+    
+    ocr_count = db.query(ScanHistoryOCR).filter(
+        ScanHistoryOCR.user_id == user_id,
+        ScanHistoryOCR.is_favorited == True
+    ).count()
+    
+    return bpom_count + ocr_count

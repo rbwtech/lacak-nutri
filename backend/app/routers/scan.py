@@ -5,8 +5,10 @@ from app.core.database import get_db
 from app.services.bpom_endpoint import BPOMScraper
 from app.services.ai_service import GeminiService
 from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, ChatRequest
-from app.dependencies import get_current_user_optional 
+from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
+from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
+from app.models.user import User
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
 
@@ -20,13 +22,11 @@ async def scan_bpom(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
-    # 1. Cek Cache
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
         crud_scan.create_bpom_history(db, cached_data, session_id, user_id)
         return {"found": True, "message": "Data ditemukan (Cache)", "data": cached_data}
 
-    # 2. Scrape Live
     scraper = BPOMScraper()
     result = await scraper.search_bpom(request.bpom_number)
     
@@ -37,7 +37,6 @@ async def scan_bpom(
             "data": None
         }
     
-    # 3. Simpan Cache & History
     crud_scan.create_bpom_cache(db, request.bpom_number, result)
     crud_scan.create_bpom_history(db, result, session_id, user_id)
     
@@ -62,7 +61,6 @@ async def analyze_ocr(
     if not result:
         return {"success": False, "message": "Gagal menganalisis gambar dengan AI."}
     
-    # Simpan History OCR
     crud_scan.create_ocr_history(db, result, session_id, user_id)
         
     return {"success": True, "data": result}
@@ -97,3 +95,61 @@ async def chat_product(request: ChatRequest):
     service = GeminiService()
     answer = await service.chat_about_product(request.product_context, request.question)
     return {"answer": answer}
+
+@router.get("/bpom/{scan_id}")
+def get_bpom_detail(
+    scan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    scan = db.query(ScanHistoryBPOM).filter(
+        ScanHistoryBPOM.id == scan_id,
+        ScanHistoryBPOM.user_id == current_user.id
+    ).first()
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan history tidak ditemukan")
+    
+    return {
+        "success": True,
+        "data": {
+            "id": scan.id,
+            "type": "bpom",
+            "bpom_number": scan.bpom_number,
+            "product_name": scan.product_name,
+            "brand": scan.brand,
+            "manufacturer": scan.manufacturer,
+            "status": scan.status,
+            "raw_response": scan.raw_response,
+            "is_favorited": scan.is_favorited,
+            "created_at": scan.created_at.isoformat()
+        }
+    }
+
+@router.get("/ocr/{scan_id}")
+def get_ocr_detail(
+    scan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    scan = db.query(ScanHistoryOCR).filter(
+        ScanHistoryOCR.id == scan_id,
+        ScanHistoryOCR.user_id == current_user.id
+    ).first()
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan history tidak ditemukan")
+    
+    return {
+        "success": True,
+        "data": {
+            "id": scan.id,
+            "type": "ocr",
+            "image_url": scan.image_url,
+            "ocr_raw_data": scan.ocr_raw_data,
+            "ai_analysis": scan.ai_analysis,
+            "health_score": scan.health_score,
+            "is_favorited": scan.is_favorited,
+            "created_at": scan.created_at.isoformat()
+        }
+    }

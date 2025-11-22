@@ -7,7 +7,6 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User, Allergen
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
-from app.models.favorite import Favorite 
 import shutil
 import uuid
 import json
@@ -15,7 +14,6 @@ from pathlib import Path
 
 router = APIRouter(prefix="/api/users", tags=["User Data"])
 
-# Schema Sederhana untuk Alergi
 class AllergenOut(BaseModel):
     id: int
     name: str
@@ -32,7 +30,6 @@ def get_all_allergens(db: Session = Depends(get_db), current_user: User = Depend
 
 @router.get("/my-allergies", response_model=List[AllergenOut])
 def get_my_allergens(current_user: User = Depends(get_current_user)):
-    """Mendapatkan alergi user yang sedang login"""
     return current_user.allergies
 
 @router.put("/allergies")
@@ -41,14 +38,9 @@ def update_user_allergies(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update pilihan alergi user"""
-    # Ambil object allergen berdasarkan ID yang dikirim
     selected_allergens = db.query(Allergen).filter(Allergen.id.in_(request.allergen_ids)).all()
-    
-    # Replace alergi lama dengan yang baru
     current_user.allergies = selected_allergens
     db.commit()
-    
     return {"message": "Preferensi alergi berhasil disimpan", "total": len(selected_allergens)}
 
 class CustomAllergyRequest(BaseModel):
@@ -123,13 +115,13 @@ async def update_profile(
         "phone": current_user.phone,
         "photo_url": current_user.photo_url
     }}
+
 @router.get("/history")
 async def get_history(
     type: str = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Query kedua tabel
     bpom_items = []
     ocr_items = []
     
@@ -152,6 +144,7 @@ async def get_history(
             "title": item.product_name or "Produk BPOM",
             "subtitle": item.bpom_number,
             "score": None,
+            "is_favorited": item.is_favorited,
             "date": item.created_at.isoformat(),
             "timestamp": item.created_at.timestamp()
         })
@@ -163,6 +156,7 @@ async def get_history(
             "title": "Analisis Nutrisi AI",
             "subtitle": f"Health Score: {item.health_score}/100",
             "score": item.health_score,
+            "is_favorited": item.is_favorited,
             "date": item.created_at.isoformat(),
             "timestamp": item.created_at.timestamp()
         })
@@ -179,11 +173,12 @@ class DashboardStats(BaseModel):
 
 class ScanHistoryItem(BaseModel):
     id: int
-    type: str # 'bpom' or 'ocr'
+    type: str
     title: str
     subtitle: str
     date: str
     score: Optional[int] = None
+    is_favorited: Optional[bool] = False
 
 class DashboardData(BaseModel):
     stats: DashboardStats
@@ -210,10 +205,8 @@ async def get_history_detail(
             "bpom_number": item.bpom_number,
             "brand": item.brand,
             "manufacturer": item.manufacturer,
-            "issued_date": item.issued_date,
-            "expired_date": item.expired_date,
-            "packaging": item.packaging,
             "status": item.status,
+            "is_favorited": item.is_favorited,
             "scanned_at": item.created_at.isoformat()
         }}
     
@@ -228,11 +221,9 @@ async def get_history_detail(
         
         return {"success": True, "data": {
             "health_score": item.health_score,
-            "grade": item.grade,
-            "nutrition_data": json.loads(item.nutrition_data) if item.nutrition_data else {},
-            "summary": item.summary,
-            "pros": json.loads(item.pros) if item.pros else [],
-            "cons": json.loads(item.cons) if item.cons else [],
+            "ocr_raw_data": item.ocr_raw_data,
+            "ai_analysis": item.ai_analysis,
+            "is_favorited": item.is_favorited,
             "scanned_at": item.created_at.isoformat()
         }}
     
@@ -247,7 +238,16 @@ def get_dashboard_data(
     count_ocr = db.query(ScanHistoryOCR).filter(ScanHistoryOCR.user_id == current_user.id).count()
     total_scans = count_bpom + count_ocr
     
-    count_favorites = db.query(Favorite).filter(Favorite.user_id == current_user.id).count()
+    count_favorites = (
+        db.query(ScanHistoryBPOM).filter(
+            ScanHistoryBPOM.user_id == current_user.id,
+            ScanHistoryBPOM.is_favorited == True
+        ).count() +
+        db.query(ScanHistoryOCR).filter(
+            ScanHistoryOCR.user_id == current_user.id,
+            ScanHistoryOCR.is_favorited == True
+        ).count()
+    )
 
     recent_bpom = db.query(ScanHistoryBPOM).filter(ScanHistoryBPOM.user_id == current_user.id)\
                     .order_by(ScanHistoryBPOM.created_at.desc()).limit(5).all()
@@ -264,6 +264,7 @@ def get_dashboard_data(
             "subtitle": item.bpom_number,
             "date": item.created_at.isoformat(),
             "score": None,
+            "is_favorited": item.is_favorited,
             "timestamp": item.created_at.timestamp()
         })
         
@@ -275,6 +276,7 @@ def get_dashboard_data(
             "subtitle": f"Analisis AI",
             "date": item.created_at.isoformat(),
             "score": item.health_score,
+            "is_favorited": item.is_favorited,
             "timestamp": item.created_at.timestamp()
         })
     
@@ -283,7 +285,7 @@ def get_dashboard_data(
     return {
         "stats": {
             "scans": total_scans,
-            "favorites": count_favorites,  # FIX INI
+            "favorites": count_favorites,
             "history": total_scans,
             "recommendations": count_ocr 
         },

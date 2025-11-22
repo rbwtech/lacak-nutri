@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 
 const Profile = () => {
@@ -16,6 +17,8 @@ const Profile = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -78,7 +81,6 @@ const Profile = () => {
 
       setUser(data.user);
 
-      // Update context juga untuk data lainnya
       await updateProfile({
         name: formData.name,
         gender: formData.gender,
@@ -88,7 +90,8 @@ const Profile = () => {
       });
 
       setEditing(false);
-      alert("Profil berhasil diperbarui!");
+      setSuccessMessage("Profil berhasil diperbarui!");
+      setShowSuccess(true);
     } catch (error) {
       alert("Gagal menyimpan profil.");
     } finally {
@@ -105,9 +108,10 @@ const Profile = () => {
         current_password: passData.current,
         new_password: passData.new,
       });
-      alert("Password berhasil diubah. Login ulang.");
       setShowPasswordModal(false);
       setPassData({ current: "", new: "", confirm: "" });
+      setSuccessMessage("Password berhasil diubah. Silakan login ulang.");
+      setShowSuccess(true);
     } catch (e) {
       alert(e.response?.data?.detail || "Gagal.");
     } finally {
@@ -182,7 +186,6 @@ const Profile = () => {
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Profile Header dengan Upload Foto */}
           <div className="flex items-center gap-6 mb-10">
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
@@ -212,103 +215,87 @@ const Profile = () => {
                       strokeWidth={2}
                       d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
                     />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
                     className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handlePhotoChange}
                   />
                 </label>
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-extrabold text-text-primary">
                 {user?.name}
               </h1>
-              <p className="text-text-secondary">{user?.email}</p>
-              <div className="flex gap-2 mt-3">
-                <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-lg uppercase tracking-wide">
-                  Member
-                </span>
-                {bmiValue && (
-                  <span
-                    className={`px-3 py-1 ${bmi.bg} ${bmi.color} text-xs font-bold rounded-lg uppercase tracking-wide`}
-                  >
-                    BMI: {bmi.label}
-                  </span>
-                )}
-              </div>
+              <p className="text-text-secondary mt-1">{user?.email}</p>
             </div>
+            {!editing && (
+              <Button onClick={() => setEditing(true)}>Edit Profil</Button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* MAIN COLUMN (Info & Allergy) */}
-            <div className="lg:col-span-8 space-y-6 order-1">
-              <Card className="relative">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-                  <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
-                    <span className="p-1.5 bg-primary/10 rounded-lg text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </span>
-                    Informasi Personal
-                  </h3>
-                  {!editing && (
-                    <button
-                      onClick={() => setEditing(true)}
-                      className="text-primary text-sm font-bold hover:bg-primary/5 px-3 py-1.5 rounded-xl transition-colors"
-                    >
-                      Edit Data
-                    </button>
-                  )}
-                </div>
+          <div className="grid lg:grid-cols-7 gap-6">
+            <div className="lg:col-span-3 space-y-6 order-1">
+              <Card title="Informasi Pribadi">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-text-primary mb-2">
+                      Nama Lengkap
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      disabled={!editing}
+                      className={`${inputClass} ${
+                        editing ? editClass : readOnlyClass
+                      }`}
+                    />
+                  </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6 mt-2">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
-                        Nama Lengkap
+                  <div>
+                    <label className="block text-sm font-bold text-text-primary mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className={`${inputClass} ${readOnlyClass}`}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-bold text-text-primary mb-2">
+                        Jenis Kelamin
                       </label>
-                      <input
-                        type="text"
-                        value={formData.name}
+                      <select
+                        value={formData.gender}
                         onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
+                          setFormData({ ...formData, gender: e.target.value })
                         }
                         disabled={!editing}
                         className={`${inputClass} ${
                           editing ? editClass : readOnlyClass
                         }`}
-                      />
+                      >
+                        <option value="male">Laki-laki</option>
+                        <option value="female">Perempuan</option>
+                      </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        disabled={true}
-                        className={`${inputClass} bg-gray-100 text-gray-400 border-transparent cursor-not-allowed`}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
+                    <div>
+                      <label className="block text-sm font-bold text-text-primary mb-2">
                         Usia
                       </label>
                       <input
@@ -324,28 +311,11 @@ const Profile = () => {
                         placeholder="-"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
-                        Gender
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={formData.gender}
-                          onChange={(e) =>
-                            setFormData({ ...formData, gender: e.target.value })
-                          }
-                          disabled={!editing}
-                          className={`${inputClass} ${
-                            editing ? editClass : readOnlyClass
-                          } appearance-none`}
-                        >
-                          <option value="male">Pria</option>
-                          <option value="female">Wanita</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-bold text-text-primary mb-2">
                         Berat (kg)
                       </label>
                       <input
@@ -361,8 +331,8 @@ const Profile = () => {
                         placeholder="-"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-secondary uppercase ml-1">
+                    <div>
+                      <label className="block text-sm font-bold text-text-primary mb-2">
                         Tinggi (cm)
                       </label>
                       <input
@@ -516,7 +486,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Modal Change Password */}
           {showPasswordModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl animate-scale-up">
@@ -565,6 +534,12 @@ const Profile = () => {
               </div>
             </div>
           )}
+
+          <SuccessModal
+            isOpen={showSuccess}
+            onClose={() => setShowSuccess(false)}
+            message={successMessage}
+          />
         </div>
       </div>
     </MainLayout>
