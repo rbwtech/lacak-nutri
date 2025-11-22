@@ -3,9 +3,7 @@ from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR, BPOMCache
 from datetime import datetime, timedelta
 import json
 
-# --- BPOM CACHE ---
 def get_bpom_cache(db: Session, bpom_number: str):
-    """Ambil cache jika ada dan belum expired (30 hari)"""
     cache = db.query(BPOMCache).filter(BPOMCache.bpom_number == bpom_number).first()
     if cache:
         expiry_date = cache.last_updated + timedelta(days=30)
@@ -25,39 +23,76 @@ def create_bpom_cache(db: Session, bpom_number: str, data: dict):
         db.add(new_cache)
         db.commit()
 
-# --- HISTORY ---
-def create_bpom_history(db: Session, data: dict, session_id: str, user_id: int = None):
-    history = ScanHistoryBPOM(
-        user_id=user_id,
-        session_id=session_id,
-        bpom_number=data.get('bpom_number', ''),
-        product_name=data.get('product_name', ''),
-        brand=data.get('brand', ''),
-        manufacturer=data.get('manufacturer', ''), 
-        status=data.get('status', ''),
-        raw_response=data
-    )
-    db.add(history)
-    db.commit()
-    return history
-
-def create_ocr_history(db: Session, result: dict, session_id: str, user_id: int = None):
-    analysis_data = result.get('analysis', {})
+def create_bpom_history(db: Session, user_id: int, data: dict, session_id: str = None):
+    query = db.query(ScanHistoryBPOM)
     
-    if isinstance(analysis_data, dict):
-        analysis_string = json.dumps(analysis_data)
+    if user_id:
+        query = query.filter(ScanHistoryBPOM.user_id == user_id)
     else:
-        analysis_string = str(analysis_data)
+        query = query.filter(ScanHistoryBPOM.session_id == session_id)
+        
+    existing_scan = query.filter(
+        ScanHistoryBPOM.bpom_number == data.get("nomor_registrasi")
+    ).first()
 
-    health_score = analysis_data.get('health_score', 0) if isinstance(analysis_data, dict) else 0
+    if existing_scan:
+        existing_scan.created_at = datetime.now()
+        existing_scan.product_name = data.get("nama_produk")
+        existing_scan.brand = data.get("merk")
+        existing_scan.manufacturer = data.get("pendaftar")
+        if not existing_scan.session_id and session_id:
+            existing_scan.session_id = session_id
+            
+        db.commit()
+        db.refresh(existing_scan)
+        return existing_scan
 
-    history = ScanHistoryOCR(
+    # Insert Baru
+    db_scan = ScanHistoryBPOM(
         user_id=user_id,
-        session_id=session_id,
-        ocr_raw_data=result.get('nutrition'),
-        ai_analysis=analysis_string,          
-        health_score=health_score
+        session_id=session_id, 
+        bpom_number=data.get("nomor_registrasi"),
+        product_name=data.get("nama_produk"),
+        brand=data.get("merk"),
+        manufacturer=data.get("pendaftar"),
+        status=data.get("status_registrasi", "Tidak Diketahui")
     )
-    db.add(history)
+    db.add(db_scan)
     db.commit()
-    return history
+    db.refresh(db_scan)
+    return db_scan
+
+def create_ocr_history(db: Session, user_id: int, health_score: int, ocr_data: str, ai_analysis: str, session_id: str = None):
+    query = db.query(ScanHistoryOCR)
+    if user_id:
+        query = query.filter(ScanHistoryOCR.user_id == user_id)
+    else:
+        query = query.filter(ScanHistoryOCR.session_id == session_id)
+        
+    last_scan = query.order_by(ScanHistoryOCR.created_at.desc()).first()
+
+    if last_scan and last_scan.ocr_raw_data == ocr_data:
+        last_scan.created_at = datetime.now()
+        db.commit()
+        db.refresh(last_scan)
+        return last_scan
+
+    db_scan = ScanHistoryOCR(
+        user_id=user_id,
+        session_id=session_id, 
+        health_score=health_score,
+        ocr_raw_data=ocr_data,
+        ai_analysis=ai_analysis
+    )
+    db.add(db_scan)
+    db.commit()
+    db.refresh(db_scan)
+    return db_scan
+
+def get_user_history(db: Session, user_id: int, limit: int = 20):
+    bpom = db.query(ScanHistoryBPOM).filter(ScanHistoryBPOM.user_id == user_id)\
+        .order_by(ScanHistoryBPOM.created_at.desc()).limit(limit).all()
+    ocr = db.query(ScanHistoryOCR).filter(ScanHistoryOCR.user_id == user_id)\
+        .order_by(ScanHistoryOCR.created_at.desc()).limit(limit).all()
+    
+    return bpom, ocr

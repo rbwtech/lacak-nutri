@@ -9,6 +9,7 @@ from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.models.user import User
+import json
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
 
@@ -24,9 +25,8 @@ async def scan_bpom(
 
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
-        crud_scan.create_bpom_history(db, cached_data, session_id, user_id)
+        crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
         return {"found": True, "message": "Data ditemukan (Cache)", "data": cached_data}
-
     scraper = BPOMScraper()
     result = await scraper.search_bpom(request.bpom_number)
     
@@ -36,9 +36,8 @@ async def scan_bpom(
             "message": f"Produk dengan kode {request.bpom_number} tidak ditemukan.",
             "data": None
         }
-    
     crud_scan.create_bpom_cache(db, request.bpom_number, result)
-    crud_scan.create_bpom_history(db, result, session_id, user_id)
+    crud_scan.create_bpom_history(db, user_id, result, session_id)
     
     return {"found": True, "message": "Data ditemukan", "data": result}
 
@@ -58,10 +57,20 @@ async def analyze_ocr(
     service = GeminiService()
     result = await service.analyze_nutrition_image(request.image_base64)
     
-    if not result:
-        return {"success": False, "message": "Gagal menganalisis gambar dengan AI."}
+    nutrition_data = result.get('nutrition')
+    ai_analysis = result.get('summary')
+    health_score = result.get('health_score')
     
-    crud_scan.create_ocr_history(db, result, session_id, user_id)
+    ocr_data_str = json.dumps(nutrition_data)
+
+    crud_scan.create_ocr_history(
+        db=db, 
+        user_id=user_id, 
+        health_score=health_score, 
+        ocr_data=ocr_data_str, 
+        ai_analysis=ai_analysis,
+        session_id=session_id 
+    )
         
     return {"success": True, "data": result}
 

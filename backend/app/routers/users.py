@@ -166,10 +166,9 @@ async def get_history(
     return {"success": True, "data": combined[:50]}
 
 class DashboardStats(BaseModel):
-    scans: int
     favorites: int
-    history: int
-    recommendations: int
+    scans: int
+    allergies: int
 
 class ScanHistoryItem(BaseModel):
     id: int
@@ -229,7 +228,31 @@ async def get_history_detail(
     
     raise HTTPException(400, "Tipe tidak valid")
 
-@router.get("/dashboard", response_model=DashboardData)
+@router.get("/dashboard-stats", response_model=DashboardStats)
+def get_profile_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    count_bpom = db.query(ScanHistoryBPOM).filter(ScanHistoryBPOM.user_id == current_user.id).count()
+    count_ocr = db.query(ScanHistoryOCR).filter(ScanHistoryOCR.user_id == current_user.id).count()
+    
+    fav_bpom = db.query(ScanHistoryBPOM).filter(
+        ScanHistoryBPOM.user_id == current_user.id,
+        ScanHistoryBPOM.is_favorited == True
+    ).count()
+    
+    fav_ocr = db.query(ScanHistoryOCR).filter(
+        ScanHistoryOCR.user_id == current_user.id,
+        ScanHistoryOCR.is_favorited == True
+    ).count()
+
+    return {
+        "favorites": fav_bpom + fav_ocr,
+        "scans": count_bpom + count_ocr,
+        "allergies": len(current_user.allergies)
+    }
+
+@router.get("/dashboard")
 def get_dashboard_data(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -273,7 +296,7 @@ def get_dashboard_data(
             "id": item.id,
             "type": "ocr",
             "title": "Scan Label Gizi",
-            "subtitle": f"Analisis AI",
+            "subtitle": "Analisis AI",
             "date": item.created_at.isoformat(),
             "score": item.health_score,
             "is_favorited": item.is_favorited,

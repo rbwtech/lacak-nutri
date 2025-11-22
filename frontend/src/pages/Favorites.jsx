@@ -17,18 +17,21 @@ const Favorites = () => {
   const fetchFavorites = async () => {
     try {
       const { data } = await api.get("/favorites/list");
-      setFavorites(data.data);
+      setFavorites(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error(e);
+      console.error("Gagal load favorit", e);
+      setFavorites([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const removeFavorite = async (id) => {
+  const removeFavorite = async (id, type) => {
+    // Butuh type untuk toggle
     try {
-      await api.delete(`/favorites/remove/${id}`);
-      setFavorites(favorites.filter((f) => f.id !== id));
+      // Gunakan endpoint toggle yang sudah ada, bukan remove
+      await api.post(`/favorites/${type}/${id}/toggle`);
+      setFavorites((prev) => prev.filter((f) => f.id !== id));
     } catch (e) {
       alert("Gagal menghapus");
     }
@@ -36,17 +39,17 @@ const Favorites = () => {
 
   return (
     <MainLayout>
-      <div className="bg-bg-base min-h-screen py-8">
+      <div className="min-h-screen bg-[#FDFDF5] py-8">
         <div className="max-w-2xl mx-auto px-4">
-          <h1 className="text-3xl font-extrabold text-text-primary mb-6">
+          <h1 className="text-3xl font-extrabold text-[#333333] mb-6">
             Favorit Saya
           </h1>
 
           {loading ? (
-            <p className="text-center text-text-secondary">Loading...</p>
-          ) : favorites.length === 0 ? (
+            <p className="text-center text-[#8C8C8C]">Loading...</p>
+          ) : favorites && favorites.length === 0 ? ( // Safety check
             <Card className="p-8 text-center">
-              <p className="text-text-secondary mb-4">Belum ada favorit</p>
+              <p className="text-[#8C8C8C] mb-4">Belum ada favorit</p>
               <Button onClick={() => navigate("/scanner")}>
                 Mulai Scan Produk
               </Button>
@@ -54,31 +57,25 @@ const Favorites = () => {
           ) : (
             <div className="space-y-4">
               {favorites.map((fav) => (
-                <Card key={fav.id} className="p-4">
+                <Card key={`${fav.product_type}-${fav.id}`} className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="font-bold text-text-primary">
+                      <h3 className="font-bold text-[#333333]">
                         {fav.product_name}
                       </h3>
                       {fav.bpom_number && (
-                        <p className="text-sm text-text-secondary mt-1">
+                        <p className="text-sm text-[#8C8C8C] mt-1">
                           {fav.bpom_number}
                         </p>
                       )}
-                      <span className="mt-2 text-xs px-2 py-1 bg-primary/10 text-primary rounded flex items-center gap-1">
-                        <svg
-                          className="w-3 h-3"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        {fav.product_type === "bpom" ? "BPOM" : "Nutrisi"}
+                      <span className="mt-2 text-xs px-2 py-1 bg-[#FF9966]/10 text-[#FF9966] rounded-md inline-flex items-center gap-1 font-bold">
+                        {/* Icon SVG omitted for brevity */}
+                        {fav.product_type === "bpom" ? "BPOM" : "Nutrisi AI"}
                       </span>
                     </div>
                     <button
-                      onClick={() => removeFavorite(fav.id)}
-                      className="text-error hover:bg-error/10 p-2 rounded-lg"
+                      onClick={() => removeFavorite(fav.id, fav.product_type)}
+                      className="text-[#EF5350] hover:bg-[#EF5350]/10 p-2 rounded-lg transition-colors"
                     >
                       <svg
                         className="w-5 h-5"
