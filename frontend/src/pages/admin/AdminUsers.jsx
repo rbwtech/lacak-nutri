@@ -75,11 +75,10 @@ const AdminUsers = () => {
       formData: dataToSubmit,
       successMsg: t("admin.user.updateSuccess"),
       failureMsg: t("admin.user.updateFailed"),
-      path: `users/${selectedUser.id}/${modalType}`,
     };
 
     if (isOwnerAdmin()) {
-      handleWriteOperation("submit", selectedUser.id, actionData);
+      handleWriteOperation("patch", null, actionData);
       setShowModal(false);
       return;
     }
@@ -105,11 +104,10 @@ const AdminUsers = () => {
       formData: {},
       successMsg: t("admin.user.resetSuccessLink"),
       failureMsg: t("admin.user.resetFailed"),
-      path: `users/${userId}/reset-password`,
     };
 
     if (isOwnerAdmin()) {
-      handleWriteOperation("submit", userId, actionData);
+      handleWriteOperation("post", null, actionData);
       return;
     }
 
