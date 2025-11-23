@@ -7,8 +7,8 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User, Allergen, LocalizationSetting
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
-from app.models.education import Article
-from app.models.food import FoodCatalog  # FIX: Use food instead of nutrition
+from app.models.education import EducationArticle, Additive, Disease, NutritionInfo
+from app.models.food import FoodCatalog
 import secrets
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
@@ -27,7 +27,7 @@ def get_admin_stats(
     total_users = db.query(User).count()
     total_bpom = db.query(ScanHistoryBPOM).count()
     total_ocr = db.query(ScanHistoryOCR).count()
-    total_articles = db.query(Article).count()
+    total_articles = db.query(EducationArticle).count()
     total_products = db.query(FoodCatalog).count()
     
     return {
@@ -62,7 +62,7 @@ def get_all_users(
             "name": u.name,
             "email": u.email,
             "role": u.role,
-            "created_at": u.created_at.isoformat(),
+            "created_at": u.created_at.isoformat() if u.created_at else None,
             "age": u.age,
             "weight": u.weight,
             "height": u.height,
@@ -151,12 +151,12 @@ def get_all_bpom_scans(
         "data": [{
             "id": s.id,
             "user_id": s.user_id,
-            "user_name": s.user.name,
+            "user_name": s.user.name if s.user else "Unknown",
             "product_name": s.product_name,
             "bpom_number": s.bpom_number,
             "manufacturer": s.manufacturer,
             "status": s.status,
-            "created_at": s.created_at.isoformat()
+            "created_at": s.created_at.isoformat() if s.created_at else None
         } for s in scans],
         "total": total
     }
@@ -175,10 +175,10 @@ def get_all_ocr_scans(
         "data": [{
             "id": s.id,
             "user_id": s.user_id,
-            "user_name": s.user.name,
+            "user_name": s.user.name if s.user else "Unknown",
             "product_name": s.product_name,
             "health_score": s.health_score,
-            "created_at": s.created_at.isoformat()
+            "created_at": s.created_at.isoformat() if s.created_at else None
         } for s in scans],
         "total": total
     }
@@ -244,6 +244,120 @@ def delete_allergen(
     db.delete(allergen)
     db.commit()
     return {"success": True, "message": "Deleted"}
+
+# ============= ADDITIVE CRUD =============
+class AdditiveCreate(BaseModel):
+    name: str
+    code: Optional[str] = None
+    category: Optional[str] = None
+    safety_level: Optional[str] = "safe"
+    description: Optional[str] = None
+    health_risks: Optional[str] = None
+
+@router.get("/additives")
+def get_additives_admin(
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    additives = db.query(Additive).all()
+    return {"data": additives}
+
+@router.post("/additives")
+def create_additive(
+    data: AdditiveCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    additive = Additive(**data.dict())
+    db.add(additive)
+    db.commit()
+    db.refresh(additive)
+    return {"success": True}
+
+@router.put("/additives/{additive_id}")
+def update_additive(
+    additive_id: int,
+    data: AdditiveCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    additive = db.query(Additive).filter(Additive.id == additive_id).first()
+    if not additive:
+        raise HTTPException(404, "Not found")
+    
+    for key, value in data.dict().items():
+        setattr(additive, key, value)
+    db.commit()
+    return {"success": True}
+
+@router.delete("/additives/{additive_id}")
+def delete_additive(
+    additive_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    additive = db.query(Additive).filter(Additive.id == additive_id).first()
+    if not additive:
+        raise HTTPException(404, "Not found")
+    db.delete(additive)
+    db.commit()
+    return {"success": True}
+
+# ============= DISEASE CRUD =============
+class DiseaseCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    dietary_recommendations: Optional[str] = None
+    foods_to_avoid: Optional[str] = None
+
+@router.get("/diseases")
+def get_diseases_admin(
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    diseases = db.query(Disease).all()
+    return {"data": diseases}
+
+@router.post("/diseases")
+def create_disease(
+    data: DiseaseCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    disease = Disease(**data.dict())
+    db.add(disease)
+    db.commit()
+    db.refresh(disease)
+    return {"success": True}
+
+@router.put("/diseases/{disease_id}")
+def update_disease(
+    disease_id: int,
+    data: DiseaseCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    disease = db.query(Disease).filter(Disease.id == disease_id).first()
+    if not disease:
+        raise HTTPException(404, "Not found")
+    
+    for key, value in data.dict().items():
+        setattr(disease, key, value)
+    db.commit()
+    return {"success": True}
+
+@router.delete("/diseases/{disease_id}")
+def delete_disease(
+    disease_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
+):
+    disease = db.query(Disease).filter(Disease.id == disease_id).first()
+    if not disease:
+        raise HTTPException(404, "Not found")
+    db.delete(disease)
+    db.commit()
+    return {"success": True}
 
 # ============= LOCALIZATION CRUD =============
 class LocalizationCreate(BaseModel):
@@ -317,7 +431,7 @@ def get_articles_admin(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    articles = db.query(Article).all()
+    articles = db.query(EducationArticle).all()
     return {"data": articles}
 
 @router.post("/articles")
@@ -326,7 +440,7 @@ def create_article(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    article = Article(**data.dict())
+    article = EducationArticle(**data.dict())
     db.add(article)
     db.commit()
     return {"success": True}
@@ -338,7 +452,7 @@ def update_article(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    article = db.query(Article).filter(Article.id == article_id).first()
+    article = db.query(EducationArticle).filter(EducationArticle.id == article_id).first()
     if not article:
         raise HTTPException(404, "Not found")
     
@@ -353,7 +467,7 @@ def delete_article(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    article = db.query(Article).filter(Article.id == article_id).first()
+    article = db.query(EducationArticle).filter(EducationArticle.id == article_id).first()
     if not article:
         raise HTTPException(404, "Not found")
     db.delete(article)

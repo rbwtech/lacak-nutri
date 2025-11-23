@@ -3,8 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute, AdminRoute } from "./routes";
 import {
+  AdminAdditives,
   AdminAllergens,
   AdminDashboard,
+  AdminDiseases,
   AdminHistory,
   AdminUsers,
   AdminArticles,
@@ -113,6 +115,22 @@ function App() {
               element={
                 <AdminRoute>
                   <AdminAllergens />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/additives"
+              element={
+                <AdminRoute>
+                  <AdminAdditives />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/diseases"
+              element={
+                <AdminRoute>
+                  <AdminDiseases />
                 </AdminRoute>
               }
             />

@@ -52,9 +52,12 @@ class User(Base):
     gender = Column(String(10), nullable=True)
     timezone = Column(String(50), default='Asia/Jakarta')
     locale = Column(String(10), default='id-ID')
+    photo_url = Column(String(255))
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships
     allergies = relationship("Allergen", secondary=user_allergies, backref="users")
-    photo_url = Column(String(255))
+    bpom_scans = relationship("ScanHistoryBPOM", back_populates="user")
+    ocr_scans = relationship("ScanHistoryOCR", back_populates="user")
