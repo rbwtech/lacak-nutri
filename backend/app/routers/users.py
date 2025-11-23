@@ -219,6 +219,38 @@ async def update_profile(
         }
     }
 
+@router.patch("/update-locale")
+def update_user_locale(
+    locale: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update user locale only without multipart form"""
+    if locale not in ['id-ID', 'en-US']:
+        raise HTTPException(400, "Locale tidak valid")
+    
+    current_user.locale = locale
+    db.commit()
+    db.refresh(current_user)
+    
+    return {
+        "success": True,
+        "message": "Bahasa berhasil diubah",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "role": current_user.role,
+            "age": current_user.age,
+            "weight": current_user.weight,
+            "height": current_user.height,
+            "gender": current_user.gender,
+            "timezone": current_user.timezone,
+            "locale": current_user.locale,
+            "photo_url": current_user.photo_url
+        }
+    }
+
 @router.get("/history")
 async def get_history(
     type: str = None,

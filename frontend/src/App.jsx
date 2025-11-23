@@ -1,7 +1,16 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import { ProtectedRoute, AdminRoute } from "./routes";
+import {
+  AdminAllergens,
+  AdminDashboard,
+  AdminHistory,
+  AdminUsers,
+  AdminArticles,
+  AdminLocalization,
+  AdminProducts,
+} from "./pages/admin";
 import {
   Home,
   Login,
@@ -73,6 +82,62 @@ function App() {
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/history"
+              element={
+                <AdminRoute>
+                  <AdminHistory />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/allergens"
+              element={
+                <AdminRoute>
+                  <AdminAllergens />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/articles"
+              element={
+                <AdminRoute>
+                  <AdminArticles />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/localization"
+              element={
+                <AdminRoute>
+                  <AdminLocalization />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/products"
+              element={
+                <AdminRoute>
+                  <AdminProducts />
+                </AdminRoute>
               }
             />
 

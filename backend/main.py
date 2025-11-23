@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import auth, scan, users, education, food, favorites
+from app.routers import auth, users, food, scan, education, favorites, admin
 import os
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
@@ -26,6 +26,7 @@ app.include_router(users.router)
 app.include_router(education.router)
 app.include_router(food.router)
 app.include_router(favorites.router)
+app.include_router(admin.router) 
 
 @app.get("/")
 def root():

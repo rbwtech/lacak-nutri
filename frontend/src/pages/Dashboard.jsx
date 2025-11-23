@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "../components/layouts";
 import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
@@ -7,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../config/api";
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [stats, setStats] = useState({
     scans: 0,
@@ -55,25 +57,33 @@ const Dashboard = () => {
   const getBMIStatus = (val) => {
     if (!val)
       return {
-        label: "Belum Ada Data",
+        label: t("dashboard.noData"),
         color: "text-text-secondary",
         bg: "bg-gray-100",
       };
     if (val < 18.5)
       return {
-        label: "Kurang",
+        label: t("dashboard.underweight"),
         color: "text-warning-text",
         bg: "bg-warning/10",
       };
     if (val < 25)
-      return { label: "Ideal", color: "text-success", bg: "bg-success/10" };
+      return {
+        label: t("dashboard.ideal"),
+        color: "text-success",
+        bg: "bg-success/10",
+      };
     if (val < 30)
       return {
-        label: "Lebih",
+        label: t("dashboard.overweight"),
         color: "text-warning-text",
         bg: "bg-warning/10",
       };
-    return { label: "Obesitas", color: "text-error", bg: "bg-error/10" };
+    return {
+      label: t("dashboard.obese"),
+      color: "text-error",
+      bg: "bg-error/10",
+    };
   };
 
   const bmiStatus = getBMIStatus(bmi);
@@ -121,6 +131,13 @@ const Dashboard = () => {
     return to ? <Link to={to}>{content}</Link> : content;
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t("dashboard.goodMorning");
+    if (hour < 18) return t("dashboard.goodAfternoon");
+    return t("dashboard.goodEvening");
+  };
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -128,13 +145,13 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-text-primary mb-2">
-                Selamat Pagi,{" "}
+                {getGreeting()},{" "}
                 <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-orange-600">
-                  {user?.name?.split(" ")[0] || "Kawan"}
+                  {user?.name?.split(" ")[0] || t("dashboard.friend")}
                 </span>
               </h1>
               <p className="text-text-secondary font-medium">
-                Siap memantau nutrisi hari ini?
+                {t("dashboard.subtitle")}
               </p>
             </div>
             <div className="flex gap-3">
@@ -159,7 +176,7 @@ const Dashboard = () => {
                       d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  Scan Produk
+                  {t("dashboard.scanProduct")}
                 </Button>
               </Link>
             </div>
@@ -167,7 +184,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             <StatCard
-              label="Total Scan"
+              label={t("dashboard.totalScans")}
               value={stats.scans}
               color="text-primary"
               bg="bg-primary/10"
@@ -182,7 +199,7 @@ const Dashboard = () => {
             />
 
             <StatCard
-              label="Favorit"
+              label={t("dashboard.favorites")}
               value={stats.favorites}
               color="text-error"
               bg="bg-error/10"
@@ -197,7 +214,7 @@ const Dashboard = () => {
             />
 
             <StatCard
-              label="BMI"
+              label={t("dashboard.bmi")}
               value={bmi ? bmi : "--"}
               color={bmiStatus.color}
               bg={bmiStatus.bg}
@@ -212,7 +229,7 @@ const Dashboard = () => {
             />
 
             <StatCard
-              label="Analisis AI"
+              label={t("dashboard.aiAnalysis")}
               value={stats.recommendations}
               color="text-warning-text"
               bg="bg-warning/10"
@@ -232,13 +249,13 @@ const Dashboard = () => {
               <div className="bg-bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-text-primary">
-                    Aktivitas Terakhir
+                    {t("dashboard.recentActivity")}
                   </h3>
                   <Link
                     to="/history"
                     className="text-sm font-bold text-primary hover:underline"
                   >
-                    Lihat Semua
+                    {t("dashboard.viewAll")}
                   </Link>
                 </div>
 
@@ -246,7 +263,7 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                       <div
-                        key={i}
+                        key={`loading-${i}`}
                         className="h-20 w-full bg-gray-100 rounded-2xl animate-pulse"
                       ></div>
                     ))}
@@ -255,7 +272,7 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     {recentScans.map((item) => (
                       <div
-                        key={item.id}
+                        key={`${item.type}-${item.id}`}
                         className="group flex items-center p-4 rounded-2xl border border-border hover:border-primary/30 hover:bg-bg-base transition-all cursor-pointer"
                         onClick={() =>
                           navigate(
@@ -318,10 +335,13 @@ const Dashboard = () => {
                           )}
                           <div className="text-right">
                             <p className="text-[10px] text-text-secondary font-medium">
-                              {new Date(item.date).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                              })}
+                              {new Date(item.date).toLocaleDateString(
+                                user?.locale || "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                }
+                              )}
                             </p>
                           </div>
                           <button
@@ -369,11 +389,11 @@ const Dashboard = () => {
                       </svg>
                     </div>
                     <p className="text-text-secondary text-sm font-medium mb-4">
-                      Belum ada riwayat scan.
+                      {t("dashboard.noHistory")}
                     </p>
                     <Link to="/scanner">
                       <Button variant="outline" size="sm">
-                        Mulai Scan
+                        {t("dashboard.startScan")}
                       </Button>
                     </Link>
                   </div>
@@ -385,10 +405,11 @@ const Dashboard = () => {
               <div className="bg-linear-to-br from-primary to-orange-500 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-xl"></div>
                 <div className="relative z-10">
-                  <h3 className="font-bold text-lg mb-2">Database Produk</h3>
+                  <h3 className="font-bold text-lg mb-2">
+                    {t("dashboard.productDatabase")}
+                  </h3>
                   <p className="text-white/90 text-sm mb-6 leading-relaxed">
-                    Cari informasi nilai gizi dari ribuan produk yang sudah
-                    terdaftar.
+                    {t("dashboard.productDatabaseDesc")}
                   </p>
                   <Link to="/products">
                     <button className="w-full py-3 bg-white text-primary font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm">
@@ -405,7 +426,7 @@ const Dashboard = () => {
                           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                         />
                       </svg>
-                      Cari Sekarang
+                      {t("dashboard.searchNow")}
                     </button>
                   </Link>
                 </div>
@@ -422,7 +443,7 @@ const Dashboard = () => {
                   </svg>
                 </div>
                 <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
-                  Tips Sehat
+                  {t("dashboard.healthTips")}
                 </h4>
                 {dailyTip ? (
                   <>
@@ -436,12 +457,12 @@ const Dashboard = () => {
                       to={`/articles/${dailyTip.slug}`}
                       className="text-xs font-bold text-text-primary hover:text-primary mt-3 block underline decoration-primary/30"
                     >
-                      Baca Selengkapnya
+                      {t("dashboard.readMore")}
                     </Link>
                   </>
                 ) : (
                   <p className="text-xs text-text-secondary">
-                    Memuat tips kesehatan untuk Anda...
+                    {t("dashboard.loadingTips")}
                   </p>
                 )}
               </div>

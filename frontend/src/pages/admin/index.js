@@ -1,0 +1,7 @@
+export { default as AdminAllergens } from "./AdminAllergens";
+export { default as AdminArticles } from "./AdminArticles";
+export { default as AdminDashboard } from "./AdminDashboard";
+export { default as AdminHistory } from "./AdminHistory";
+export { default as AdminLocalization } from "./AdminLocalization";
+export { default as AdminProducts } from "./AdminProducts";
+export { default as AdminUsers } from "./AdminUsers";
