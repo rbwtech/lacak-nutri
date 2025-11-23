@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { useTranslation } from "react-i18next";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const Register = () => {
   const { t } = useTranslation();
@@ -17,10 +18,18 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const recaptchaRef = useRef(null);
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: null, submit: null });
+  };
+
+  const onRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setErrors((prev) => ({ ...prev, submit: null }));
   };
 
   const handleSubmit = async (e) => {
@@ -33,16 +42,30 @@ const Register = () => {
       return;
     }
 
+    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
+      setErrors({
+        submit: t("auth.recaptchaRequired") || "Harap verifikasi reCAPTCHA.",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        recaptcha_token: recaptchaToken,
       });
       navigate("/dashboard");
-    } catch {
-      setErrors({ submit: t("auth.registerFailed") });
+    } catch (error) {
+      const errorDetail = error.response?.data?.detail;
+      setErrors({ submit: errorDetail || t("auth.registerFailed") });
     } finally {
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaToken(null);
+      }
       setLoading(false);
     }
   };
@@ -108,6 +131,17 @@ const Register = () => {
             error={errors.confirmPassword}
             className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
+
+          {RECAPTCHA_SITE_KEY && (
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={onRecaptchaChange}
+                onExpired={() => setRecaptchaToken(null)}
+              />
+            </div>
+          )}
 
           {errors.submit && (
             <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">

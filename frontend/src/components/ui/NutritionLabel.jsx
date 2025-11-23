@@ -1,5 +1,8 @@
+import { useTranslation } from "react-i18next";
+
 const NutritionLabel = ({ data }) => {
   if (!data) return null;
+  const { t } = useTranslation();
 
   const getVal = (...keys) => {
     for (const key of keys) {
@@ -119,42 +122,48 @@ const NutritionLabel = ({ data }) => {
   return (
     <div className="bg-white dark:bg-neutral-900 p-4 border-2 border-black dark:border-neutral-500 text-sm font-sans w-full max-w-sm mx-auto shadow-lg rounded-sm text-black dark:text-neutral-200">
       <h2 className="text-3xl font-black border-b-8 border-black pb-1 mb-2 dark:border-neutral-300">
-        Informasi Nilai Gizi
+        {t("nutritionLabel.title")}
       </h2>
 
       <div className="flex justify-between items-end mb-2 border-b-4 border-black pb-2 dark:border-neutral-300">
         <div>
-          <p className="font-bold text-base">Takaran Saji</p>
+          <p className="font-bold text-base">
+            {t("nutritionLabel.servingSize")}
+          </p>
           <p className="text-sm text-gray-600 dark:text-neutral-400">
-            Per Kemasan/Sajian
+            {t("nutritionLabel.perPackage")}
           </p>
         </div>
       </div>
 
       <div className="flex justify-between items-center border-b-4 border-black py-3 mb-2 dark:border-neutral-300">
-        <span className="font-black text-xl">Energi Total</span>
+        <span className="font-black text-xl">
+          {t("nutritionLabel.totalEnergy")}
+        </span>
         <span className="font-black text-4xl">
           {Math.round(getVal("calories", "energi"))}{" "}
-          <span className="text-lg">kkal</span>
+          <span className="text-lg">{t("nutritionLabel.kcalUnit")}</span>
         </span>
       </div>
 
-      <p className="text-right text-xs font-bold mb-1">% AKG*</p>
+      <p className="text-right text-xs font-bold mb-1">
+        {t("nutritionLabel.dailyValueHeader")}
+      </p>
       <div className="border-b-2 border-black mb-1 dark:border-neutral-300"></div>
 
       <Row
-        label="Lemak Total"
+        label={t("nutritionLabel.totalFat")}
         value={getVal("fat", "lemak_total", "lemak")}
         bold={true}
       />
       <Row
-        label="Kolesterol"
+        label={t("nutritionLabel.cholesterol")}
         value={getVal("cholesterol_mg", "kolesterol", "cholesterol")}
         unit="mg"
         bold={true}
       />
       <Row
-        label="Natrium (Garam)"
+        label={t("nutritionLabel.sodium")}
         value={getVal("sodium_mg", "sodium", "natrium", "garam")}
         unit="mg"
         bold={true}
@@ -163,36 +172,47 @@ const NutritionLabel = ({ data }) => {
 
       <div className="border-t-4 border-black mt-1 dark:border-neutral-300"></div>
       <Row
-        label="Karbohidrat Total"
+        label={t("nutritionLabel.totalCarbs")}
         value={getVal("carbs", "karbohidrat_total", "karbohidrat")}
         bold={true}
       />
       <Row
-        label="Serat Pangan"
+        label={t("nutritionLabel.dietaryFiber")}
         value={getVal("fiber", "serat")}
         indent={true}
       />
       <Row
-        label="Gula"
+        label={t("nutritionLabel.sugar")}
         value={getVal("sugar", "gula")}
         indent={true}
         highlight={true}
       />
 
       <div className="border-t-4 border-black mt-1 dark:border-neutral-300"></div>
-      <Row label="Protein" value={getVal("protein")} bold={true} />
+      <Row
+        label={t("nutritionLabel.protein")}
+        value={getVal("protein")}
+        bold={true}
+      />
 
       <div className="border-t-8 border-black mt-4 pt-3 dark:border-neutral-300">
         <div className="grid grid-cols-2 gap-y-2 text-xs font-medium text-gray-700 dark:text-neutral-300">
-          <span>Kalsium {getVal("calcium_mg", "kalsium", "calcium")}mg</span>
-          <span>Zat Besi {getVal("iron_mg", "zat_besi", "iron")}mg</span>
-          <span>Kalium {getVal("potassium_mg", "kalium", "potassium")}mg</span>
+          <span>
+            {t("nutritionLabel.calcium")}{" "}
+            {getVal("calcium_mg", "kalsium", "calcium")}mg
+          </span>
+          <span>
+            {t("nutritionLabel.iron")} {getVal("iron_mg", "zat_besi", "iron")}mg
+          </span>
+          <span>
+            {t("nutritionLabel.potassium")}{" "}
+            {getVal("potassium_mg", "kalium", "potassium")}mg
+          </span>
         </div>
       </div>
 
       <p className="text-[10px] mt-4 leading-tight text-gray-500 dark:text-neutral-400">
-        *Persen Angka Kecukupan Gizi (AKG) berdasarkan kebutuhan energi 2150
-        kkal. Kebutuhan energi Anda mungkin lebih tinggi atau lebih rendah.
+        {t("nutritionLabel.footerNote", { akg: 2150 })}
       </p>
     </div>
   );

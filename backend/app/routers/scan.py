@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, status
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.core.database import get_db
@@ -7,11 +7,13 @@ from app.services.ai_service import GeminiService
 from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, ChatRequest
 from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
+from datetime import date
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.models.user import User  # ONLY User, no UserAllergy
 import json
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
+MAX_FREE_OCR_SCANS_PER_DAY = 4
 
 @router.post("/bpom", response_model=ScanResponse)
 async def scan_bpom(
@@ -56,15 +58,25 @@ async def analyze_ocr(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
+    scan_count_today = crud_scan.get_daily_ocr_scans_count(db, user_id, session_id)
+    
+    if scan_count_today >= MAX_FREE_OCR_SCANS_PER_DAY:
+        if user_id:
+            detail_msg = "Anda telah mencapai batas maksimal 4x Analisis AI per hari. Silakan coba lagi besok."
+        else:
+            detail_msg = "Anda sebagai Tamu telah mencapai batas maksimal 4x Analisis AI per hari. Silakan buat akun untuk batas yang lebih longgar, atau coba lagi besok."
+            
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=detail_msg
+        )
     service = GeminiService()
     result = await service.analyze_nutrition_image(request.image_base64)
 
-    # Get user allergies through relationship
     user_allergies = []
     if current_user:
         user_allergies = [allergy.name.lower() for allergy in current_user.allergies]
     
-    # Detect allergens from ingredients
     ingredients = result.get('ingredients') or ""
     ingredients_text = ingredients.lower()
     detected_allergens = [

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { useTranslation } from "react-i18next";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const Login = () => {
   const { t } = useTranslation();
@@ -13,17 +14,39 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const recaptchaRef = useRef(null);
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+  const onRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setLoginError(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setLoginError(null);
+
+    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
+      setLoginError(
+        t("auth.recaptchaRequired") || "Harap verifikasi reCAPTCHA."
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password);
+      await login(email, password, recaptchaToken);
       navigate("/dashboard");
     } catch (error) {
-      setLoginError(t("auth.loginFailed"));
+      const errorDetail = error.response?.data?.detail;
+      setLoginError(errorDetail || t("auth.loginFailed"));
     } finally {
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaToken(null);
+      }
       setLoading(false);
     }
   };
@@ -79,6 +102,17 @@ const Login = () => {
               </Link>
             </div>
           </div>
+
+          {RECAPTCHA_SITE_KEY && (
+            <div className="flex justify-center pt-2">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={onRecaptchaChange}
+                onExpired={() => setRecaptchaToken(null)}
+              />
+            </div>
+          )}
 
           {loginError && (
             <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">

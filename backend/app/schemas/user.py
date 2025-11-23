@@ -3,17 +3,23 @@ from typing import Optional
 
 class AuthorizationCode(BaseModel):
     auth_code: str
-    
+
 class UserBase(BaseModel):
     email: EmailStr
     name: str
 
 class UserCreate(UserBase):
     password: str
+    recaptcha_token: str
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    recaptcha_token: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    recaptcha_token: str
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
