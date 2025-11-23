@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["lacaknutri.webp", "robots.txt"],
+      includeAssets: ["lacaknutri.svg", "robots.txt"],
       manifest: {
         name: "LacakNutri - Scanner Nutrisi & BPOM",
         short_name: "LacakNutri",
@@ -20,13 +20,13 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "/lacaknutri.webp",
+            src: "/lacaknutri.svg",
             sizes: "192x192",
             type: "image/webp",
             purpose: "any maskable",
           },
           {
-            src: "/lacaknutri.webp",
+            src: "/lacaknutri.svg",
             sizes: "512x512",
             type: "image/webp",
             purpose: "any maskable",
