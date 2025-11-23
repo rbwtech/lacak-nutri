@@ -425,6 +425,13 @@
       "noDescriptionPlaceholder": "Tidak ada deskripsi",
       "refresh": "Segarkan"
     },
+    "pagination": {
+      "show": "Tampilkan",
+      "previous": "Sebelumnya",
+      "next": "Selanjutnya",
+      "pageInfo": "Halaman {{current}} dari {{total}} ({{count}} item)",
+      "noResults": "Tidak ada hasil yang cocok dengan pencarian"
+    },
     "dashboard": {
       "title": "Admin Dashboard",
       "subtitle": "Kelola data dan pengguna platform"
@@ -460,6 +467,7 @@
       "resetSuccess": "Link reset dibuat: {{link}}\nKirim ke: {{email}}",
       "resetFailed": "Gagal membuat link reset",
       "updateFailed": "Update gagal",
+      "updateSuccess": "Update sukses",
       "emailPlaceholder": "Email baru",
       "tableEmail": "Email",
       "reset": "Reset",
@@ -511,6 +519,9 @@
       "edit": "Edit Alergen",
       "custom": "Kustom",
       "confirmDelete": "Hapus alergen ini?",
+      "successUpdate": "Update sukses",
+      "successCreate": "Buat sukses",
+      "successDelete": "Hapus sukses",
       "name": "Nama",
       "description": "Deskripsi",
       "namePlaceholder": "Contoh: Kacang Tanah",
@@ -538,6 +549,7 @@
       "foodsToAvoidPlaceholder": "Makanan yang harus dihindari"
     },
     "article": {
+      "name": "Nama Artikel",
       "title": "Manajemen Artikel",
       "desc": "Konten edukasi",
       "total": "Total: {{count}} artikel",
@@ -574,6 +586,9 @@
       "locale": "Lokal",
       "localeLabel": "Label Lokal",
       "countryCode": "Kode Negara",
+      "successUpdate": "Update sukses",
+      "successCreate": "Buat sukses",
+      "successDelete": "Hapus sukses",
       "region": "Wilayah",
       "status": "Status",
       "active": "Aktif",
@@ -581,6 +596,7 @@
     },
     "product": {
       "title": "Katalog Produk",
+      "searchPlaceholder": "Cari nama produk atau kode...",
       "desc": "Katalog bahan makanan",
       "total": "Total: {{count}} produk",
       "add": "Tambah Produk",

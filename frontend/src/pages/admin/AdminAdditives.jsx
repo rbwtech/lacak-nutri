@@ -7,6 +7,7 @@ import api from "../../config/api";
 import Toast from "../../components/ui/Toast";
 import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
 import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import { useDebounce } from "../../hooks/useCommon";
 import { useTranslation } from "react-i18next";
 
 const AdminAdditives = () => {
@@ -19,12 +20,11 @@ const AdminAdditives = () => {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    category: "",
+    category: "lainnya",
     safety_level: "safe",
     description: "",
     health_risks: "",
   });
-  const [total, setTotal] = useState(0);
   const [toast, setToast] = useState({
     isOpen: false,
     message: "",
@@ -33,10 +33,23 @@ const AdminAdditives = () => {
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
+  // Pagination & Search
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const debouncedSearch = useDebounce(search, 500);
+
   const fetchAdditives = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/additives");
+      const { data } = await api.get("/admin/additives", {
+        params: {
+          search: debouncedSearch || undefined,
+          skip: (page - 1) * pageSize,
+          limit: pageSize,
+        },
+      });
       setAdditives(data.data);
       setTotal(data.total || 0);
     } catch (e) {
@@ -55,9 +68,15 @@ const AdminAdditives = () => {
   } = useOwnerAuth(showToast, fetchAdditives);
 
   useEffect(() => {
-    fetchAdditives();
-  }, []);
+    setPage(1);
+  }, [debouncedSearch, pageSize]);
 
+  useEffect(() => {
+    fetchAdditives();
+  }, [page, pageSize, debouncedSearch]);
+
+  // ... openModal, handleCreateOrUpdate, handleDelete, getSafetyColor, translateSafety ...
+  // (Copy these functions from your previous AdminAdditives.jsx or the provided one, they are standard)
   const openModal = (additive = null) => {
     if (additive) {
       setEditMode(true);
@@ -69,7 +88,7 @@ const AdminAdditives = () => {
       setFormData({
         name: "",
         code: "",
-        category: "",
+        category: "lainnya",
         safety_level: "safe",
         description: "",
         health_risks: "",
@@ -144,6 +163,8 @@ const AdminAdditives = () => {
     return t(`admin.additive.${level}`);
   };
 
+  const totalPages = Math.ceil(total / pageSize);
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -161,6 +182,71 @@ const AdminAdditives = () => {
               {t("admin.additive.add")}
             </Button>
           </div>
+
+          {/* Search & Filter Card */}
+          <Card className="p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="w-full md:w-2/3">
+                <div className="relative">
+                  <svg
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder={t("admin.user.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <span className="text-sm text-text-secondary font-semibold whitespace-nowrap">
+                  {t("admin.pagination.show")}:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none font-semibold cursor-pointer"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </Card>
 
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
@@ -197,7 +283,9 @@ const AdminAdditives = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        {t("admin.common.noData")}
+                        {search
+                          ? t("admin.pagination.noResults")
+                          : t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -243,18 +331,49 @@ const AdminAdditives = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span className="text-sm text-text-secondary">
+                  {t("admin.pagination.pageInfo", {
+                    current: page,
+                    total: totalPages,
+                    count: total,
+                  })}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    {t("admin.pagination.previous")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    {t("admin.pagination.next")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>
-      {/* Modal and Auth */}
+      {/* ... (Modals and Toast) ... */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.additive.edit") : t("admin.additive.add")}
             </h3>
+
             <div className="space-y-4">
-              {/* Inputs */}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.additive.name")}
@@ -274,16 +393,28 @@ const AdminAdditives = () => {
                   placeholder="e.g., E951"
                 />
               </div>
-              {/* ... Other inputs ... */}
+
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label={t("admin.additive.category")}
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  placeholder={t("admin.additive.categoryPlaceholder")}
-                />
+                <div>
+                  <label className="block text-sm font-bold text-text-primary mb-2">
+                    {t("admin.additive.category")}
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) =>
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                  >
+                    <option value="pemanis">Pemanis</option>
+                    <option value="pengawet">Pengawet</option>
+                    <option value="pewarna">Pewarna</option>
+                    <option value="perisa">Perisa</option>
+                    <option value="pengemulsi">Pengemulsi</option>
+                    <option value="lainnya">Lainnya</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-text-primary mb-2">
                     {t("admin.additive.safetyLabel")}
@@ -303,7 +434,6 @@ const AdminAdditives = () => {
                   </select>
                 </div>
               </div>
-              {/* Textareas */}
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.additive.description")}
@@ -333,6 +463,7 @@ const AdminAdditives = () => {
                 />
               </div>
             </div>
+
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

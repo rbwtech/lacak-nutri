@@ -7,6 +7,7 @@ import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
 import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
 import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import { useDebounce } from "../../hooks/useCommon";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
 
@@ -32,16 +33,27 @@ const AdminDiseases = () => {
     message: "",
     type: "success",
   });
+
+  // Pagination & Search
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const debouncedSearch = useDebounce(search, 500);
 
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
-  // FIX: Define fetch first
   const fetchDiseases = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/diseases");
+      const { data } = await api.get("/admin/diseases", {
+        params: {
+          search: debouncedSearch || undefined,
+          skip: (page - 1) * pageSize,
+          limit: pageSize,
+        },
+      });
       setDiseases(data.data);
       setTotal(data.total || 0);
     } catch (e) {
@@ -60,8 +72,12 @@ const AdminDiseases = () => {
   } = useOwnerAuth(showToast, fetchDiseases);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, pageSize]);
+
+  useEffect(() => {
     fetchDiseases();
-  }, []);
+  }, [page, pageSize, debouncedSearch]);
 
   const openModal = (disease = null) => {
     if (disease) {
@@ -90,13 +106,11 @@ const AdminDiseases = () => {
         : t("admin.disease.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-
     if (isOwnerAdmin()) {
       handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-
     try {
       if (editMode) await api.put(`/admin/diseases/${currentId}`, formData);
       else await api.post("/admin/diseases", formData);
@@ -116,12 +130,10 @@ const AdminDiseases = () => {
       successMsg: t("admin.disease.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-
     if (isOwnerAdmin()) {
       handleWriteOperation("delete", idToDelete, actionData);
       return;
     }
-
     try {
       await api.delete(`/admin/diseases/${idToDelete}`);
       showToast(actionData.successMsg);
@@ -130,14 +142,12 @@ const AdminDiseases = () => {
       showToast(actionData.failureMsg, "error");
     }
   };
+  const handleDeleteClick = (id) => setConfirmDelete({ isOpen: true, id });
 
-  const handleDeleteClick = (id) => {
-    setConfirmDelete({ isOpen: true, id });
-  };
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <MainLayout>
-      {/* ... (Table content) ... */}
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -146,7 +156,7 @@ const AdminDiseases = () => {
                 {t("admin.disease.title")}
               </h1>
               <p className="text-text-secondary">
-                {t("admin.disease.total", { count: diseases.length })}
+                {t("admin.disease.total", { count: total })}
               </p>
             </div>
             <Button onClick={() => openModal()}>
@@ -154,14 +164,80 @@ const AdminDiseases = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="w-full md:w-2/3">
+                <div className="relative">
+                  <svg
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder={t("admin.user.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <span className="text-sm text-text-secondary font-semibold whitespace-nowrap">
+                  {t("admin.pagination.show")}:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none font-semibold cursor-pointer"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {loading ? (
               <Card className="p-6 col-span-full text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
               </Card>
             ) : diseases.length === 0 ? (
               <Card className="p-6 col-span-full text-center text-text-secondary">
-                {t("admin.common.noData")}
+                {search
+                  ? t("admin.pagination.noResults")
+                  : t("admin.common.noData")}
               </Card>
             ) : (
               diseases.map((disease) => (
@@ -193,13 +269,43 @@ const AdminDiseases = () => {
               ))
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-bg-surface rounded-3xl border border-border shadow-card">
+              <span className="text-sm text-text-secondary">
+                {t("admin.pagination.pageInfo", {
+                  current: page,
+                  total: totalPages,
+                  count: total,
+                })}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  {t("admin.pagination.previous")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  {t("admin.pagination.next")}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
-            {/* ... (Form Fields) ... */}
+            {/* ... (Modal content same as previous) ... */}
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.disease.edit") : t("admin.disease.add")}
             </h3>

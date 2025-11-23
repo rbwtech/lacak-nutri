@@ -424,6 +424,13 @@
       "noDescriptionPlaceholder": "No description",
       "refresh": "Refresh"
     },
+    "pagination": {
+      "show": "Show",
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{current}} of {{total}} ({{count}} items)",
+      "noResults": "No results found matching your search"
+    },
     "dashboard": {
       "title": "Admin Dashboard",
       "subtitle": "Manage platform data & users"
@@ -459,6 +466,7 @@
       "resetSuccess": "Reset link generated: {{link}}\nSend to: {{email}}",
       "resetFailed": "Failed to generate reset link",
       "updateFailed": "Update failed",
+      "updateSuccess": "Update success",
       "emailPlaceholder": "New email",
       "tableEmail": "Email",
       "reset": "Reset"
@@ -511,6 +519,9 @@
       "custom": "Custom",
       "confirmDelete": "Delete this allergen?",
       "name": "Name",
+      "successUpdate": "Update success",
+      "successCreate": "Create success",
+      "successDelete": "Delete success",
       "description": "Description",
       "namePlaceholder": "e.g., Peanuts",
       "descriptionPlaceholder": "Optional description"
@@ -537,6 +548,7 @@
       "foodsToAvoidPlaceholder": "Foods that should be avoided"
     },
     "article": {
+      "name": "Article Name",
       "title": "Article Management",
       "desc": "Education content",
       "total": "Total: {{count}} articles",
@@ -573,6 +585,9 @@
       "locale": "Locale",
       "localeLabel": "Locale Label",
       "countryCode": "Country Code",
+      "successUpdate": "Update success",
+      "successCreate": "Create success",
+      "successDelete": "Delete success",
       "region": "Region",
       "status": "Status",
       "active": "Active",
@@ -580,6 +595,7 @@
     },
     "product": {
       "title": "Product Catalog",
+      "searchPlaceholder": "Search product name or code...",
       "desc": "Food catalog",
       "total": "Total: {{count}} products",
       "add": "Add Product",

@@ -5,10 +5,11 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import { useDebounce } from "../../hooks/useCommon";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
-import { useOwnerAuth } from "../../hooks/useOwnerAuth";
-import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
 
 const AdminArticles = () => {
   const { t } = useTranslation();
@@ -36,15 +37,28 @@ const AdminArticles = () => {
     type: "success",
   });
 
+  // Pagination & Search State
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const debouncedSearch = useDebounce(search, 500);
+
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
-  // FIX: Define fetch first
   const fetchArticles = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/articles");
+      const { data } = await api.get("/admin/articles", {
+        params: {
+          search: debouncedSearch || undefined,
+          skip: (page - 1) * pageSize,
+          limit: pageSize,
+        },
+      });
       setArticles(data.data);
+      setTotal(data.total || 0);
     } catch (e) {
       showToast(t("admin.article.errorLoad"), "error");
     } finally {
@@ -61,8 +75,12 @@ const AdminArticles = () => {
   } = useOwnerAuth(showToast, fetchArticles);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, pageSize]);
+
+  useEffect(() => {
     fetchArticles();
-  }, []);
+  }, [page, pageSize, debouncedSearch]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -128,14 +146,12 @@ const AdminArticles = () => {
       failureMsg: t("admin.common.operationFailed"),
     };
 
-    // Check Owner
     if (isOwnerAdmin()) {
       handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
 
-    // Non-Owner Direct Execution
     try {
       if (editMode) await api.put(`/admin/articles/${currentId}`, formData);
       else await api.post("/admin/articles", formData);
@@ -147,14 +163,11 @@ const AdminArticles = () => {
     }
   };
 
-  const handleDeleteClick = (id) => {
-    setConfirmDelete({ isOpen: true, id });
-  };
+  const handleDeleteClick = (id) => setConfirmDelete({ isOpen: true, id });
 
   const handleDeleteConfirm = async () => {
     const idToDelete = confirmDelete.id;
     setConfirmDelete({ isOpen: false, id: null });
-
     const actionData = {
       endpoint: "articles",
       successMsg: t("admin.article.successDelete"),
@@ -166,7 +179,6 @@ const AdminArticles = () => {
       return;
     }
 
-    // Non-Owner Direct Execution
     try {
       await api.delete(`/admin/articles/${idToDelete}`);
       showToast(actionData.successMsg);
@@ -193,6 +205,8 @@ const AdminArticles = () => {
     }
   };
 
+  const totalPages = Math.ceil(total / pageSize);
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -203,7 +217,7 @@ const AdminArticles = () => {
                 {t("admin.article.title")}
               </h1>
               <p className="text-text-secondary">
-                {t("admin.article.total", { count: articles.length })}
+                {t("admin.article.total", { count: total })}
               </p>
             </div>
             <Button onClick={() => openModal()}>
@@ -211,14 +225,81 @@ const AdminArticles = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Search & Filter Card */}
+          <Card className="p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="w-full md:w-2/3">
+                <div className="relative">
+                  <svg
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder={t("admin.user.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <span className="text-sm text-text-secondary font-semibold whitespace-nowrap">
+                  {t("admin.pagination.show")}:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none font-semibold cursor-pointer"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {loading ? (
               <Card className="p-6 col-span-full text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
               </Card>
             ) : articles.length === 0 ? (
               <Card className="p-6 col-span-full text-center text-text-secondary">
-                {t("admin.common.noData")}
+                {search
+                  ? t("admin.pagination.noResults")
+                  : t("admin.common.noData")}
               </Card>
             ) : (
               articles.map((article) => (
@@ -250,11 +331,6 @@ const AdminArticles = () => {
                     <p className="text-xs text-text-secondary mb-4">
                       /{article.slug}
                     </p>
-                    {article.author && (
-                      <p className="text-xs text-text-secondary mb-4">
-                        {t("admin.article.byAuthor")}: {article.author}
-                      </p>
-                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={() => openModal(article)}
@@ -274,6 +350,37 @@ const AdminArticles = () => {
               ))
             )}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-bg-surface rounded-3xl border border-border shadow-card">
+              <span className="text-sm text-text-secondary">
+                {t("admin.pagination.pageInfo", {
+                  current: page,
+                  total: totalPages,
+                  count: total,
+                })}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  {t("admin.pagination.previous")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  {t("admin.pagination.next")}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -284,7 +391,7 @@ const AdminArticles = () => {
               {editMode ? t("admin.article.edit") : t("admin.article.add")}
             </h3>
             <div className="space-y-4">
-              {/* Form Fields */}
+              {/* ... Form fields ... */}
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.article.thumbnail")}

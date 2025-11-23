@@ -2,24 +2,42 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "../../components/layouts";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
+import { useDebounce } from "../../hooks/useCommon";
 
 const AdminHistory = () => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState("bpom");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Pagination & Search State
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const debouncedSearch = useDebounce(search, 500);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, debouncedSearch, pageSize]);
 
   useEffect(() => {
     fetchHistory();
-  }, [activeTab]);
+  }, [page, pageSize, activeTab, debouncedSearch]);
 
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const { data: res } = await api.get(`/admin/history/${activeTab}`);
+      const { data: res } = await api.get(`/admin/history/${activeTab}`, {
+        params: {
+          search: debouncedSearch || undefined,
+          skip: (page - 1) * pageSize,
+          limit: pageSize,
+        },
+      });
       setData(res.data);
       setTotal(res.total);
     } catch (e) {
@@ -28,6 +46,8 @@ const AdminHistory = () => {
       setLoading(false);
     }
   };
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <MainLayout>
@@ -46,28 +66,48 @@ const AdminHistory = () => {
           </div>
 
           <Card className="p-6 mb-6">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab("bpom")}
-                className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                  activeTab === "bpom"
-                    ? "bg-primary text-white"
-                    : "bg-bg-base text-text-secondary hover:bg-primary/10"
-                }`}
-              >
-                {t("admin.history.bpomTab")}
-              </button>
-              <button
-                onClick={() => setActiveTab("ocr")}
-                className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                  activeTab === "ocr"
-                    ? "bg-primary text-white"
-                    : "bg-bg-base text-text-secondary hover:bg-primary/10"
-                }`}
-              >
-                {t("admin.history.ocrTab")}
-              </button>
+            <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setActiveTab("bpom")}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                    activeTab === "bpom"
+                      ? "bg-primary text-white"
+                      : "bg-bg-base text-text-secondary hover:bg-primary/10"
+                  }`}
+                >
+                  {t("admin.history.bpomTab")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("ocr")}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                    activeTab === "ocr"
+                      ? "bg-primary text-white"
+                      : "bg-bg-base text-text-secondary hover:bg-primary/10"
+                  }`}
+                >
+                  {t("admin.history.ocrTab")}
+                </button>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none font-semibold cursor-pointer"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
             </div>
+            <Input
+              placeholder={t("admin.user.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              containerClass="w-full"
+            />
           </Card>
 
           <Card className="overflow-hidden">
@@ -120,7 +160,9 @@ const AdminHistory = () => {
                         colSpan={activeTab === "bpom" ? "6" : "5"}
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        {t("admin.common.noData")}
+                        {search
+                          ? t("admin.pagination.noResults")
+                          : t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -179,6 +221,36 @@ const AdminHistory = () => {
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span className="text-sm text-text-secondary">
+                  {t("admin.pagination.pageInfo", {
+                    current: page,
+                    total: totalPages,
+                    count: total,
+                  })}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    {t("admin.pagination.previous")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    {t("admin.pagination.next")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>

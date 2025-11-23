@@ -227,11 +227,21 @@ def send_reset_password_link(
 def get_all_bpom_scans(
     skip: int = 0,
     limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    scans = db.query(ScanHistoryBPOM).order_by(ScanHistoryBPOM.created_at.desc()).offset(skip).limit(limit).all()
-    total = db.query(ScanHistoryBPOM).count()
+    query = db.query(ScanHistoryBPOM)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (ScanHistoryBPOM.product_name.ilike(search_term)) |
+            (ScanHistoryBPOM.bpom_number.ilike(search_term))
+        )
+
+    total = query.count()
+    scans = query.order_by(ScanHistoryBPOM.created_at.desc()).offset(skip).limit(limit).all()
     
     return {
         "data": [{
@@ -251,11 +261,18 @@ def get_all_bpom_scans(
 def get_all_ocr_scans(
     skip: int = 0,
     limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    scans = db.query(ScanHistoryOCR).order_by(ScanHistoryOCR.created_at.desc()).offset(skip).limit(limit).all()
-    total = db.query(ScanHistoryOCR).count()
+    query = db.query(ScanHistoryOCR)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(ScanHistoryOCR.product_name.ilike(search_term))
+
+    total = query.count()
+    scans = query.order_by(ScanHistoryOCR.created_at.desc()).offset(skip).limit(limit).all()
     
     return {
         "data": [{
@@ -276,10 +293,21 @@ class AllergenCreate(BaseModel):
 
 @router.get("/allergens")
 def get_allergens_admin(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    allergens = db.query(Allergen).all()
+    query = db.query(Allergen)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(Allergen.name.ilike(search_term))
+
+    total = query.count()
+    allergens = query.offset(skip).limit(limit).all()
+    
     return {
         "data": [{
             "id": a.id,
@@ -287,7 +315,7 @@ def get_allergens_admin(
             "description": a.description,
             "created_by": a.created_by
         } for a in allergens],
-        "total": len(allergens)
+        "total": total
     }
 
 @router.post("/allergens")
@@ -343,11 +371,24 @@ class AdditiveCreate(BaseModel):
 
 @router.get("/additives")
 def get_additives_admin(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    additives = db.query(Additive).all()
-    return {"data": additives, "total": len(additives)}
+    query = db.query(Additive)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (Additive.name.ilike(search_term)) | 
+            (Additive.code.ilike(search_term))
+        )
+
+    total = query.count()
+    additives = query.offset(skip).limit(limit).all()
+    return {"data": additives, "total": total}
 
 @router.post("/additives")
 def create_additive(
@@ -399,11 +440,21 @@ class DiseaseCreate(BaseModel):
 
 @router.get("/diseases")
 def get_diseases_admin(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    diseases = db.query(Disease).all()
-    return {"data": diseases, "total": len(diseases)}
+    query = db.query(Disease)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(Disease.name.ilike(search_term))
+
+    total = query.count()
+    diseases = query.offset(skip).limit(limit).all()
+    return {"data": diseases, "total": total}
 
 @router.post("/diseases")
 def create_disease(
@@ -459,11 +510,24 @@ class LocalizationCreate(BaseModel):
 
 @router.get("/localization")
 def get_localization_settings(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    settings = db.query(LocalizationSetting).all()
-    return {"data": settings, "total": len(settings)}
+    query = db.query(LocalizationSetting)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (LocalizationSetting.timezone.ilike(search_term)) |
+            (LocalizationSetting.region.ilike(search_term))
+        )
+
+    total = query.count()
+    settings = query.offset(skip).limit(limit).all()
+    return {"data": settings, "total": total}
 
 @router.post("/localization")
 def create_localization(
@@ -516,11 +580,21 @@ class ArticleCreate(BaseModel):
 
 @router.get("/articles")
 def get_articles_admin(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    articles = db.query(EducationArticle).all()
-    return {"data": articles}
+    query = db.query(EducationArticle)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(EducationArticle.title.ilike(search_term))
+
+    total = query.count()
+    articles = query.order_by(EducationArticle.created_at.desc()).offset(skip).limit(limit).all()
+    return {"data": articles, "total": total}
 
 @router.post("/articles")
 def create_article(
@@ -584,10 +658,22 @@ class FoodCatalogCreate(BaseModel):
 def get_food_catalog(
     skip: int = 0,
     limit: int = 50,
+    search: str = None, 
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    products = db.query(FoodCatalog).offset(skip).limit(limit).all()
+    query = db.query(FoodCatalog)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (FoodCatalog.name.ilike(search_term)) | 
+            (FoodCatalog.original_code.ilike(search_term))
+        )
+    
+    total = query.count()
+    products = query.order_by(FoodCatalog.id.desc()).offset(skip).limit(limit).all()
+    
     return {
         "data": [{
             "id": p.id,
@@ -603,7 +689,7 @@ def get_food_catalog(
             "sodium_mg": float(p.sodium_mg) if p.sodium_mg else 0.0,
             "image_url": getattr(p, 'image_url', None)
         } for p in products],
-        "total": db.query(FoodCatalog).count()
+        "total": total
     }
 
 @router.post("/food-catalog")

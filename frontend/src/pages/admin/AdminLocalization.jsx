@@ -7,6 +7,7 @@ import api from "../../config/api";
 import Toast from "../../components/ui/Toast";
 import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
 import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import { useDebounce } from "../../hooks/useCommon";
 import { useTranslation } from "react-i18next";
 
 const AdminLocalization = () => {
@@ -26,19 +27,32 @@ const AdminLocalization = () => {
     region: "",
     is_active: true,
   });
-  const [total, setTotal] = useState(0);
   const [toast, setToast] = useState({
     isOpen: false,
     message: "",
     type: "success",
   });
+
+  // Pagination & Search
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const debouncedSearch = useDebounce(search, 500);
+
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/localization");
+      const { data } = await api.get("/admin/localization", {
+        params: {
+          search: debouncedSearch || undefined,
+          skip: (page - 1) * pageSize,
+          limit: pageSize,
+        },
+      });
       setSettings(data.data);
       setTotal(data.total || 0);
     } catch (e) {
@@ -57,8 +71,12 @@ const AdminLocalization = () => {
   } = useOwnerAuth(showToast, fetchSettings);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, pageSize]);
+
+  useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [page, pageSize, debouncedSearch]);
 
   const openModal = (setting = null) => {
     if (setting) {
@@ -91,6 +109,7 @@ const AdminLocalization = () => {
         : t("admin.localization.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
+
     if (isOwnerAdmin()) {
       handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
@@ -130,24 +149,89 @@ const AdminLocalization = () => {
     }
   };
 
+  const totalPages = Math.ceil(total / pageSize);
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* ... (Header and Table) ... */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
                 {t("admin.localization.title")}
               </h1>
               <p className="text-text-secondary">
-                {t("admin.localization.total", { count: settings.length })}
+                {t("admin.localization.total", { count: total })}
               </p>
             </div>
             <Button onClick={() => openModal()}>
               {t("admin.localization.add")}
             </Button>
           </div>
+
+          <Card className="p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="w-full md:w-2/3">
+                <div className="relative">
+                  <svg
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder={t("admin.user.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <span className="text-sm text-text-secondary font-semibold whitespace-nowrap">
+                  {t("admin.pagination.show")}:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none font-semibold cursor-pointer"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </Card>
 
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
@@ -184,7 +268,9 @@ const AdminLocalization = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        {t("admin.common.noData")}
+                        {search
+                          ? t("admin.pagination.noResults")
+                          : t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -246,6 +332,35 @@ const AdminLocalization = () => {
                 </tbody>
               </table>
             </div>
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span className="text-sm text-text-secondary">
+                  {t("admin.pagination.pageInfo", {
+                    current: page,
+                    total: totalPages,
+                    count: total,
+                  })}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    {t("admin.pagination.previous")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    {t("admin.pagination.next")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -258,7 +373,7 @@ const AdminLocalization = () => {
                 ? t("admin.localization.edit")
                 : t("admin.localization.add")}
             </h3>
-            {/* ... (Form Content, similar to previous version) ... */}
+            {/* ... (Form Fields same as before) ... */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
