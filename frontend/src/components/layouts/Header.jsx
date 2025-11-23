@@ -392,9 +392,9 @@ const Header = () => {
             <Link to="/" className="flex items-center gap-3 group select-none">
               <div className="p-1 rounded-xl shadow-md group-hover:scale-105 transition-transform">
                 <img
-                  src="/lacaknutri.webp"
+                  src="/lacaknutri.svg"
                   alt="LacakNutri Logo"
-                  className="w-8 h-8 object-cover rounded-lg"
+                  className="w-8 h-8 object-contain rounded-lg"
                 />
               </div>
               <span className="text-xl font-extrabold text-text-primary tracking-tight hidden sm:block group-hover:text-primary transition-colors">

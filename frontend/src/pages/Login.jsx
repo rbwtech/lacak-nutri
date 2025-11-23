@@ -33,7 +33,7 @@ const Login = () => {
       <div className="bg-white/80 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 shadow-2xl relative z-10">
         <div className="text-center mb-8">
           <img
-            src="/lacaknutri.webp"
+            src="/lacaknutri.svg"
             alt="Logo"
             className="w-20 h-20 mx-auto mb-4 drop-shadow-lg hover:scale-105 transition-transform duration-300"
           />

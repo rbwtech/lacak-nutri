@@ -13,7 +13,7 @@ import secrets
 import os
 from pathlib import Path
 
-UPLOAD_DIR = Path("api/uploads")
+UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])

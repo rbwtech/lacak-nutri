@@ -9,9 +9,9 @@ const Footer = () => {
             <div className="flex items-center gap-2 mb-4">
               <div className="p-1 rounded-lg shadow-md">
                 <img
-                  src="/lacaknutri.webp"
+                  src="/lacaknutri.svg"
                   alt="LacakNutri Logo"
-                  className="w-7.5 h-7.5 object-cover rounded-md"
+                  className="w-7.5 h-7.5 object-contain rounded-md"
                 />
               </div>
               <span className="text-h4 font-bold text-text-primary">

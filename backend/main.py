@@ -18,7 +18,7 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/api/uploads", StaticFiles(directory="uploads"), name="api-uploads")
 
 app.include_router(auth.router)
 app.include_router(scan.router)
