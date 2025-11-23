@@ -5,7 +5,7 @@ import Input from "../components/ui/Input";
 import { useTranslation } from "react-i18next";
 import ReCAPTCHA from "react-google-recaptcha";
 import axios from "axios";
-const API_BASE_URL = mport.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
