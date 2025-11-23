@@ -34,10 +34,13 @@ import {
   Terms,
   NotFound,
 } from "./pages";
+import { useTheme } from "./hooks/useCommon";
 
 const queryClient = new QueryClient();
 
 function App() {
+  useTheme();
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

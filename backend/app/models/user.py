@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Enum, Boolean, DateTime, func, F
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
+import secrets
 
 # Tabel Asosiasi (Pivot Table)
 user_allergies = Table(
@@ -61,3 +62,13 @@ class User(Base):
     allergies = relationship("Allergen", secondary=user_allergies, backref="users")
     bpom_scans = relationship("ScanHistoryBPOM", back_populates="user")
     ocr_scans = relationship("ScanHistoryOCR", back_populates="user")
+
+class OwnerAuthorizationCode(Base):
+    __tablename__ = "owner_auth_codes"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
+    code = Column(String(8), unique=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Boolean, default=False)

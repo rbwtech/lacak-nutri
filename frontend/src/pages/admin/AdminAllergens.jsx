@@ -4,6 +4,9 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import { useTranslation } from "react-i18next";
 
 const AdminAllergens = () => {
@@ -15,10 +18,13 @@ const AdminAllergens = () => {
   const [currentId, setCurrentId] = useState(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    fetchAllergens();
-  }, []);
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: "",
+    type: "success",
+  });
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
 
   const fetchAllergens = async () => {
     setLoading(true);
@@ -33,6 +39,18 @@ const AdminAllergens = () => {
     }
   };
 
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchAllergens);
+
+  useEffect(() => {
+    fetchAllergens();
+  }, []);
+
   const openModal = (allergen = null) => {
     if (allergen) {
       setEditMode(true);
@@ -46,28 +64,37 @@ const AdminAllergens = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (editMode) {
-        await api.put(`/admin/allergens/${currentId}`, formData);
-      } else {
-        await api.post("/admin/allergens", formData);
-      }
+  const handleCreateOrUpdate = () => {
+    const actionData = {
+      endpoint: "allergens",
+      formData: formData,
+      successMsg: editMode
+        ? t("admin.allergen.successUpdate")
+        : t("admin.allergen.successCreate"),
+      failureMsg: t("admin.common.operationFailed"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", currentId, actionData)
+    ) {
       setShowModal(false);
-      fetchAllergens();
-    } catch (e) {
-      alert(e.response?.data?.detail || t("admin.common.operationFailed"));
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (!confirm(t("admin.allergen.confirmDelete"))) return;
-    try {
-      await api.delete(`/admin/allergens/${id}`);
-      fetchAllergens();
-    } catch (e) {
-      alert(t("common.errorDelete"));
+    const actionData = {
+      endpoint: "allergens",
+      successMsg: t("admin.allergen.successDelete"),
+      failureMsg: t("common.errorDelete"),
+    };
+    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+      return;
     }
+    executePendingAction();
   };
 
   return (
@@ -170,7 +197,7 @@ const AdminAllergens = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleSubmit} fullWidth>
+              <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
@@ -184,6 +211,17 @@ const AdminAllergens = () => {
           </Card>
         </div>
       )}
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        message={toast.message}
+        type={toast.type}
+      />
     </MainLayout>
   );
 };

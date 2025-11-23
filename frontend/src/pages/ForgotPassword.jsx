@@ -13,6 +13,7 @@ const ForgotPassword = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
+    // Simulasi API call
     setTimeout(() => {
       setSubmitted(true);
       setLoading(false);
@@ -20,16 +21,28 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 md:p-8">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Blobs for Style Consistency */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+      <div className="bg-bg-surface/80 dark:bg-bg-surface/90 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 dark:border-border/50 shadow-2xl relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-text-primary">
+          <img
+            src="/lacaknutri.svg"
+            alt="Logo"
+            className="w-16 h-16 mx-auto mb-4 drop-shadow-lg"
+          />
+          <h1 className="text-3xl font-black text-text-primary tracking-tight">
             {t("auth.forgotTitle")}
           </h1>
-          <p className="text-text-secondary mt-2">{t("auth.forgotSubtitle")}</p>
+          <p className="text-text-secondary mt-2 text-sm">
+            {t("auth.forgotSubtitle")}
+          </p>
         </div>
 
-        <div className="bg-bg-surface rounded-3xl border border-border p-8 shadow-soft">
+        <div>
           {!submitted ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
@@ -38,6 +51,7 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("auth.emailPlaceholder")}
+                className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
                 required
               />
               <Button type="submit" fullWidth loading={loading} size="lg">

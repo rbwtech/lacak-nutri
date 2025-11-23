@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../ui/Button";
 import api from "../../config/api";
+import { useTheme } from "../../hooks/useCommon";
 
 const LanguageSwitcher = () => {
   const { t, i18n } = useTranslation();
@@ -134,9 +135,7 @@ const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isDark, setIsDark] = useState(
-    () => localStorage.getItem("theme") === "dark"
-  );
+  const [isDark, setIsDark] = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -146,16 +145,6 @@ const Header = () => {
       i18n.changeLanguage(preferredLang);
     }
   }, [user, i18n]);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDark]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);

@@ -4,6 +4,9 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import { useTranslation } from "react-i18next";
 
 const AdminAdditives = () => {
@@ -22,10 +25,13 @@ const AdminAdditives = () => {
     health_risks: "",
   });
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    fetchAdditives();
-  }, []);
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: "",
+    type: "success",
+  });
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
 
   const fetchAdditives = async () => {
     setLoading(true);
@@ -34,11 +40,23 @@ const AdminAdditives = () => {
       setAdditives(data.data);
       setTotal(data.total || 0);
     } catch (e) {
-      console.error(t("admin.additive.errorLoad"), e);
+      showToast(t("admin.additive.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
   };
+
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchAdditives);
+
+  useEffect(() => {
+    fetchAdditives();
+  }, []);
 
   const openModal = (additive = null) => {
     if (additive) {
@@ -60,31 +78,37 @@ const AdminAdditives = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (editMode) {
-        await api.put(`/admin/additives/${currentId}`, formData);
-        alert(t("admin.additive.successUpdate"));
-      } else {
-        await api.post("/admin/additives", formData);
-        alert(t("admin.additive.successCreate"));
-      }
+  const handleCreateOrUpdate = () => {
+    const actionData = {
+      endpoint: "additives",
+      formData: formData,
+      successMsg: editMode
+        ? t("admin.additive.successUpdate")
+        : t("admin.additive.successCreate"),
+      failureMsg: t("admin.common.operationFailed"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", currentId, actionData)
+    ) {
       setShowModal(false);
-      fetchAdditives();
-    } catch (e) {
-      alert(e.response?.data?.detail || t("admin.common.operationFailed"));
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (!confirm(t("admin.additive.confirmDelete"))) return;
-    try {
-      await api.delete(`/admin/additives/${id}`);
-      alert(t("admin.additive.successDelete"));
-      fetchAdditives();
-    } catch (e) {
-      alert(t("common.errorDelete"));
+    const actionData = {
+      endpoint: "additives",
+      successMsg: t("admin.additive.successDelete"),
+      failureMsg: t("common.errorDelete"),
+    };
+    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+      return;
     }
+    executePendingAction();
   };
 
   const getSafetyColor = (level) => {
@@ -296,12 +320,12 @@ const AdminAdditives = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleSubmit} fullWidth>
+              <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
-                variant="ghost"
                 onClick={() => setShowModal(false)}
+                variant="ghost"
                 fullWidth
               >
                 {t("common.cancel")}
@@ -310,6 +334,17 @@ const AdminAdditives = () => {
           </Card>
         </div>
       )}
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        message={toast.message}
+        type={toast.type}
+      />
     </MainLayout>
   );
 };

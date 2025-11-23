@@ -30,7 +30,6 @@ const Articles = () => {
     { id: "tips", label: t("articles.catTips") },
   ];
 
-  // Reset page saat filter berubah
   useEffect(() => {
     setPage(1);
   }, [activeCategory, debouncedSearch, pageSize]);
@@ -48,14 +47,12 @@ const Articles = () => {
           },
         });
 
-        // Handle response pagination
         const result = response.data;
         if (result && Array.isArray(result.data)) {
           setArticles(result.data);
           setTotalItems(result.total || 0);
           setTotalPages(Math.ceil((result.total || 0) / pageSize));
         } else {
-          // Fallback jika response aneh
           setArticles([]);
           setTotalItems(0);
         }

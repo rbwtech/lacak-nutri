@@ -53,7 +53,7 @@ const Register = () => {
       <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-300/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
-      <div className="bg-white/80 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+      <div className="bg-bg-surface/80 dark:bg-bg-surface/90 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 dark:border-border/50 shadow-2xl relative z-10">
         <div className="text-center mb-7">
           <img
             src="/lacaknutri.svg"
@@ -75,7 +75,7 @@ const Register = () => {
             placeholder={t("auth.namePlaceholder")}
             value={formData.name}
             onChange={handleChange}
-            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
@@ -85,7 +85,7 @@ const Register = () => {
             placeholder={t("auth.emailPlaceholder")}
             value={formData.email}
             onChange={handleChange}
-            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
@@ -95,7 +95,7 @@ const Register = () => {
             placeholder={t("auth.passwordHint")}
             value={formData.password}
             onChange={handleChange}
-            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
@@ -106,7 +106,7 @@ const Register = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
             error={errors.confirmPassword}
-            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
 
           {errors.submit && (

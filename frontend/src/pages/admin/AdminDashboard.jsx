@@ -12,10 +12,10 @@ const AdminDashboard = () => {
     scans: 0,
     articles: 0,
     products: 0,
-    allergens: 0, // NEW
-    additives: 0, // NEW
-    diseases: 0, // NEW
-    localization: 0, // NEW
+    allergens: 0,
+    additives: 0,
+    diseases: 0,
+    localization: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +107,7 @@ const AdminDashboard = () => {
       ),
       color: "text-red-500",
       bg: "bg-red-50",
-      count: stats.allergens, // NEW
+      count: stats.allergens,
     },
     {
       title: t("admin.additive.title"),
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
       ),
       color: "text-yellow-600",
       bg: "bg-yellow-50",
-      count: stats.additives, // NEW
+      count: stats.additives,
     },
     {
       title: t("admin.disease.title"),
@@ -137,7 +137,7 @@ const AdminDashboard = () => {
       ),
       color: "text-pink-500",
       bg: "bg-pink-50",
-      count: stats.diseases, // NEW
+      count: stats.diseases,
     },
     {
       title: t("admin.localization.title"),
@@ -152,7 +152,7 @@ const AdminDashboard = () => {
       ),
       color: "text-indigo-500",
       bg: "bg-indigo-50",
-      count: stats.localization, // NEW
+      count: stats.localization,
     },
   ];
 
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {adminMenus.map((menu, idx) => (
               <Link key={idx} to={menu.to}>
-                <Card className="p-6 hover:shadow-lg transition-all group cursor-pointer border-2 hover:border-primary/30">
+                <Card className="p-6 hover:shadow-lg transition-all group cursor-pointer border-2 hover:border-primary/30 h-full flex flex-col">
                   <div
                     className={`w-12 h-12 rounded-2xl ${menu.bg} ${menu.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
                   >
@@ -186,17 +186,22 @@ const AdminDashboard = () => {
                       {menu.icon}
                     </svg>
                   </div>
-                  <h3 className="font-bold text-lg text-text-primary mb-1">
+                  <h3 className="font-bold text-base text-text-primary mb-1 whitespace-nowrap">
                     {menu.title}
                   </h3>
-                  <p className="text-sm text-text-secondary mb-3">
-                    {menu.desc}
-                  </p>
-                  {menu.count !== undefined && (
-                    <p className="text-2xl font-extrabold text-primary">
-                      {menu.count}
+
+                  <div className="flex flex-col flex-1">
+                    <p className="text-sm text-text-secondary mb-3 line-clamp-2">
+                      {menu.desc}
                     </p>
-                  )}
+                    {loading ? (
+                      <div className="h-6 w-16 bg-gray-100 animate-pulse rounded"></div>
+                    ) : (
+                      <p className="text-2xl font-extrabold text-primary">
+                        {menu.count}
+                      </p>
+                    )}
+                  </div>
                 </Card>
               </Link>
             ))}

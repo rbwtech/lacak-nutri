@@ -34,7 +34,7 @@ const Login = () => {
       <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
-      <div className="bg-white/80 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+      <div className="bg-bg-surface/80 dark:bg-bg-surface/90 backdrop-blur-md w-full max-w-md p-8 rounded-3xl border border-white/20 dark:border-border/50 shadow-2xl relative z-10">
         <div className="text-center mb-8">
           <img
             src="/lacaknutri.svg"
@@ -56,7 +56,7 @@ const Login = () => {
             placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
             error={loginError}
           />
 
@@ -67,7 +67,7 @@ const Login = () => {
               placeholder={t("auth.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-white/50 border-primary/20 focus:border-primary h-12"
+              className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
               error={loginError}
             />
             <div className="text-right mt-1">

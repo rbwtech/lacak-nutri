@@ -4,6 +4,9 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import { useTranslation } from "react-i18next";
 
 const AdminLocalization = () => {
@@ -24,10 +27,13 @@ const AdminLocalization = () => {
     is_active: true,
   });
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: "",
+    type: "success",
+  });
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -41,6 +47,18 @@ const AdminLocalization = () => {
       setLoading(false);
     }
   };
+
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchSettings);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const openModal = (setting = null) => {
     if (setting) {
@@ -64,28 +82,37 @@ const AdminLocalization = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (editMode) {
-        await api.put(`/admin/localization/${currentId}`, formData);
-      } else {
-        await api.post("/admin/localization", formData);
-      }
+  const handleCreateOrUpdate = () => {
+    const actionData = {
+      endpoint: "localization",
+      formData: formData,
+      successMsg: editMode
+        ? t("admin.localization.successUpdate")
+        : t("admin.localization.successCreate"),
+      failureMsg: t("admin.common.operationFailed"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", currentId, actionData)
+    ) {
       setShowModal(false);
-      fetchSettings();
-    } catch (e) {
-      alert(e.response?.data?.detail || t("admin.common.operationFailed"));
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (!confirm(t("admin.common.confirmDelete"))) return;
-    try {
-      await api.delete(`/admin/localization/${id}`);
-      fetchSettings();
-    } catch (e) {
-      alert(t("common.errorDelete"));
+    const actionData = {
+      endpoint: "localization",
+      successMsg: t("admin.localization.successDelete"),
+      failureMsg: t("common.errorDelete"),
+    };
+    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+      return;
     }
+    executePendingAction();
   };
 
   return (
@@ -302,7 +329,7 @@ const AdminLocalization = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleSubmit} fullWidth>
+              <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
@@ -316,6 +343,17 @@ const AdminLocalization = () => {
           </Card>
         </div>
       )}
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        message={toast.message}
+        type={toast.type}
+      />
     </MainLayout>
   );
 };

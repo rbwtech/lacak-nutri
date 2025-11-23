@@ -5,6 +5,8 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
 
@@ -30,11 +32,9 @@ const AdminDiseases = () => {
     message: "",
     type: "success",
   });
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
   const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    fetchDiseases();
-  }, []);
 
   const fetchDiseases = async () => {
     setLoading(true);
@@ -49,9 +49,17 @@ const AdminDiseases = () => {
     }
   };
 
-  const showToast = (message, type = "success") => {
-    setToast({ isOpen: true, message, type });
-  };
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchDiseases);
+
+  useEffect(() => {
+    fetchDiseases();
+  }, []);
 
   const openModal = (disease = null) => {
     if (disease) {
@@ -71,23 +79,24 @@ const AdminDiseases = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (editMode) {
-        await api.put(`/admin/diseases/${currentId}`, formData);
-        showToast(t("admin.disease.successUpdate"));
-      } else {
-        await api.post("/admin/diseases", formData);
-        showToast(t("admin.disease.successCreate"));
-      }
+  const handleCreateOrUpdate = () => {
+    const actionData = {
+      endpoint: "diseases",
+      formData: formData,
+      successMsg: editMode
+        ? t("admin.disease.successUpdate")
+        : t("admin.disease.successCreate"),
+      failureMsg: t("admin.common.operationFailed"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", currentId, actionData)
+    ) {
       setShowModal(false);
-      fetchDiseases();
-    } catch (e) {
-      showToast(
-        e.response?.data?.detail || t("admin.common.operationFailed"),
-        "error"
-      );
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
   const handleDeleteClick = (id) => {
@@ -95,14 +104,20 @@ const AdminDiseases = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await api.delete(`/admin/diseases/${confirmDelete.id}`);
-      setConfirmDelete({ isOpen: false, id: null });
-      showToast(t("admin.disease.successDelete"));
-      fetchDiseases();
-    } catch (e) {
-      showToast(t("common.errorDelete"), "error");
+    const idToDelete = confirmDelete.id;
+    setConfirmDelete({ isOpen: false, id: null });
+    const actionData = {
+      endpoint: "diseases",
+      successMsg: t("admin.disease.successDelete"),
+      failureMsg: t("common.errorDelete"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("delete", idToDelete, actionData)
+    ) {
+      return;
     }
+    executePendingAction();
   };
 
   return (
@@ -233,7 +248,7 @@ const AdminDiseases = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleSubmit} fullWidth>
+              <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
@@ -247,7 +262,11 @@ const AdminDiseases = () => {
           </Card>
         </div>
       )}
-
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null })}
@@ -256,7 +275,6 @@ const AdminDiseases = () => {
         message={t("admin.disease.confirmDelete")}
         type="danger"
       />
-
       <Toast
         isOpen={toast.isOpen}
         onClose={() => setToast({ ...toast, isOpen: false })}

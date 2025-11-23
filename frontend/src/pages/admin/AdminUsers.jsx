@@ -5,6 +5,9 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import Toast from "../../components/ui/Toast";
 
 const AdminUsers = () => {
   const { t } = useTranslation();
@@ -15,10 +18,13 @@ const AdminUsers = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("");
   const [formData, setFormData] = useState({ role: "", email: "" });
-
-  useEffect(() => {
-    fetchUsers();
-  }, [search]);
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: "",
+    type: "success",
+  });
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -34,6 +40,18 @@ const AdminUsers = () => {
     }
   };
 
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchUsers);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [search]);
+
   const openModal = (user, type) => {
     setSelectedUser(user);
     setModalType(type);
@@ -45,26 +63,46 @@ const AdminUsers = () => {
     setShowModal(true);
   };
 
-  const handleUpdate = async () => {
-    try {
-      if (modalType === "role") {
-        await api.patch(`/admin/users/${selectedUser.id}/role`, {
-          role: formData.role,
-        });
-      } else if (modalType === "email") {
-        await api.patch(`/admin/users/${selectedUser.id}/email`, {
-          email: formData.email,
-        });
-      }
+  const handleUpdate = () => {
+    const dataToSubmit =
+      modalType === "role"
+        ? { role: formData.role }
+        : { email: formData.email };
+
+    const actionData = {
+      endpoint: `users/${selectedUser.id}/${modalType}`,
+      formData: dataToSubmit,
+      successMsg: t("admin.user.updateSuccess"),
+      failureMsg: t("admin.user.updateFailed"),
+      path: `users/${selectedUser.id}/${modalType}`,
+    };
+
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", selectedUser.id, actionData)
+    ) {
       setShowModal(false);
-      fetchUsers();
-    } catch (e) {
-      alert(e.response?.data?.detail || t("admin.user.updateFailed"));
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
   const handleResetPassword = async (userId) => {
     if (!confirm(t("admin.user.confirmReset"))) return;
+
+    const actionData = {
+      endpoint: `users/${userId}/reset-password`,
+      formData: {},
+      successMsg: t("admin.user.resetSuccessLink"),
+      failureMsg: t("admin.user.resetFailed"),
+      path: `users/${userId}/reset-password`,
+    };
+
+    if (isOwnerAdmin() && !handleWriteOperation("submit", userId, actionData)) {
+      return;
+    }
+
     try {
       const { data } = await api.post(`/admin/users/${userId}/reset-password`);
       alert(
@@ -74,10 +112,13 @@ const AdminUsers = () => {
         })
       );
     } catch (e) {
-      alert(t("admin.user.resetFailed"));
+      showToast(
+        e.response?.data?.detail || t("admin.user.resetFailed"),
+        "error"
+      );
     }
+    executePendingAction();
   };
-
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -278,6 +319,17 @@ const AdminUsers = () => {
           </Card>
         </div>
       )}
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        message={toast.message}
+        type={toast.type}
+      />
     </MainLayout>
   );
 };

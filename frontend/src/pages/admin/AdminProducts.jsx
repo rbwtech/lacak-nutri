@@ -5,6 +5,8 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
 
@@ -42,15 +44,8 @@ const AdminProducts = () => {
     message: "",
     type: "success",
   });
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const showToast = (message, type = "success") => {
+  const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
-  };
-
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -62,6 +57,18 @@ const AdminProducts = () => {
       setLoading(false);
     }
   };
+
+  const {
+    isOwnerAdmin,
+    showAuthModal,
+    handleWriteOperation,
+    executePendingAction,
+    resetAuth,
+  } = useOwnerAuth(showToast, fetchProducts);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -128,23 +135,24 @@ const AdminProducts = () => {
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (editMode) {
-        await api.put(`/admin/food-catalog/${currentId}`, formData);
-        showToast(t("admin.product.successUpdate"));
-      } else {
-        await api.post("/admin/food-catalog", formData);
-        showToast(t("admin.product.successCreate"));
-      }
+  const handleCreateOrUpdate = () => {
+    const actionData = {
+      endpoint: "food-catalog",
+      formData: formData,
+      successMsg: editMode
+        ? t("admin.product.successUpdate")
+        : t("admin.product.successCreate"),
+      failureMsg: t("admin.common.operationFailed"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("submit", currentId, actionData)
+    ) {
       setShowModal(false);
-      fetchProducts();
-    } catch (e) {
-      showToast(
-        e.response?.data?.detail || t("admin.common.operationFailed"),
-        "error"
-      );
+      return;
     }
+    executePendingAction();
+    setShowModal(false);
   };
 
   const handleDeleteClick = (id) => {
@@ -152,14 +160,20 @@ const AdminProducts = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await api.delete(`/admin/food-catalog/${confirmDelete.id}`);
-      setConfirmDelete({ isOpen: false, id: null });
-      showToast(t("admin.product.successDelete"));
-      fetchProducts();
-    } catch (e) {
-      showToast(t("common.errorDelete"), "error");
+    const idToDelete = confirmDelete.id;
+    setConfirmDelete({ isOpen: false, id: null });
+    const actionData = {
+      endpoint: "food-catalog",
+      successMsg: t("admin.product.successDelete"),
+      failureMsg: t("common.errorDelete"),
+    };
+    if (
+      isOwnerAdmin() &&
+      !handleWriteOperation("delete", idToDelete, actionData)
+    ) {
+      return;
     }
+    executePendingAction();
   };
 
   return (
@@ -502,7 +516,7 @@ const AdminProducts = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleSubmit} fullWidth>
+              <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
@@ -516,7 +530,11 @@ const AdminProducts = () => {
           </Card>
         </div>
       )}
-
+      <OwnerAuthorizationModal
+        isOpen={showAuthModal}
+        onAuthorize={executePendingAction}
+        onClose={resetAuth}
+      />
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null })}
@@ -525,7 +543,6 @@ const AdminProducts = () => {
         message={t("admin.product.confirmDelete")}
         type="danger"
       />
-
       <Toast
         isOpen={toast.isOpen}
         onClose={() => setToast({ ...toast, isOpen: false })}

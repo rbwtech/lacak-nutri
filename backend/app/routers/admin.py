@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -9,6 +9,8 @@ from app.models.user import User, Allergen, LocalizationSetting
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.models.education import EducationArticle, Additive, Disease, NutritionInfo
 from app.models.food import FoodCatalog
+from app.schemas.user import AuthorizationCode 
+from app.crud import admin as crud_admin
 import secrets
 import os
 from pathlib import Path
@@ -48,6 +50,49 @@ async def upload_image(
         f.write(file_bytes)
 
     return {"success": True, "url": f"/api/uploads/{subdir}/{filename}"}
+
+def owner_auth_required(
+    current_user: User = Depends(get_current_user),
+    auth_code_header: str | None = Header(None, alias="X-Authorization-Code"), 
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Admin access required")
+        
+    if current_user.id == crud_admin.OWNER_ID:
+        if not auth_code_header or not crud_admin.verify_authorization_code(db, current_user.id, auth_code_header):
+            raise HTTPException(
+                status_code=403,
+                detail="Owner Authorization Code required or invalid."
+            )
+
+    return current_user
+
+OWNER_WRITE_DEPENDENCY = Depends(owner_auth_required)
+
+class AuthCodeResponse(BaseModel):
+    wa_link: str
+    code_expires_in: str
+
+@router.get("/auth-code", response_model=AuthCodeResponse)
+def get_auth_code(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.id != crud_admin.OWNER_ID:
+        raise HTTPException(403, "Owner access required")
+        
+    # Generate code and save to DB (valid for 5 minutes)
+    code = crud_admin.create_authorization_code(db, lifetime_minutes=5)
+    
+    owner_phone = crud_admin.OWNER_PHONE
+    message = f"Kode Otorisasi Admin Anda adalah: {code}. Kode ini berlaku 2 jam."
+    wa_link = f"https://wa.me/{owner_phone}?text={message.replace(' ', '%20')}"
+    
+    return {
+        "wa_link": wa_link,
+        "code_expires_in": "2 jam"
+    }
 
 
 # ============= DASHBOARD STATS =============
@@ -120,7 +165,7 @@ def update_user_role(
     user_id: int,
     data: UpdateUserRole,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     if data.role not in ["user", "admin"]:
         raise HTTPException(400, "Invalid role")
@@ -141,7 +186,7 @@ def update_user_email(
     user_id: int,
     data: UpdateUserEmail,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -247,7 +292,7 @@ def get_allergens_admin(
 def create_allergen(
     data: AllergenCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     allergen = Allergen(name=data.name, description=data.description)
     db.add(allergen)
@@ -260,7 +305,7 @@ def update_allergen(
     allergen_id: int,
     data: AllergenCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     allergen = db.query(Allergen).filter(Allergen.id == allergen_id).first()
     if not allergen:
@@ -275,7 +320,7 @@ def update_allergen(
 def delete_allergen(
     allergen_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     allergen = db.query(Allergen).filter(Allergen.id == allergen_id).first()
     if not allergen:
@@ -306,7 +351,7 @@ def get_additives_admin(
 def create_additive(
     data: AdditiveCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     additive = Additive(**data.dict())
     db.add(additive)
@@ -319,7 +364,7 @@ def update_additive(
     additive_id: int,
     data: AdditiveCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     additive = db.query(Additive).filter(Additive.id == additive_id).first()
     if not additive:
@@ -334,7 +379,7 @@ def update_additive(
 def delete_additive(
     additive_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     additive = db.query(Additive).filter(Additive.id == additive_id).first()
     if not additive:
@@ -362,7 +407,7 @@ def get_diseases_admin(
 def create_disease(
     data: DiseaseCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     disease = Disease(**data.dict())
     db.add(disease)
@@ -375,7 +420,7 @@ def update_disease(
     disease_id: int,
     data: DiseaseCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     disease = db.query(Disease).filter(Disease.id == disease_id).first()
     if not disease:
@@ -390,7 +435,7 @@ def update_disease(
 def delete_disease(
     disease_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     disease = db.query(Disease).filter(Disease.id == disease_id).first()
     if not disease:
@@ -422,7 +467,7 @@ def get_localization_settings(
 def create_localization(
     data: LocalizationCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     setting = LocalizationSetting(**data.dict())
     db.add(setting)
@@ -434,7 +479,7 @@ def update_localization(
     setting_id: int,
     data: LocalizationCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     setting = db.query(LocalizationSetting).filter(LocalizationSetting.id == setting_id).first()
     if not setting:
@@ -449,7 +494,7 @@ def update_localization(
 def delete_localization(
     setting_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     setting = db.query(LocalizationSetting).filter(LocalizationSetting.id == setting_id).first()
     if not setting:
@@ -479,7 +524,7 @@ def get_articles_admin(
 def create_article(
     data: ArticleCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     article = EducationArticle(**data.dict())
     db.add(article)
@@ -491,7 +536,7 @@ def update_article(
     article_id: int,
     data: ArticleCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     article = db.query(EducationArticle).filter(EducationArticle.id == article_id).first()
     if not article:
@@ -506,7 +551,7 @@ def update_article(
 def delete_article(
     article_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     article = db.query(EducationArticle).filter(EducationArticle.id == article_id).first()
     if not article:
@@ -563,7 +608,7 @@ def get_food_catalog(
 def create_food_product(
     data: FoodCatalogCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     product = FoodCatalog(**data.dict())
     db.add(product)
@@ -575,7 +620,7 @@ def update_food_product(
     product_id: int,
     data: FoodCatalogCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     product = db.query(FoodCatalog).filter(FoodCatalog.id == product_id).first()
     if not product:
@@ -590,7 +635,7 @@ def update_food_product(
 def delete_food_product(
     product_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     product = db.query(FoodCatalog).filter(FoodCatalog.id == product_id).first()
     if not product:

@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
+class AuthorizationCode(BaseModel):
+    auth_code: str
+    
 class UserBase(BaseModel):
     email: EmailStr
     name: str
