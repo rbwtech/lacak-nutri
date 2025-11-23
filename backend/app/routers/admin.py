@@ -57,16 +57,23 @@ def get_admin_stats(
     admin: User = Depends(admin_required)
 ):
     total_users = db.query(User).count()
-    total_bpom = db.query(ScanHistoryBPOM).count()
-    total_ocr = db.query(ScanHistoryOCR).count()
+    total_scans = db.query(ScanHistoryBPOM).count() + db.query(ScanHistoryOCR).count()
     total_articles = db.query(EducationArticle).count()
     total_products = db.query(FoodCatalog).count()
+    total_allergens = db.query(Allergen).count()
+    total_additives = db.query(Additive).count()
+    total_diseases = db.query(Disease).count()
+    total_localization = db.query(LocalizationSetting).count()
     
     return {
         "users": total_users,
-        "scans": total_bpom + total_ocr,
+        "scans": total_scans,
         "articles": total_articles,
-        "products": total_products
+        "products": total_products,
+        "allergens": total_allergens,  # Added
+        "additives": total_additives,  # Added
+        "diseases": total_diseases,    # Added
+        "localization": total_localization # Added
     }
 
 # ============= USER MANAGEMENT =============
@@ -232,7 +239,8 @@ def get_allergens_admin(
             "name": a.name,
             "description": a.description,
             "created_by": a.created_by
-        } for a in allergens]
+        } for a in allergens],
+        "total": len(allergens)
     }
 
 @router.post("/allergens")
@@ -292,7 +300,7 @@ def get_additives_admin(
     admin: User = Depends(admin_required)
 ):
     additives = db.query(Additive).all()
-    return {"data": additives}
+    return {"data": additives, "total": len(additives)}
 
 @router.post("/additives")
 def create_additive(
@@ -348,7 +356,7 @@ def get_diseases_admin(
     admin: User = Depends(admin_required)
 ):
     diseases = db.query(Disease).all()
-    return {"data": diseases}
+    return {"data": diseases, "total": len(diseases)}
 
 @router.post("/diseases")
 def create_disease(
@@ -408,7 +416,7 @@ def get_localization_settings(
     admin: User = Depends(admin_required)
 ):
     settings = db.query(LocalizationSetting).all()
-    return {"data": settings}
+    return {"data": settings, "total": len(settings)}
 
 @router.post("/localization")
 def create_localization(

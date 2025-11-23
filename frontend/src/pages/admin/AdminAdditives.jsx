@@ -4,8 +4,10 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminAdditives = () => {
+  const { t } = useTranslation();
   const [additives, setAdditives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -19,6 +21,7 @@ const AdminAdditives = () => {
     description: "",
     health_risks: "",
   });
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchAdditives();
@@ -29,8 +32,9 @@ const AdminAdditives = () => {
     try {
       const { data } = await api.get("/admin/additives");
       setAdditives(data.data);
+      setTotal(data.total || 0);
     } catch (e) {
-      console.error("Failed to load additives", e);
+      console.error(t("admin.additive.errorLoad"), e);
     } finally {
       setLoading(false);
     }
@@ -60,23 +64,26 @@ const AdminAdditives = () => {
     try {
       if (editMode) {
         await api.put(`/admin/additives/${currentId}`, formData);
+        alert(t("admin.additive.successUpdate"));
       } else {
         await api.post("/admin/additives", formData);
+        alert(t("admin.additive.successCreate"));
       }
       setShowModal(false);
       fetchAdditives();
     } catch (e) {
-      alert(e.response?.data?.detail || "Operation failed");
+      alert(e.response?.data?.detail || t("admin.common.operationFailed"));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this additive?")) return;
+    if (!confirm(t("admin.additive.confirmDelete"))) return;
     try {
       await api.delete(`/admin/additives/${id}`);
+      alert(t("admin.additive.successDelete"));
       fetchAdditives();
     } catch (e) {
-      alert("Delete failed");
+      alert(t("common.errorDelete"));
     }
   };
 
@@ -93,6 +100,10 @@ const AdminAdditives = () => {
     }
   };
 
+  const translateSafety = (level) => {
+    return t(`admin.additive.${level}`);
+  };
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -100,13 +111,15 @@ const AdminAdditives = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                Additive Management
+                {t("admin.additive.title")}
               </h1>
               <p className="text-text-secondary">
-                Total: {additives.length} additives
+                {t("admin.additive.total", { count: additives.length })}
               </p>
             </div>
-            <Button onClick={() => openModal()}>Add Additive</Button>
+            <Button onClick={() => openModal()}>
+              {t("admin.additive.add")}
+            </Button>
           </div>
 
           <Card className="overflow-hidden">
@@ -115,19 +128,19 @@ const AdminAdditives = () => {
                 <thead className="bg-bg-base border-b border-border">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Name
+                      {t("admin.additive.name")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Code
+                      {t("admin.additive.code")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Category
+                      {t("admin.additive.category")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Safety
+                      {t("admin.additive.safety")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Actions
+                      {t("common.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -144,7 +157,7 @@ const AdminAdditives = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        No additives
+                        {t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -165,7 +178,7 @@ const AdminAdditives = () => {
                               additive.safety_level
                             )}`}
                           >
-                            {additive.safety_level}
+                            {translateSafety(additive.safety_level)}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -174,13 +187,13 @@ const AdminAdditives = () => {
                               onClick={() => openModal(additive)}
                               className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20"
                             >
-                              Edit
+                              {t("common.edit")}
                             </button>
                             <button
                               onClick={() => handleDelete(additive.id)}
                               className="px-3 py-1 bg-error/10 text-error text-xs font-bold rounded hover:bg-error/20"
                             >
-                              Delete
+                              {t("common.delete")}
                             </button>
                           </div>
                         </td>
@@ -198,22 +211,22 @@ const AdminAdditives = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
-              {editMode ? "Edit Additive" : "Add Additive"}
+              {editMode ? t("admin.additive.edit") : t("admin.additive.add")}
             </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Name"
+                  label={t("admin.additive.name")}
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., Aspartame"
+                  placeholder={t("admin.additive.namePlaceholder")}
                   required
                 />
                 <Input
-                  label="Code"
+                  label={t("admin.additive.code")}
                   value={formData.code}
                   onChange={(e) =>
                     setFormData({ ...formData, code: e.target.value })
@@ -224,16 +237,16 @@ const AdminAdditives = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Category"
+                  label={t("admin.additive.category")}
                   value={formData.category}
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  placeholder="e.g., Sweetener"
+                  placeholder={t("admin.additive.categoryPlaceholder")}
                 />
                 <div>
                   <label className="block text-sm font-bold text-text-primary mb-2">
-                    Safety Level
+                    {t("admin.additive.safetyLabel")}
                   </label>
                   <select
                     value={formData.safety_level}
@@ -242,16 +255,18 @@ const AdminAdditives = () => {
                     }
                     className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   >
-                    <option value="safe">Safe</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="avoid">Avoid</option>
+                    <option value="safe">{t("admin.additive.safe")}</option>
+                    <option value="moderate">
+                      {t("admin.additive.moderate")}
+                    </option>
+                    <option value="avoid">{t("admin.additive.avoid")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Description
+                  {t("admin.additive.description")}
                 </label>
                 <textarea
                   value={formData.description}
@@ -260,12 +275,13 @@ const AdminAdditives = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   rows="3"
+                  placeholder={t("admin.additive.descriptionPlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Health Risks
+                  {t("admin.additive.risks")}
                 </label>
                 <textarea
                   value={formData.health_risks}
@@ -274,20 +290,21 @@ const AdminAdditives = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   rows="3"
+                  placeholder={t("admin.additive.risksPlaceholder")}
                 />
               </div>
             </div>
 
             <div className="flex gap-3 mt-6">
               <Button onClick={handleSubmit} fullWidth>
-                {editMode ? "Update" : "Create"}
+                {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
                 fullWidth
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Card>

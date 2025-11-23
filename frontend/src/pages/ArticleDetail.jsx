@@ -4,8 +4,10 @@ import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import api from "../config/api";
+import { useTranslation } from "react-i18next";
 
 const ArticleDetail = () => {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,10 +44,10 @@ const ArticleDetail = () => {
       <MainLayout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
           <h2 className="text-2xl font-bold text-text-primary mb-2">
-            Artikel Tidak Ditemukan
+            {t("articles.notFoundTitle")}
           </h2>
           <Link to="/articles">
-            <Button>Kembali ke Daftar</Button>
+            <Button>{t("articles.backToAll")}</Button>
           </Link>
         </div>
       </MainLayout>
@@ -73,19 +75,27 @@ const ArticleDetail = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Kembali ke Artikel
+            {t("articles.backToList")}
           </Link>
 
           <Card className="overflow-hidden">
             <div className="mb-8 border-b border-border pb-6">
               <div className="flex items-center gap-3 mb-4">
                 <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wide">
-                  {article.category}
+                  {t(
+                    `articles.cat${
+                      article.category.charAt(0).toUpperCase() +
+                      article.category.slice(1)
+                    }`
+                  )}
                 </span>
                 <span className="text-xs text-text-secondary font-medium">
-                  {new Date(article.created_at).toLocaleDateString("id-ID", {
-                    dateStyle: "long",
-                  })}
+                  {new Date(article.created_at).toLocaleDateString(
+                    i18n.language,
+                    {
+                      dateStyle: "long",
+                    }
+                  )}
                 </span>
               </div>
 
@@ -99,9 +109,11 @@ const ArticleDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-text-primary">
-                    {article.author || "Tim LacakNutri"}
+                    {article.author || t("articles.defaultAuthor")}
                   </p>
-                  <p className="text-xs text-text-secondary">Penulis</p>
+                  <p className="text-xs text-text-secondary">
+                    {t("articles.authorLabel")}
+                  </p>
                 </div>
               </div>
             </div>

@@ -6,8 +6,10 @@ import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminProducts = () => {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -55,7 +57,7 @@ const AdminProducts = () => {
       const { data } = await api.get("/admin/food-catalog");
       setProducts(data.data);
     } catch (e) {
-      showToast("Failed to load products", "error");
+      showToast(t("admin.product.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -68,15 +70,16 @@ const AdminProducts = () => {
     setUploading(true);
     const formDataUpload = new FormData();
     formDataUpload.append("file", file);
+    formDataUpload.append("type", "product");
 
     try {
       const { data } = await api.post("/admin/upload-image", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setFormData({ ...formData, image_url: data.url });
-      showToast("Image uploaded successfully");
+      showToast(t("admin.product.imageSuccess"));
     } catch (e) {
-      showToast("Image upload failed", "error");
+      showToast(t("admin.product.errorUpload"), "error");
     } finally {
       setUploading(false);
     }
@@ -86,7 +89,21 @@ const AdminProducts = () => {
     if (product) {
       setEditMode(true);
       setCurrentId(product.id);
-      setFormData(product);
+      setFormData({
+        ...product,
+        weight_g: parseFloat(product.weight_g) || 100,
+        calories: parseFloat(product.calories) || 0,
+        protein: parseFloat(product.protein) || 0,
+        fat: parseFloat(product.fat) || 0,
+        carbs: parseFloat(product.carbs) || 0,
+        sugar: parseFloat(product.sugar) || 0,
+        fiber: parseFloat(product.fiber) || 0,
+        sodium_mg: parseFloat(product.sodium_mg) || 0,
+        potassium_mg: parseFloat(product.potassium_mg) || 0,
+        calcium_mg: parseFloat(product.calcium_mg) || 0,
+        iron_mg: parseFloat(product.iron_mg) || 0,
+        cholesterol_mg: parseFloat(product.cholesterol_mg) || 0,
+      });
     } else {
       setEditMode(false);
       setCurrentId(null);
@@ -115,15 +132,18 @@ const AdminProducts = () => {
     try {
       if (editMode) {
         await api.put(`/admin/food-catalog/${currentId}`, formData);
-        showToast("Product updated successfully");
+        showToast(t("admin.product.successUpdate"));
       } else {
         await api.post("/admin/food-catalog", formData);
-        showToast("Product created successfully");
+        showToast(t("admin.product.successCreate"));
       }
       setShowModal(false);
       fetchProducts();
     } catch (e) {
-      showToast(e.response?.data?.detail || "Operation failed", "error");
+      showToast(
+        e.response?.data?.detail || t("admin.common.operationFailed"),
+        "error"
+      );
     }
   };
 
@@ -135,10 +155,10 @@ const AdminProducts = () => {
     try {
       await api.delete(`/admin/food-catalog/${confirmDelete.id}`);
       setConfirmDelete({ isOpen: false, id: null });
-      showToast("Product deleted successfully");
+      showToast(t("admin.product.successDelete"));
       fetchProducts();
     } catch (e) {
-      showToast("Delete failed", "error");
+      showToast(t("common.errorDelete"), "error");
     }
   };
 
@@ -149,13 +169,15 @@ const AdminProducts = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                Product Catalog
+                {t("admin.product.title")}
               </h1>
               <p className="text-text-secondary">
-                Total: {products.length} products
+                {t("admin.product.total", { count: products.length })}
               </p>
             </div>
-            <Button onClick={() => openModal()}>Add Product</Button>
+            <Button onClick={() => openModal()}>
+              {t("admin.product.add")}
+            </Button>
           </div>
 
           <Card className="overflow-hidden">
@@ -164,19 +186,19 @@ const AdminProducts = () => {
                 <thead className="bg-bg-base border-b border-border">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Image
+                      {t("admin.product.image")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Code
+                      {t("admin.product.code")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Name
+                      {t("admin.product.name")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Nutrition (per 100g)
+                      {t("admin.product.nutritionHeader")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Actions
+                      {t("common.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -193,7 +215,7 @@ const AdminProducts = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        No products
+                        {t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -232,10 +254,16 @@ const AdminProducts = () => {
                         </td>
                         <td className="px-6 py-4 text-sm text-text-secondary">
                           <div className="space-y-1">
-                            <p>Cal: {product.calories}kcal</p>
                             <p>
-                              P: {product.protein}g | F: {product.fat}g | C:{" "}
-                              {product.carbs}g
+                              {t("products.cal")}:{" "}
+                              {Math.round(product.calories)}kcal
+                            </p>
+                            <p>
+                              {t("products.prot")}:{" "}
+                              {Math.round(product.protein)}g |{" "}
+                              {t("products.fat")}: {Math.round(product.fat)}g |{" "}
+                              {t("products.carbs")}: {Math.round(product.carbs)}
+                              g
                             </p>
                           </div>
                         </td>
@@ -245,13 +273,13 @@ const AdminProducts = () => {
                               onClick={() => openModal(product)}
                               className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20"
                             >
-                              Edit
+                              {t("common.edit")}
                             </button>
                             <button
                               onClick={() => handleDeleteClick(product.id)}
                               className="px-3 py-1 bg-error/10 text-error text-xs font-bold rounded hover:bg-error/20"
                             >
-                              Delete
+                              {t("common.delete")}
                             </button>
                           </div>
                         </td>
@@ -269,14 +297,14 @@ const AdminProducts = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-4xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
-              {editMode ? "Edit Product" : "Add Product"}
+              {editMode ? t("admin.product.edit") : t("admin.product.add")}
             </h3>
 
             <div className="space-y-4">
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Product Image
+                  {t("admin.product.image")}
                 </label>
                 <div className="flex items-center gap-4">
                   {formData.image_url && (
@@ -287,7 +315,9 @@ const AdminProducts = () => {
                     />
                   )}
                   <label className="cursor-pointer px-4 py-2 bg-primary/10 text-primary text-sm font-bold rounded-xl hover:bg-primary/20 transition-colors">
-                    {uploading ? "Uploading..." : "Choose Image"}
+                    {uploading
+                      ? t("common.uploading")
+                      : t("admin.product.chooseImage")}
                     <input
                       type="file"
                       accept="image/*"
@@ -301,7 +331,7 @@ const AdminProducts = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Code"
+                  label={t("admin.product.code")}
                   value={formData.original_code}
                   onChange={(e) =>
                     setFormData({ ...formData, original_code: e.target.value })
@@ -309,19 +339,19 @@ const AdminProducts = () => {
                   placeholder="e.g., AM001"
                 />
                 <Input
-                  label="Name"
+                  label={t("admin.product.name")}
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="Product name"
+                  placeholder={t("admin.product.namePlaceholder")}
                   required
                 />
               </div>
 
               <div className="grid grid-cols-4 gap-4">
                 <Input
-                  label="Weight (g)"
+                  label={t("admin.product.weight")}
                   type="number"
                   value={formData.weight_g}
                   onChange={(e) =>
@@ -332,7 +362,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Calories (kcal)"
+                  label={t("admin.product.calories")}
                   type="number"
                   value={formData.calories}
                   onChange={(e) =>
@@ -343,7 +373,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Protein (g)"
+                  label={t("admin.product.protein")}
                   type="number"
                   step="0.1"
                   value={formData.protein}
@@ -355,7 +385,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Fat (g)"
+                  label={t("admin.product.fat")}
                   type="number"
                   step="0.1"
                   value={formData.fat}
@@ -370,7 +400,7 @@ const AdminProducts = () => {
 
               <div className="grid grid-cols-4 gap-4">
                 <Input
-                  label="Carbs (g)"
+                  label={t("admin.product.carbs")}
                   type="number"
                   step="0.1"
                   value={formData.carbs}
@@ -382,7 +412,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Sugar (g)"
+                  label={t("admin.product.sugar")}
                   type="number"
                   step="0.1"
                   value={formData.sugar}
@@ -394,7 +424,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Fiber (g)"
+                  label={t("admin.product.fiber")}
                   type="number"
                   step="0.1"
                   value={formData.fiber}
@@ -406,7 +436,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Sodium (mg)"
+                  label={t("admin.product.sodium")}
                   type="number"
                   step="0.1"
                   value={formData.sodium_mg}
@@ -421,7 +451,7 @@ const AdminProducts = () => {
 
               <div className="grid grid-cols-4 gap-4">
                 <Input
-                  label="Potassium (mg)"
+                  label={t("admin.product.potassium")}
                   type="number"
                   step="0.1"
                   value={formData.potassium_mg}
@@ -433,7 +463,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Calcium (mg)"
+                  label={t("admin.product.calcium")}
                   type="number"
                   step="0.1"
                   value={formData.calcium_mg}
@@ -445,7 +475,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Iron (mg)"
+                  label={t("admin.product.iron")}
                   type="number"
                   step="0.1"
                   value={formData.iron_mg}
@@ -457,7 +487,7 @@ const AdminProducts = () => {
                   }
                 />
                 <Input
-                  label="Cholesterol (mg)"
+                  label={t("admin.product.cholesterol")}
                   type="number"
                   step="0.1"
                   value={formData.cholesterol_mg}
@@ -473,14 +503,14 @@ const AdminProducts = () => {
 
             <div className="flex gap-3 mt-6">
               <Button onClick={handleSubmit} fullWidth>
-                {editMode ? "Update" : "Create"}
+                {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
                 fullWidth
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Card>
@@ -491,8 +521,8 @@ const AdminProducts = () => {
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null })}
         onConfirm={handleDeleteConfirm}
-        title="Delete Product"
-        message="Are you sure you want to delete this product?"
+        title={t("admin.product.deleteTitle")}
+        message={t("admin.product.confirmDelete")}
         type="danger"
       />
 

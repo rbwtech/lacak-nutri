@@ -6,8 +6,10 @@ import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminDiseases = () => {
+  const { t } = useTranslation();
   const [diseases, setDiseases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +30,7 @@ const AdminDiseases = () => {
     message: "",
     type: "success",
   });
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchDiseases();
@@ -38,8 +41,9 @@ const AdminDiseases = () => {
     try {
       const { data } = await api.get("/admin/diseases");
       setDiseases(data.data);
+      setTotal(data.total || 0);
     } catch (e) {
-      showToast("Failed to load diseases", "error");
+      showToast(t("admin.disease.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -71,15 +75,18 @@ const AdminDiseases = () => {
     try {
       if (editMode) {
         await api.put(`/admin/diseases/${currentId}`, formData);
-        showToast("Disease updated successfully");
+        showToast(t("admin.disease.successUpdate"));
       } else {
         await api.post("/admin/diseases", formData);
-        showToast("Disease created successfully");
+        showToast(t("admin.disease.successCreate"));
       }
       setShowModal(false);
       fetchDiseases();
     } catch (e) {
-      showToast(e.response?.data?.detail || "Operation failed", "error");
+      showToast(
+        e.response?.data?.detail || t("admin.common.operationFailed"),
+        "error"
+      );
     }
   };
 
@@ -91,10 +98,10 @@ const AdminDiseases = () => {
     try {
       await api.delete(`/admin/diseases/${confirmDelete.id}`);
       setConfirmDelete({ isOpen: false, id: null });
-      showToast("Disease deleted successfully");
+      showToast(t("admin.disease.successDelete"));
       fetchDiseases();
     } catch (e) {
-      showToast("Delete failed", "error");
+      showToast(t("common.errorDelete"), "error");
     }
   };
 
@@ -105,13 +112,15 @@ const AdminDiseases = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                Disease Management
+                {t("admin.disease.title")}
               </h1>
               <p className="text-text-secondary">
-                Total: {diseases.length} diseases
+                {t("admin.disease.total", { count: diseases.length })}
               </p>
             </div>
-            <Button onClick={() => openModal()}>Add Disease</Button>
+            <Button onClick={() => openModal()}>
+              {t("admin.disease.add")}
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -121,7 +130,7 @@ const AdminDiseases = () => {
               </Card>
             ) : diseases.length === 0 ? (
               <Card className="p-6 col-span-full text-center text-text-secondary">
-                No diseases found
+                {t("admin.common.noData")}
               </Card>
             ) : (
               diseases.map((disease) => (
@@ -133,20 +142,20 @@ const AdminDiseases = () => {
                     {disease.name}
                   </h3>
                   <p className="text-sm text-text-secondary mb-4 line-clamp-3">
-                    {disease.description || "No description"}
+                    {disease.description || t("admin.common.noDescription")}
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => openModal(disease)}
                       className="flex-1 px-4 py-2 bg-primary/10 text-primary text-sm font-bold rounded-xl hover:bg-primary/20"
                     >
-                      Edit
+                      {t("common.edit")}
                     </button>
                     <button
                       onClick={() => handleDeleteClick(disease.id)}
                       className="flex-1 px-4 py-2 bg-error/10 text-error text-sm font-bold rounded-xl hover:bg-error/20"
                     >
-                      Delete
+                      {t("common.delete")}
                     </button>
                   </div>
                 </Card>
@@ -160,23 +169,23 @@ const AdminDiseases = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
-              {editMode ? "Edit Disease" : "Add Disease"}
+              {editMode ? t("admin.disease.edit") : t("admin.disease.add")}
             </h3>
 
             <div className="space-y-4">
               <Input
-                label="Name"
+                label={t("admin.disease.name")}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="e.g., Diabetes"
+                placeholder={t("admin.disease.namePlaceholder")}
                 required
               />
 
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Description
+                  {t("admin.disease.description")}
                 </label>
                 <textarea
                   value={formData.description}
@@ -185,13 +194,13 @@ const AdminDiseases = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   rows="3"
-                  placeholder="Disease description"
+                  placeholder={t("admin.disease.descriptionPlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Dietary Recommendations
+                  {t("admin.disease.recommendations")}
                 </label>
                 <textarea
                   value={formData.dietary_recommendations}
@@ -203,13 +212,13 @@ const AdminDiseases = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   rows="3"
-                  placeholder="Recommended foods and diet"
+                  placeholder={t("admin.disease.recommendationsPlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
-                  Foods to Avoid
+                  {t("admin.disease.foodsToAvoid")}
                 </label>
                 <textarea
                   value={formData.foods_to_avoid}
@@ -218,21 +227,21 @@ const AdminDiseases = () => {
                   }
                   className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
                   rows="3"
-                  placeholder="Foods that should be avoided"
+                  placeholder={t("admin.disease.foodsToAvoidPlaceholder")}
                 />
               </div>
             </div>
 
             <div className="flex gap-3 mt-6">
               <Button onClick={handleSubmit} fullWidth>
-                {editMode ? "Update" : "Create"}
+                {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
                 fullWidth
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Card>
@@ -243,8 +252,8 @@ const AdminDiseases = () => {
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null })}
         onConfirm={handleDeleteConfirm}
-        title="Delete Disease"
-        message="Are you sure you want to delete this disease? This action cannot be undone."
+        title={t("admin.disease.deleteTitle")}
+        message={t("admin.disease.confirmDelete")}
         type="danger"
       />
 

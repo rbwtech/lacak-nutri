@@ -4,8 +4,10 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminLocalization = () => {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +23,7 @@ const AdminLocalization = () => {
     region: "",
     is_active: true,
   });
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchSettings();
@@ -31,6 +34,7 @@ const AdminLocalization = () => {
     try {
       const { data } = await api.get("/admin/localization");
       setSettings(data.data);
+      setTotal(data.total || 0);
     } catch (e) {
       console.error("Failed to load settings", e);
     } finally {
@@ -70,17 +74,17 @@ const AdminLocalization = () => {
       setShowModal(false);
       fetchSettings();
     } catch (e) {
-      alert(e.response?.data?.detail || "Operation failed");
+      alert(e.response?.data?.detail || t("admin.common.operationFailed"));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this setting?")) return;
+    if (!confirm(t("admin.common.confirmDelete"))) return;
     try {
       await api.delete(`/admin/localization/${id}`);
       fetchSettings();
     } catch (e) {
-      alert("Delete failed");
+      alert(t("common.errorDelete"));
     }
   };
 
@@ -91,13 +95,15 @@ const AdminLocalization = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                Localization Settings
+                {t("admin.localization.title")}
               </h1>
               <p className="text-text-secondary">
-                Total: {settings.length} settings
+                {t("admin.localization.total", { count: settings.length })}
               </p>
             </div>
-            <Button onClick={() => openModal()}>Add Setting</Button>
+            <Button onClick={() => openModal()}>
+              {t("admin.localization.add")}
+            </Button>
           </div>
 
           <Card className="overflow-hidden">
@@ -106,19 +112,19 @@ const AdminLocalization = () => {
                 <thead className="bg-bg-base border-b border-border">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Timezone
+                      {t("admin.localization.timezone")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Locale
+                      {t("admin.localization.locale")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Region
+                      {t("admin.localization.region")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Status
+                      {t("admin.localization.status")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Actions
+                      {t("common.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -135,7 +141,7 @@ const AdminLocalization = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        No settings
+                        {t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -170,7 +176,9 @@ const AdminLocalization = () => {
                                 : "bg-gray-100 text-gray-600"
                             }`}
                           >
-                            {setting.is_active ? "Active" : "Inactive"}
+                            {setting.is_active
+                              ? t("admin.localization.active")
+                              : t("admin.localization.inactive")}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -179,13 +187,13 @@ const AdminLocalization = () => {
                               onClick={() => openModal(setting)}
                               className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20"
                             >
-                              Edit
+                              {t("common.edit")}
                             </button>
                             <button
                               onClick={() => handleDelete(setting.id)}
                               className="px-3 py-1 bg-error/10 text-error text-xs font-bold rounded hover:bg-error/20"
                             >
-                              Delete
+                              {t("common.delete")}
                             </button>
                           </div>
                         </td>
@@ -203,13 +211,15 @@ const AdminLocalization = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
-              {editMode ? "Edit Setting" : "Add Setting"}
+              {editMode
+                ? t("admin.localization.edit")
+                : t("admin.localization.add")}
             </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Timezone"
+                  label={t("admin.localization.timezone")}
                   value={formData.timezone}
                   onChange={(e) =>
                     setFormData({ ...formData, timezone: e.target.value })
@@ -217,7 +227,7 @@ const AdminLocalization = () => {
                   placeholder="Asia/Jakarta"
                 />
                 <Input
-                  label="Offset"
+                  label={t("admin.localization.offset")}
                   value={formData.timezone_offset}
                   onChange={(e) =>
                     setFormData({
@@ -230,7 +240,7 @@ const AdminLocalization = () => {
               </div>
 
               <Input
-                label="Timezone Label"
+                label={t("admin.localization.tzLabel")}
                 value={formData.timezone_label}
                 onChange={(e) =>
                   setFormData({ ...formData, timezone_label: e.target.value })
@@ -240,7 +250,7 @@ const AdminLocalization = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Locale"
+                  label={t("admin.localization.locale")}
                   value={formData.locale}
                   onChange={(e) =>
                     setFormData({ ...formData, locale: e.target.value })
@@ -248,7 +258,7 @@ const AdminLocalization = () => {
                   placeholder="id-ID"
                 />
                 <Input
-                  label="Locale Label"
+                  label={t("admin.localization.localeLabel")}
                   value={formData.locale_label}
                   onChange={(e) =>
                     setFormData({ ...formData, locale_label: e.target.value })
@@ -259,7 +269,7 @@ const AdminLocalization = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Country Code"
+                  label={t("admin.localization.countryCode")}
                   value={formData.country_code}
                   onChange={(e) =>
                     setFormData({ ...formData, country_code: e.target.value })
@@ -267,7 +277,7 @@ const AdminLocalization = () => {
                   placeholder="ID"
                 />
                 <Input
-                  label="Region"
+                  label={t("admin.localization.region")}
                   value={formData.region}
                   onChange={(e) =>
                     setFormData({ ...formData, region: e.target.value })
@@ -286,21 +296,21 @@ const AdminLocalization = () => {
                   className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <span className="text-sm font-bold text-text-primary">
-                  Active
+                  {t("admin.localization.active")}
                 </span>
               </label>
             </div>
 
             <div className="flex gap-3 mt-6">
               <Button onClick={handleSubmit} fullWidth>
-                {editMode ? "Update" : "Create"}
+                {editMode ? t("common.update") : t("common.create")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
                 fullWidth
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Card>

@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { MainLayout } from "../components/layouts";
 import Button from "../components/ui/Button";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const Home = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   return (
@@ -18,17 +20,16 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             <span className="inline-block py-1 px-3 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4">
-              #1 Health Companion
+              {t("home.tagline")}
             </span>
             <h1 className="text-4xl md:text-6xl font-extrabold text-text-primary mb-6 leading-tight">
-              Pantau Nutrisi Makanan dengan{" "}
+              {t("home.headlineStart")}{" "}
               <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-orange-600">
-                Cerdas
+                {t("home.headlineEnd")}
               </span>
             </h1>
             <p className="text-lg md:text-xl text-text-secondary mb-10 leading-relaxed">
-              Scan barcode, analisis nutrisi instan, dan validasi BPOM dalam
-              satu aplikasi. Pilihan cerdas untuk hidup lebih sehat.
+              {t("home.subHeadline")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -38,7 +39,7 @@ const Home = () => {
                     size="lg"
                     className="shadow-lg shadow-primary/30 border-2 border-transparent"
                   >
-                    Buka Dashboard &rarr;
+                    {t("home.openDashboard")} &rarr;
                   </Button>
                 </Link>
               ) : (
@@ -47,7 +48,7 @@ const Home = () => {
                     size="lg"
                     className="shadow-lg shadow-primary/30 border-2 border-transparent"
                   >
-                    Mulai Gratis Sekarang
+                    {t("home.startFree")}
                   </Button>
                 </Link>
               )}
@@ -58,7 +59,7 @@ const Home = () => {
                   size="lg"
                   className="bg-white/20 backdrop-blur-sm border-border"
                 >
-                  Coba Scanner Demo
+                  {t("home.tryScanner")}
                 </Button>
               </Link>
             </div>
@@ -70,10 +71,10 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-text-primary mb-4">
-              Fitur Unggulan
+              {t("home.featuresTitle")}
             </h2>
             <p className="text-base text-text-secondary">
-              Semua yang Anda butuhkan untuk hidup sehat
+              {t("home.featuresSubTitle")}
             </p>
           </div>
 
@@ -96,11 +97,10 @@ const Home = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-text-primary mb-3">
-                Scanner Barcode & OCR
+                {t("home.feature1Title")}
               </h3>
               <p className="text-sm text-text-secondary leading-relaxed">
-                Scan barcode atau foto kemasan untuk info nutrisi lengkap secara
-                instan.
+                {t("home.feature1Desc")}
               </p>
             </div>
 
@@ -122,11 +122,10 @@ const Home = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-text-primary mb-3">
-                Validasi BPOM
+                {t("home.feature2Title")}
               </h3>
               <p className="text-sm text-text-secondary leading-relaxed">
-                Cek status registrasi BPOM produk makanan dan minuman dengan
-                akurat.
+                {t("home.feature2Desc")}
               </p>
             </div>
 
@@ -148,11 +147,10 @@ const Home = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-text-primary mb-3">
-                Analisis AI
+                {t("home.feature3Title")}
               </h3>
               <p className="text-sm text-text-secondary leading-relaxed">
-                Rekomendasi nutrisi personal dengan teknologi Gemini AI yang
-                canggih.
+                {t("home.feature3Desc")}
               </p>
             </div>
           </div>

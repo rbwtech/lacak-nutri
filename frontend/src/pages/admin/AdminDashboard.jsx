@@ -3,13 +3,19 @@ import { Link } from "react-router-dom";
 import { MainLayout } from "../../components/layouts";
 import Card from "../../components/ui/Card";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     users: 0,
     scans: 0,
     articles: 0,
     products: 0,
+    allergens: 0, // NEW
+    additives: 0, // NEW
+    diseases: 0, // NEW
+    localization: 0, // NEW
   });
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +35,8 @@ const AdminDashboard = () => {
 
   const adminMenus = [
     {
-      title: "Users",
-      desc: "Manage users & roles",
+      title: t("admin.user.title"),
+      desc: t("admin.user.desc"),
       to: "/admin/users",
       icon: (
         <path
@@ -44,8 +50,8 @@ const AdminDashboard = () => {
       count: stats.users,
     },
     {
-      title: "Scan History",
-      desc: "BPOM & OCR scans",
+      title: t("admin.history.title"),
+      desc: t("admin.history.desc"),
       to: "/admin/history",
       icon: (
         <path
@@ -59,8 +65,8 @@ const AdminDashboard = () => {
       count: stats.scans,
     },
     {
-      title: "Articles",
-      desc: "Education content",
+      title: t("admin.article.title"),
+      desc: t("admin.article.desc"),
       to: "/admin/articles",
       icon: (
         <path
@@ -74,8 +80,8 @@ const AdminDashboard = () => {
       count: stats.articles,
     },
     {
-      title: "Products",
-      desc: "Food catalog",
+      title: t("admin.product.title"),
+      desc: t("admin.product.desc"),
       to: "/admin/products",
       icon: (
         <path
@@ -89,8 +95,8 @@ const AdminDashboard = () => {
       count: stats.products,
     },
     {
-      title: "Allergens",
-      desc: "Manage allergen list",
+      title: t("admin.allergen.title"),
+      desc: t("admin.allergen.desc"),
       to: "/admin/allergens",
       icon: (
         <path
@@ -101,10 +107,11 @@ const AdminDashboard = () => {
       ),
       color: "text-red-500",
       bg: "bg-red-50",
+      count: stats.allergens, // NEW
     },
     {
-      title: "Additives",
-      desc: "Food additives DB",
+      title: t("admin.additive.title"),
+      desc: t("admin.additive.desc"),
       to: "/admin/additives",
       icon: (
         <path
@@ -115,10 +122,11 @@ const AdminDashboard = () => {
       ),
       color: "text-yellow-600",
       bg: "bg-yellow-50",
+      count: stats.additives, // NEW
     },
     {
-      title: "Diseases",
-      desc: "Health conditions",
+      title: t("admin.disease.title"),
+      desc: t("admin.disease.desc"),
       to: "/admin/diseases",
       icon: (
         <path
@@ -129,10 +137,11 @@ const AdminDashboard = () => {
       ),
       color: "text-pink-500",
       bg: "bg-pink-50",
+      count: stats.diseases, // NEW
     },
     {
-      title: "Localization",
-      desc: "Timezone & locale",
+      title: t("admin.localization.title"),
+      desc: t("admin.localization.desc"),
       to: "/admin/localization",
       icon: (
         <path
@@ -143,6 +152,7 @@ const AdminDashboard = () => {
       ),
       color: "text-indigo-500",
       bg: "bg-indigo-50",
+      count: stats.localization, // NEW
     },
   ];
 
@@ -152,9 +162,11 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-10">
             <h1 className="text-3xl font-extrabold text-text-primary mb-2">
-              Admin Dashboard
+              {t("admin.dashboard.title")}
             </h1>
-            <p className="text-text-secondary">Manage platform data & users</p>
+            <p className="text-text-secondary">
+              {t("admin.dashboard.subtitle")}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

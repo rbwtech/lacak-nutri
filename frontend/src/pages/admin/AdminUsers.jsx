@@ -4,8 +4,10 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminUsers = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -57,17 +59,22 @@ const AdminUsers = () => {
       setShowModal(false);
       fetchUsers();
     } catch (e) {
-      alert(e.response?.data?.detail || "Update failed");
+      alert(e.response?.data?.detail || t("admin.user.updateFailed"));
     }
   };
 
   const handleResetPassword = async (userId) => {
-    if (!confirm("Generate reset password link?")) return;
+    if (!confirm(t("admin.user.confirmReset"))) return;
     try {
       const { data } = await api.post(`/admin/users/${userId}/reset-password`);
-      alert(`Reset link: ${data.reset_link}\nSend to: ${data.user_email}`);
+      alert(
+        t("admin.user.resetSuccess", {
+          link: data.reset_link,
+          email: data.user_email,
+        })
+      );
     } catch (e) {
-      alert("Failed to generate reset link");
+      alert(t("admin.user.resetFailed"));
     }
   };
 
@@ -78,16 +85,18 @@ const AdminUsers = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                User Management
+                {t("admin.user.title")}
               </h1>
-              <p className="text-text-secondary">Total: {users.length} users</p>
+              <p className="text-text-secondary">
+                {t("admin.user.total", { count: users.length })}
+              </p>
             </div>
-            <Button onClick={fetchUsers}>Refresh</Button>
+            <Button onClick={fetchUsers}>{t("common.refresh")}</Button>
           </div>
 
           <Card className="p-6 mb-6">
             <Input
-              placeholder="Search by name or email..."
+              placeholder={t("admin.user.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               containerClass="max-w-md"
@@ -100,19 +109,19 @@ const AdminUsers = () => {
                 <thead className="bg-bg-base border-b border-border">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      User
+                      {t("admin.user.tableUser")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Role
+                      {t("admin.user.tableRole")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Info
+                      {t("admin.user.tableInfo")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Allergies
+                      {t("admin.user.tableAllergies")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Actions
+                      {t("common.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -129,7 +138,7 @@ const AdminUsers = () => {
                         colSpan="5"
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        No users found
+                        {t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -160,9 +169,11 @@ const AdminUsers = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-text-secondary">
-                          <p>Age: {user.age || "-"}</p>
                           <p>
-                            BMI:{" "}
+                            {t("admin.user.ageLabel")} {user.age || "-"}
+                          </p>
+                          <p>
+                            {t("admin.user.bmiLabel")}{" "}
                             {user.weight && user.height
                               ? (
                                   user.weight / Math.pow(user.height / 100, 2)
@@ -184,7 +195,7 @@ const AdminUsers = () => {
                             </div>
                           ) : (
                             <span className="text-text-secondary text-sm">
-                              None
+                              {t("admin.user.none")}
                             </span>
                           )}
                         </td>
@@ -194,19 +205,19 @@ const AdminUsers = () => {
                               onClick={() => openModal(user, "role")}
                               className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20"
                             >
-                              Role
+                              {t("admin.user.tableRole")}
                             </button>
                             <button
                               onClick={() => openModal(user, "email")}
                               className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded hover:bg-blue-100"
                             >
-                              Email
+                              {t("admin.user.tableEmail")}
                             </button>
                             <button
                               onClick={() => handleResetPassword(user.id)}
                               className="px-3 py-1 bg-warning/10 text-warning-text text-xs font-bold rounded hover:bg-warning/20"
                             >
-                              Reset
+                              {t("admin.user.reset")}
                             </button>
                           </div>
                         </td>
@@ -225,7 +236,9 @@ const AdminUsers = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-md p-6">
             <h3 className="text-xl font-bold text-text-primary mb-4">
-              {modalType === "role" ? "Update Role" : "Update Email"}
+              {modalType === "role"
+                ? t("admin.user.updateRole")
+                : t("admin.user.updateEmail")}
             </h3>
 
             {modalType === "role" ? (
@@ -236,8 +249,8 @@ const AdminUsers = () => {
                 }
                 className="w-full px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none"
               >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+                <option value="user">{t("profile.user")}</option>
+                <option value="admin">{t("profile.admin")}</option>
               </select>
             ) : (
               <Input
@@ -246,20 +259,20 @@ const AdminUsers = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                placeholder="New email"
+                placeholder={t("admin.user.emailPlaceholder")}
               />
             )}
 
             <div className="flex gap-3 mt-6">
               <Button onClick={handleUpdate} fullWidth>
-                Update
+                {t("common.update")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
                 fullWidth
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </Card>

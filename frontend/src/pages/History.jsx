@@ -5,8 +5,10 @@ import Button from "../components/ui/Button";
 import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const History = () => {
+  const { t, i18n } = useTranslation();
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,9 @@ const History = () => {
         )
       );
       setSuccessMessage(
-        data.is_favorited ? "Ditambahkan ke favorit" : "Dihapus dari favorit"
+        data.is_favorited
+          ? t("history.addedToFav")
+          : t("history.removedFromFav")
       );
       setShowSuccess(true);
     } catch (err) {
@@ -67,7 +71,7 @@ const History = () => {
       <div className="bg-bg-base min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl font-extrabold text-text-primary mb-6">
-            Riwayat Scan
+            {t("history.title")}
           </h1>
 
           <div className="flex gap-2 mb-6">
@@ -82,10 +86,10 @@ const History = () => {
                 }`}
               >
                 {type === "all"
-                  ? "Semua"
+                  ? t("history.filterAll")
                   : type === "bpom"
-                  ? "BPOM"
-                  : "Nutrisi"}
+                  ? t("common.bpomLabel")
+                  : t("history.filterNutrition")}
               </button>
             ))}
           </div>
@@ -121,7 +125,7 @@ const History = () => {
                       id="search-history"
                       name="search-history"
                       type="text"
-                      placeholder="Cari riwayat..."
+                      placeholder={t("history.searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -145,16 +149,16 @@ const History = () => {
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
-                  <p className="text-text-secondary mb-4">Belum ada riwayat</p>
+                  <p className="text-text-secondary mb-4">
+                    {t("history.noHistoryTitle")}
+                  </p>
                   <Button onClick={() => navigate("/scanner")}>
-                    Mulai Scan
+                    {t("history.startScanButton")}
                   </Button>
                 </Card>
               ) : filteredHistory.length === 0 ? (
                 <Card className="p-8 text-center">
-                  <p className="text-text-secondary">
-                    Tidak ada riwayat yang cocok dengan pencarian
-                  </p>
+                  <p className="text-text-secondary">{t("history.noMatch")}</p>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -242,7 +246,10 @@ const History = () => {
 
                           <div className="text-right">
                             <p className="text-xs text-text-secondary">
-                              {new Date(item.date).toLocaleDateString("id-ID")}
+                              {new Date(item.date).toLocaleDateString(
+                                i18n.language,
+                                { dateStyle: "medium" }
+                              )}
                             </p>
                           </div>
 

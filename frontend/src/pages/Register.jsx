@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import { useTranslation } from "react-i18next";
 
 const Register = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
@@ -18,7 +20,7 @@ const Register = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: null });
+    setErrors({ ...errors, [e.target.name]: null, submit: null });
   };
 
   const handleSubmit = async (e) => {
@@ -26,7 +28,7 @@ const Register = () => {
     setLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      setErrors({ confirmPassword: "Password tidak sama" });
+      setErrors({ confirmPassword: t("auth.passwordMismatch") });
       setLoading(false);
       return;
     }
@@ -39,7 +41,7 @@ const Register = () => {
       });
       navigate("/dashboard");
     } catch {
-      setErrors({ submit: "Gagal mendaftar. Coba lagi." });
+      setErrors({ submit: t("auth.registerFailed") });
     } finally {
       setLoading(false);
     }
@@ -59,48 +61,48 @@ const Register = () => {
             className="w-20 h-20 mx-auto mb-3 drop-shadow-lg hover:scale-105 transition-transform duration-300"
           />
           <h1 className="text-3xl font-black text-text-primary tracking-tight">
-            Buat Akun Baru
+            {t("auth.registerTitle")}
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            Yuk mulai perjalanan hidup sehatmu!
+            {t("auth.registerSubtitle")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
-            label="Nama Lengkap"
+            label={t("auth.fullName")}
             name="name"
-            placeholder="Nama Anda"
+            placeholder={t("auth.namePlaceholder")}
             value={formData.name}
             onChange={handleChange}
             className="bg-white/50 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
-            label="Email"
+            label={t("auth.email")}
             type="email"
             name="email"
-            placeholder="nama@email.com"
+            placeholder={t("auth.emailPlaceholder")}
             value={formData.email}
             onChange={handleChange}
             className="bg-white/50 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
-            label="Password"
+            label={t("auth.password")}
             type="password"
             name="password"
-            placeholder="Minimal 8 karakter"
+            placeholder={t("auth.passwordHint")}
             value={formData.password}
             onChange={handleChange}
             className="bg-white/50 border-primary/20 focus:border-primary h-12"
           />
 
           <Input
-            label="Ulangi Password"
+            label={t("auth.confirmPassword")}
             type="password"
             name="confirmPassword"
-            placeholder="••••••••"
+            placeholder={t("auth.passwordPlaceholder")}
             value={formData.confirmPassword}
             onChange={handleChange}
             error={errors.confirmPassword}
@@ -119,18 +121,18 @@ const Register = () => {
             loading={loading}
             className="h-12 text-lg shadow-lg shadow-primary/30 mt-4"
           >
-            Daftar Sekarang
+            {t("auth.registerButton")}
           </Button>
         </form>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-text-secondary">
-            Sudah punya akun?{" "}
+            {t("auth.hasAccount")}{" "}
             <Link
               to="/login"
               className="font-bold text-primary hover:underline"
             >
-              Masuk
+              {t("auth.login")}
             </Link>
           </p>
         </div>

@@ -11,8 +11,10 @@ import Button from "../components/ui/Button";
 import NutritionLabel from "../components/ui/NutritionLabel";
 import AnimatedStatus from "../components/ui/AnimatedStatus";
 import api from "../config/api";
+import { useTranslation } from "react-i18next";
 
 const HistoryDetail = () => {
+  const { t, i18n } = useTranslation();
   const { id, type } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -20,12 +22,14 @@ const HistoryDetail = () => {
   const [showImage, setShowImage] = useState(false);
   const [searchParams] = useSearchParams();
   const fromSource = searchParams.get("from");
+
   const getBackLink = () => {
+    const defaultNav = { url: "/history", text: t("nav.history") };
     if (fromSource === "favorites")
-      return { url: "/favorites", text: "Favorit" };
+      return { url: "/favorites", text: t("nav.favorites") };
     if (fromSource === "dashboard")
-      return { url: "/dashboard", text: "Dashboard" };
-    return { url: "/history", text: "Riwayat" };
+      return { url: "/dashboard", text: t("nav.dashboard") };
+    return defaultNav;
   };
 
   const backLink = getBackLink();
@@ -43,14 +47,12 @@ const HistoryDetail = () => {
       let processedData = result.data || result;
 
       if (type === "bpom" && processedData.raw_response) {
-        // raw_response sudah object dari backend (JSON column)
         if (typeof processedData.raw_response === "object") {
           processedData = { ...processedData, ...processedData.raw_response };
         }
       }
 
       if (type === "ocr") {
-        // OCR mapping
         if (processedData.ocr_raw_data) {
           if (typeof processedData.ocr_raw_data === "string") {
             processedData.nutrition_data = JSON.parse(
@@ -93,8 +95,10 @@ const HistoryDetail = () => {
       <MainLayout>
         <div className="bg-bg-base min-h-screen py-8">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <p className="text-text-secondary mb-4">Data tidak ditemukan</p>
-            <Button onClick={() => navigate("/history")}>Kembali</Button>
+            <p className="text-text-secondary mb-4">{t("history.notFound")}</p>
+            <Button onClick={() => navigate("/history")}>
+              {t("common.back")}
+            </Button>
           </div>
         </div>
       </MainLayout>
@@ -122,19 +126,19 @@ const HistoryDetail = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Kembali ke {backLink.text}
+            {t("history.backTo")} {backLink.text}
           </Link>
 
           {type === "bpom" ? (
             <div className="text-center animate-fade-in-up">
               <AnimatedStatus type="success" />
               <h2 className="text-2xl font-extrabold text-text-primary mb-6">
-                Terdaftar BPOM
+                {t("history.bpomRegistered")}
               </h2>
               <Card className="p-6 text-left">
                 <div>
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                    Nama Produk
+                    {t("history.productName")}
                   </p>
                   <p className="font-bold text-lg text-text-primary">
                     {data.product_name}
@@ -149,7 +153,7 @@ const HistoryDetail = () => {
                 <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                   <div>
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Nomor Registrasi
+                      {t("history.regNumber")}
                     </p>
                     <p className="font-mono font-bold text-sm text-text-primary">
                       {data.bpom_number}
@@ -157,15 +161,15 @@ const HistoryDetail = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Status
+                      {t("history.status")}
                     </p>
                     <p className="font-bold text-sm text-success">
-                      {data.status || "Terdaftar"}
+                      {data.status || t("history.statusRegistered")}
                     </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Pendaftar / Pabrik
+                      {t("history.manufacturer")}
                     </p>
                     <p className="text-sm font-semibold text-text-primary">
                       {data.manufacturer || "-"}
@@ -173,7 +177,7 @@ const HistoryDetail = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Terbit
+                      {t("history.issued")}
                     </p>
                     <p className="text-xs font-medium">
                       {data.issued_date || "-"}
@@ -181,7 +185,7 @@ const HistoryDetail = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Kedaluwarsa
+                      {t("history.expired")}
                     </p>
                     <p className="text-xs font-medium text-error">
                       {data.expired_date || "-"}
@@ -189,7 +193,7 @@ const HistoryDetail = () => {
                   </div>
                   <div className="col-span-2">
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Kemasan
+                      {t("history.packaging")}
                     </p>
                     <p className="text-xs font-medium text-text-primary">
                       {data.packaging || "-"}
@@ -197,12 +201,12 @@ const HistoryDetail = () => {
                   </div>
                   <div className="col-span-2">
                     <p className="text-[10px] font-bold text-text-secondary uppercase">
-                      Tanggal Scan
+                      {t("history.scanDate")}
                     </p>
                     <p className="text-xs font-medium text-text-primary">
                       {new Date(
                         data.created_at || data.scanned_at
-                      ).toLocaleString("id-ID")}
+                      ).toLocaleString(i18n.language)}
                     </p>
                   </div>
                 </div>
@@ -212,7 +216,7 @@ const HistoryDetail = () => {
             <div className="space-y-6 animate-fade-in-up">
               <div className="text-center">
                 <h2 className="text-2xl font-extrabold text-text-primary mb-3">
-                  {data.product_name || "Analisis Nutrisi AI"}
+                  {data.product_name || t("common.nutritionAILabel")}
                 </h2>
                 <div className="flex items-center justify-center gap-3">
                   <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
@@ -223,7 +227,8 @@ const HistoryDetail = () => {
                   </div>
                 </div>
                 <p className="text-xs text-text-secondary mt-3">
-                  Scan pada: {new Date(data.scanned_at).toLocaleString("id-ID")}
+                  {t("history.scannedAt")}{" "}
+                  {new Date(data.scanned_at).toLocaleString(i18n.language)}
                 </p>
               </div>
 
@@ -233,7 +238,8 @@ const HistoryDetail = () => {
                   size="sm"
                   onClick={() => setShowImage(!showImage)}
                 >
-                  {showImage ? "Sembunyikan" : "Lihat"} Gambar Scan
+                  {t(showImage ? "history.hideImage" : "history.viewImage")}{" "}
+                  {t("history.imageLabel")}
                 </Button>
                 {showImage && (
                   <img
@@ -261,10 +267,11 @@ const HistoryDetail = () => {
                   </svg>
                   <div>
                     <h4 className="font-bold text-error text-sm">
-                      Peringatan Alergi!
+                      {t("history.allergyWarningTitle")}
                     </h4>
                     <p className="text-xs text-text-primary mt-1">
-                      Mengandung: <strong>{data.warnings.join(", ")}</strong>
+                      {t("history.allergyWarningContent")}{" "}
+                      <strong>{data.warnings.join(", ")}</strong>
                     </p>
                   </div>
                 </div>
@@ -275,7 +282,7 @@ const HistoryDetail = () => {
               {data.summary && (
                 <Card className="p-5">
                   <h4 className="font-bold text-text-primary mb-2">
-                    Ringkasan
+                    {t("history.summary")}
                   </h4>
                   <p className="text-sm text-text-secondary italic leading-relaxed">
                     "{data.summary}"
@@ -301,7 +308,7 @@ const HistoryDetail = () => {
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        Keunggulan
+                        {t("history.pros")}
                       </h4>
                       <ul className="space-y-1 text-xs text-text-primary">
                         {data.pros.map((pro, i) => (
@@ -326,7 +333,7 @@ const HistoryDetail = () => {
                             d="M6 18L18 6M6 6l12 12"
                           />
                         </svg>
-                        Perhatian
+                        {t("history.cons")}
                       </h4>
                       <ul className="space-y-1 text-xs text-text-primary">
                         {data.cons.map((con, i) => (
@@ -341,7 +348,7 @@ const HistoryDetail = () => {
               {data.ingredients && (
                 <Card className="p-4">
                   <h4 className="font-bold text-text-primary text-sm mb-2">
-                    Komposisi
+                    {t("history.ingredients")}
                   </h4>
                   <p className="text-xs text-text-secondary leading-relaxed">
                     {data.ingredients}

@@ -3,8 +3,10 @@ import { MainLayout } from "../../components/layouts";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import api from "../../config/api";
+import { useTranslation } from "react-i18next";
 
 const AdminHistory = () => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState("bpom");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,11 +36,13 @@ const AdminHistory = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
-                Scan History
+                {t("admin.history.title")}
               </h1>
-              <p className="text-text-secondary">Total: {total} scans</p>
+              <p className="text-text-secondary">
+                {t("admin.history.total", { count: total })}
+              </p>
             </div>
-            <Button onClick={fetchHistory}>Refresh</Button>
+            <Button onClick={fetchHistory}>{t("common.refresh")}</Button>
           </div>
 
           <Card className="p-6 mb-6">
@@ -51,7 +55,7 @@ const AdminHistory = () => {
                     : "bg-bg-base text-text-secondary hover:bg-primary/10"
                 }`}
               >
-                BPOM Scans
+                {t("admin.history.bpomTab")}
               </button>
               <button
                 onClick={() => setActiveTab("ocr")}
@@ -61,7 +65,7 @@ const AdminHistory = () => {
                     : "bg-bg-base text-text-secondary hover:bg-primary/10"
                 }`}
               >
-                OCR Scans
+                {t("admin.history.ocrTab")}
               </button>
             </div>
           </Card>
@@ -75,28 +79,28 @@ const AdminHistory = () => {
                       ID
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      User
+                      {t("admin.history.user")}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Product
+                      {t("admin.history.product")}
                     </th>
                     {activeTab === "bpom" && (
                       <>
                         <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                          BPOM Number
+                          {t("admin.history.bpomNum")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                          Status
+                          {t("history.status")}
                         </th>
                       </>
                     )}
                     {activeTab === "ocr" && (
                       <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                        Score
+                        {t("admin.history.score")}
                       </th>
                     )}
                     <th className="px-6 py-4 text-left text-xs font-bold text-text-secondary uppercase">
-                      Date
+                      {t("admin.history.date")}
                     </th>
                   </tr>
                 </thead>
@@ -116,7 +120,7 @@ const AdminHistory = () => {
                         colSpan={activeTab === "bpom" ? "6" : "5"}
                         className="px-6 py-8 text-center text-text-secondary"
                       >
-                        No data
+                        {t("admin.common.noData")}
                       </td>
                     </tr>
                   ) : (
@@ -159,7 +163,7 @@ const AdminHistory = () => {
                         )}
                         <td className="px-6 py-4 text-sm text-text-secondary">
                           {new Date(item.created_at).toLocaleDateString(
-                            "id-ID",
+                            i18n.language,
                             {
                               day: "numeric",
                               month: "short",

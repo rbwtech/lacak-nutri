@@ -3,22 +3,26 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { useTranslation } from "react-i18next";
 
 const Login = () => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError(null);
     try {
       await login(email, password);
       navigate("/dashboard");
     } catch (error) {
-      alert("Login gagal");
+      setLoginError(t("auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -38,41 +42,49 @@ const Login = () => {
             className="w-20 h-20 mx-auto mb-4 drop-shadow-lg hover:scale-105 transition-transform duration-300"
           />
           <h1 className="text-3xl font-black text-text-primary tracking-tight">
-            Selamat Datang
+            {t("auth.loginTitle")}
           </h1>
           <p className="text-text-secondary mt-2 text-sm">
-            Masuk untuk melanjutkan hidup sehatmu
+            {t("auth.loginSubtitle")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
-            label="Email"
+            label={t("auth.email")}
             type="email"
-            placeholder="nama@email.com"
+            placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="bg-white/50 border-primary/20 focus:border-primary h-12"
+            error={loginError}
           />
 
           <div>
             <Input
-              label="Password"
+              label={t("auth.password")}
               type="password"
-              placeholder="••••••••"
+              placeholder={t("auth.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-white/50 border-primary/20 focus:border-primary h-12"
+              error={loginError}
             />
             <div className="text-right mt-1">
               <Link
                 to="/forgot-password"
-                class="text-xs font-bold text-primary hover:underline"
+                className="text-xs font-bold text-primary hover:underline"
               >
-                Lupa Password?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
           </div>
+
+          {loginError && (
+            <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">
+              {loginError}
+            </div>
+          )}
 
           <Button
             type="submit"
@@ -80,18 +92,18 @@ const Login = () => {
             loading={loading}
             className="h-12 text-lg shadow-lg shadow-primary/30 mt-4"
           >
-            Masuk Sekarang
+            {t("auth.loginButton")}
           </Button>
         </form>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-text-secondary">
-            Belum punya akun?{" "}
+            {t("auth.noAccount")}{" "}
             <Link
               to="/register"
               className="font-bold text-primary hover:underline"
             >
-              Daftar Gratis
+              {t("auth.registerFree")}
             </Link>
           </p>
         </div>

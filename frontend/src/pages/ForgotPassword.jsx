@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import { useTranslation } from "react-i18next";
 
 const ForgotPassword = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -11,7 +13,6 @@ const ForgotPassword = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulasi API call
     setTimeout(() => {
       setSubmitted(true);
       setLoading(false);
@@ -23,26 +24,24 @@ const ForgotPassword = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-text-primary">
-            Lupa Password?
+            {t("auth.forgotTitle")}
           </h1>
-          <p className="text-text-secondary mt-2">
-            Masukkan email Anda untuk mereset kata sandi
-          </p>
+          <p className="text-text-secondary mt-2">{t("auth.forgotSubtitle")}</p>
         </div>
 
         <div className="bg-bg-surface rounded-3xl border border-border p-8 shadow-soft">
           {!submitted ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
-                label="Email"
+                label={t("auth.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
+                placeholder={t("auth.emailPlaceholder")}
                 required
               />
               <Button type="submit" fullWidth loading={loading} size="lg">
-                Kirim Link Reset
+                {t("auth.sendResetLink")}
               </Button>
             </form>
           ) : (
@@ -63,27 +62,26 @@ const ForgotPassword = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-text-primary mb-2">
-                Cek Email Anda
+                {t("auth.checkEmailTitle")}
               </h3>
               <p className="text-text-secondary mb-6">
-                Kami telah mengirimkan instruksi reset password ke{" "}
-                <strong>{email}</strong>
+                {t("auth.resetSentTo")} <strong>{email}</strong>
               </p>
               <Button
                 variant="outline"
                 fullWidth
                 onClick={() => setSubmitted(false)}
               >
-                Kirim Ulang
+                {t("auth.resend")}
               </Button>
             </div>
           )}
         </div>
 
         <p className="text-center mt-8 text-text-secondary text-sm">
-          Kembali ke{" "}
+          {t("auth.backTo")}{" "}
           <Link to="/login" className="text-primary font-bold hover:underline">
-            Halaman Login
+            {t("auth.loginPage")}
           </Link>
         </p>
       </div>

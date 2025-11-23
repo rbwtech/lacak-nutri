@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Footer = () => {
+  const { t } = useTranslation();
   return (
     <footer className="bg-bg-surface border-t border-border mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -19,20 +21,21 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-label text-text-secondary">
-              Platform analisis nutrisi dan validasi BPOM untuk hidup lebih
-              sehat.
+              {t("footer.platformDesc")}
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-text-primary mb-3">Fitur</h4>
+            <h4 className="font-semibold text-text-primary mb-3">
+              {t("footer.featuresTitle")}
+            </h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/products"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Cari Produk
+                  {t("footer.searchProducts")}
                 </Link>
               </li>
               <li>
@@ -40,7 +43,7 @@ const Footer = () => {
                   to="/scanner"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Scanner
+                  {t("footer.scanner")}
                 </Link>
               </li>
               <li>
@@ -48,21 +51,23 @@ const Footer = () => {
                   to="/articles"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Artikel
+                  {t("footer.articles")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-text-primary mb-3">Informasi</h4>
+            <h4 className="font-semibold text-text-primary mb-3">
+              {t("footer.infoTitle")}
+            </h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/about"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Tentang
+                  {t("footer.about")}
                 </Link>
               </li>
               <li>
@@ -70,7 +75,7 @@ const Footer = () => {
                   to="/faq"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  FAQ
+                  {t("footer.faq")}
                 </Link>
               </li>
               <li>
@@ -78,21 +83,23 @@ const Footer = () => {
                   to="/contact"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Kontak
+                  {t("footer.contact")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-text-primary mb-3">Legal</h4>
+            <h4 className="font-semibold text-text-primary mb-3">
+              {t("footer.legalTitle")}
+            </h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/privacy"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Privasi
+                  {t("footer.privacy")}
                 </Link>
               </li>
               <li>
@@ -100,7 +107,7 @@ const Footer = () => {
                   to="/terms"
                   className="text-label text-text-secondary hover:text-primary"
                 >
-                  Syarat & Ketentuan
+                  {t("footer.terms")}
                 </Link>
               </li>
             </ul>
@@ -109,7 +116,7 @@ const Footer = () => {
 
         <div className="border-t border-border mt-8 pt-6 text-center">
           <p className="text-label text-text-secondary">
-            © 2025 LacakNutri. Built for UINIC 7.0 Web Development Competition.
+            {t("footer.copyright")}
           </p>
         </div>
       </div>

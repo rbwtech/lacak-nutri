@@ -20,7 +20,6 @@ import {
   ForgotPassword,
   Dashboard,
   Products,
-  ProductDetail,
   Profile,
   Scanner,
   Favorites,
@@ -54,7 +53,6 @@ function App() {
 
             {/* Core Features (Bisa Guest sesuai SRS) */}
             <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/history" element={<History />} />

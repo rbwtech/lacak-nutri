@@ -6,25 +6,26 @@ import Button from "../components/ui/Button";
 import api from "../config/api";
 import { useDebounce } from "../hooks/useCommon";
 import NutritionLabel from "../components/ui/NutritionLabel";
+import { useTranslation } from "react-i18next";
 
 const Products = () => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 500);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Advanced Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [pageSize, setPageSize] = useState(12); // Default 12
+  const [pageSize, setPageSize] = useState(12);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, pageSize]); // Reset page jika search/size berubah
+  }, [debouncedSearch, pageSize]);
 
   useEffect(() => {
     fetchProducts();
@@ -54,11 +55,9 @@ const Products = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
-      document.body.style.overflow = "hidden";
     }
   };
 
-  // Helper Render Pagination Numbers
   const renderPaginationNumbers = () => {
     const pages = [];
     const maxVisible = 5;
@@ -93,22 +92,18 @@ const Products = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-text-primary mb-2">
-              Katalog Bahan Makanan
+              {t("products.mainTitle")}
             </h1>
-            <p className="text-text-secondary">
-              Database lengkap informasi nilai gizi standar.
-            </p>
+            <p className="text-text-secondary">{t("products.subtitle")}</p>
           </div>
 
           {/* Search Bar & Controls */}
           <div className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center">
             <div className="flex-1 w-full">
               <Input
-                placeholder="Cari nama bahan (misal: Beras, Telur)..."
+                placeholder={t("products.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                // FIX: Pastikan className input internal h-12 (ada di komponen Input.jsx default py-3.5 setara h-12)
-                // Disini kita atur container input
                 className="shadow-lg border-primary/20 focus:border-primary text-lg w-full"
                 icon={
                   <svg
@@ -131,7 +126,7 @@ const Products = () => {
             {/* Page Size Selector */}
             <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 px-4 py-3.5 rounded-2xl border border-border shadow-lg w-full md:w-auto h-[54px]">
               <span className="text-xs font-bold text-text-secondary whitespace-nowrap">
-                Tampil:
+                {t("products.showLabel")}:
               </span>
               <select
                 value={pageSize}
@@ -149,10 +144,11 @@ const Products = () => {
           {/* Total Data Info */}
           <div className="mb-6 flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-bold text-text-secondary">
-              Total Data: {totalItems}
+              {t("products.totalData")}: {totalItems}
             </span>
             <span className="text-xs text-text-secondary">
-              Halaman {page} dari {totalPages}
+              {t("products.pageLabel")} {page} {t("products.ofLabel")}{" "}
+              {totalPages}
             </span>
           </div>
 
@@ -200,7 +196,7 @@ const Products = () => {
                         <div className="grid grid-cols-3 gap-2 text-center mb-4">
                           <div className="p-2 bg-bg-base rounded-lg border border-border">
                             <p className="text-[9px] font-bold text-text-secondary uppercase">
-                              Kalori
+                              {t("products.cal")}
                             </p>
                             <p className="font-extrabold text-primary text-sm">
                               {Math.round(item.calories)}
@@ -208,7 +204,7 @@ const Products = () => {
                           </div>
                           <div className="p-2 bg-bg-base rounded-lg border border-border">
                             <p className="text-[9px] font-bold text-text-secondary uppercase">
-                              Prot
+                              {t("products.prot")}
                             </p>
                             <p className="font-extrabold text-secondary text-sm">
                               {Math.round(item.protein)}g
@@ -216,7 +212,7 @@ const Products = () => {
                           </div>
                           <div className="p-2 bg-bg-base rounded-lg border border-border">
                             <p className="text-[9px] font-bold text-text-secondary uppercase">
-                              Lemak
+                              {t("products.fat")}
                             </p>
                             <p className="font-extrabold text-accent text-sm">
                               {Math.round(item.fat)}g
@@ -227,7 +223,7 @@ const Products = () => {
                       <div className="pt-3 border-t border-border/50 text-center mt-auto">
                         {" "}
                         <span className="text-xs font-bold text-primary">
-                          Lihat Detail Label Gizi →
+                          {t("products.viewDetail")} →
                         </span>
                       </div>
                     </Card>
@@ -235,7 +231,7 @@ const Products = () => {
                 ))}
               </div>
 
-              {/* Advanced Pagination Controls */}
+              {/* Pagination Controls */}
               <div className="flex flex-wrap justify-center items-center gap-4 mt-12">
                 {/* Tombol kiri */}
                 <div className="flex items-center gap-2 order-1">
@@ -260,7 +256,7 @@ const Products = () => {
                 {/* Input Halaman */}
                 <div className="flex items-center gap-3 order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
                   <span className="text-xs text-text-secondary font-bold">
-                    Halaman
+                    {t("products.pageLabel")}
                   </span>
                   <input
                     type="number"
@@ -277,7 +273,7 @@ const Products = () => {
                     className="w-12 p-1 text-center border-b-2 border-primary/20 focus:border-primary bg-transparent text-sm font-bold outline-none transition-colors"
                   />
                   <span className="text-xs text-text-secondary">
-                    dari {totalPages}
+                    {t("products.ofLabel")} {totalPages}
                   </span>
                 </div>
 
@@ -306,14 +302,16 @@ const Products = () => {
             <div className="text-center py-20 bg-bg-surface rounded-3xl border border-dashed border-border">
               <div className="text-5xl mb-4 opacity-50">🥕</div>
               <h3 className="text-xl font-bold text-text-primary">
-                Data tidak ditemukan
+                {t("products.notFoundTitle")}
               </h3>
-              <p className="text-text-secondary">Coba kata kunci lain.</p>
+              <p className="text-text-secondary">
+                {t("products.notFoundHint")}
+              </p>
             </div>
           )}
         </div>
 
-        {/* MODAL (SAMA SEPERTI SEBELUMNYA) */}
+        {/* MODAL */}
         {selectedProduct && (
           <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -346,14 +344,29 @@ const Products = () => {
                   {selectedProduct.name}
                 </h3>
                 <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-6">
-                  Sumber: Database LacakNutri
+                  {t("products.sourceLabel")}
                 </p>
 
-                <NutritionLabel data={selectedProduct} />
+                <NutritionLabel
+                  data={{
+                    calories: selectedProduct.calories,
+                    protein: selectedProduct.protein,
+                    fat: selectedProduct.fat,
+                    carbs: selectedProduct.carbs,
+                    sugar: selectedProduct.sugar,
+                    fiber: selectedProduct.fiber,
+                    sodium_mg: selectedProduct.sodium_mg,
+                    potassium_mg: selectedProduct.potassium_mg,
+                    calcium_mg: selectedProduct.calcium_mg,
+                    iron_mg: selectedProduct.iron_mg,
+                    cholesterol_mg: selectedProduct.cholesterol_mg,
+                    servingSize: selectedProduct.weight_g,
+                  }}
+                />
 
                 <div className="mt-6">
                   <Button fullWidth onClick={() => setSelectedProduct(null)}>
-                    Tutup
+                    {t("products.closeButton")}
                   </Button>
                 </div>
               </div>

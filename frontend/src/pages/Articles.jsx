@@ -6,28 +6,28 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import api from "../config/api";
 import { useDebounce } from "../hooks/useCommon";
+import { useTranslation } from "react-i18next";
 
 const Articles = () => {
+  const { t, i18n } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Pagination State
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   const categories = [
-    { id: "all", label: "Semua" },
-    { id: "gizi", label: "Gizi" },
-    { id: "aditif", label: "Aditif" },
-    { id: "penyakit", label: "Penyakit & Diet" },
-    { id: "label", label: "Membaca Label" },
-    { id: "tips", label: "Tips Sehat" },
+    { id: "all", label: t("articles.catAll") },
+    { id: "gizi", label: t("articles.catGizi") },
+    { id: "aditif", label: t("articles.catAditif") },
+    { id: "penyakit", label: t("articles.catPenyakit") },
+    { id: "label", label: t("articles.catLabel") },
+    { id: "tips", label: t("articles.catTips") },
   ];
 
   // Reset page saat filter berubah
@@ -81,11 +81,9 @@ const Articles = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8 text-center md:text-left">
             <h1 className="text-3xl font-bold text-text-primary mb-2">
-              Pusat Edukasi Gizi
+              {t("articles.mainTitle")}
             </h1>
-            <p className="text-text-secondary">
-              Artikel dan panduan terpercaya untuk hidup lebih sehat.
-            </p>
+            <p className="text-text-secondary">{t("articles.subtitle")}</p>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-end md:items-center">
@@ -105,7 +103,7 @@ const Articles = () => {
 
             <div className="w-full md:w-1/3 flex items-center gap-3">
               <Input
-                placeholder="Cari artikel..."
+                placeholder={t("articles.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 icon={
@@ -127,7 +125,7 @@ const Articles = () => {
 
               <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 px-4 py-3.5 rounded-2xl border border-border shadow-lg h-[54px] w-auto">
                 <span className="text-xs font-bold text-text-secondary whitespace-nowrap">
-                  Tampil:
+                  {t("articles.showLabel")}:
                 </span>
                 <select
                   value={pageSize}
@@ -144,10 +142,11 @@ const Articles = () => {
 
           <div className="mb-6 flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-bold text-text-secondary">
-              {totalItems} Artikel Ditemukan
+              {totalItems} {t("articles.foundTotal")}
             </span>
             <span className="text-xs text-text-secondary">
-              Halaman {page} dari {totalPages}
+              {t("articles.pageLabel")} {page} {t("articles.ofLabel")}{" "}
+              {totalPages}
             </span>
           </div>
 
@@ -178,7 +177,12 @@ const Articles = () => {
                       )}
                       <div className="flex items-start justify-between mb-3 mt-2">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded-lg">
-                          {article.category}
+                          {t(
+                            `articles.cat${
+                              article.category.charAt(0).toUpperCase() +
+                              article.category.slice(1)
+                            }`
+                          )}
                         </span>
                         <span className="text-xs text-text-secondary flex items-center gap-1">
                           <svg
@@ -194,7 +198,7 @@ const Articles = () => {
                               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                           </svg>
-                          {article.read_time || "5 min"}
+                          {article.read_time || `5 ${t("articles.minRead")}`}
                         </span>
                       </div>
                       <h3 className="text-xl font-bold text-text-primary mb-2 line-clamp-2 hover:text-primary transition-colors">
@@ -209,12 +213,12 @@ const Articles = () => {
                       <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
                         <span className="text-xs text-text-secondary">
                           {new Date(article.created_at).toLocaleDateString(
-                            "id-ID",
+                            i18n.language,
                             { dateStyle: "medium" }
                           )}
                         </span>
                         <span className="text-primary text-sm font-bold inline-flex items-center gap-1 group">
-                          Baca
+                          {t("articles.readMore")}
                           <svg
                             className="w-4 h-4 group-hover:translate-x-1 transition-transform"
                             fill="none"
@@ -260,7 +264,7 @@ const Articles = () => {
                 {/* Input Halaman */}
                 <div className="flex items-center gap-3 order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
                   <span className="text-xs text-text-secondary font-bold">
-                    Halaman
+                    {t("articles.pageLabel")}
                   </span>
                   <input
                     type="number"
@@ -277,7 +281,7 @@ const Articles = () => {
                     className="w-12 p-1 text-center border-b-2 border-primary/20 focus:border-primary bg-transparent text-sm font-bold outline-none transition-colors"
                   />
                   <span className="text-xs text-text-secondary">
-                    dari {totalPages}
+                    {t("articles.ofLabel")} {totalPages}
                   </span>
                 </div>
 
@@ -303,13 +307,13 @@ const Articles = () => {
               </div>
             </>
           ) : (
-            <div className="text-center py-20 bg-bg-surface rounded-3xl border border-border">
+            <div className="text-center py-20 bg-bg-surface rounded-3xl border border-dashed border-border">
               <div className="text-6xl mb-4 grayscale opacity-50">📚</div>
               <h3 className="text-xl font-bold text-text-primary mb-2">
-                Tidak ada artikel
+                {t("articles.noArticleTitle")}
               </h3>
               <p className="text-text-secondary">
-                Coba ubah kata kunci pencarian atau kategori lain.
+                {t("articles.noArticleHint")}
               </p>
             </div>
           )}

@@ -4,8 +4,10 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Favorites = () => {
+  const { t } = useTranslation();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +22,7 @@ const Favorites = () => {
       const { data } = await api.get("/favorites/list");
       setFavorites(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Gagal load favorit", e);
+      console.error(t("favorites.errorLoad"), e);
       setFavorites([]);
     } finally {
       setLoading(false);
@@ -39,7 +41,7 @@ const Favorites = () => {
         prev.filter((f) => !(f.id === id && f.product_type === type))
       );
     } catch (e) {
-      alert("Gagal menghapus");
+      alert(t("favorites.errorRemove"));
     }
   };
 
@@ -52,13 +54,13 @@ const Favorites = () => {
       <div className="min-h-screen bg-bg-base py-8">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl font-extrabold text-text-primary mb-6">
-            Favorit Saya
+            {t("favorites.title")}
           </h1>
 
           {loading ? (
             <div className="text-center py-12">
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-text-secondary">Memuat favorit...</p>
+              <p className="text-text-secondary">{t("common.loading")}</p>
             </div>
           ) : (
             <>
@@ -82,7 +84,7 @@ const Favorites = () => {
                       id="search-favorites"
                       name="search-favorites"
                       type="text"
-                      placeholder="Cari favorit..."
+                      placeholder={t("favorites.searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -109,19 +111,19 @@ const Favorites = () => {
                     </svg>
                   </div>
                   <p className="text-text-secondary mb-4 text-lg font-bold">
-                    Belum ada favorit
+                    {t("favorites.noFavTitle")}
                   </p>
                   <p className="text-text-secondary text-sm mb-6">
-                    Mulai scan produk dan tambahkan ke favorit
+                    {t("favorites.noFavSubtitle")}
                   </p>
                   <Button onClick={() => navigate("/scanner")}>
-                    Scan Produk Sekarang
+                    {t("favorites.scanNow")}
                   </Button>
                 </Card>
               ) : filteredFavorites.length === 0 ? (
                 <Card className="p-8 text-center">
                   <p className="text-text-secondary">
-                    Tidak ada favorit yang cocok dengan pencarian
+                    {t("favorites.noMatch")}
                   </p>
                 </Card>
               ) : (
@@ -172,7 +174,7 @@ const Favorites = () => {
                           }}
                         >
                           <h3 className="font-bold text-text-primary text-lg mb-1 group-hover:text-primary transition-colors cursor-pointer">
-                            {fav.product_name || "Produk Tanpa Nama"}
+                            {fav.product_name || t("favorites.noName")}
                           </h3>
                           {fav.bpom_number && (
                             <p className="text-sm text-text-secondary font-mono mb-2">
@@ -182,17 +184,19 @@ const Favorites = () => {
                           <div className="flex items-center gap-2">
                             <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-bold">
                               {fav.product_type === "bpom"
-                                ? "BPOM"
-                                : "Nutrisi AI"}
+                                ? t("common.bpomLabel")
+                                : t("common.nutritionAILabel")}
                             </span>
                             {fav.product_data?.health_score && (
                               <span className="text-xs px-3 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
-                                Score: {fav.product_data.health_score}/100
+                                {t("favorites.scoreLabel")}:{" "}
+                                {fav.product_data.health_score}/100
                               </span>
                             )}
                             {fav.product_data?.grade && (
                               <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-bold">
-                                Grade {fav.product_data.grade}
+                                {t("favorites.gradeLabel")}{" "}
+                                {fav.product_data.grade}
                               </span>
                             )}
                           </div>
@@ -203,7 +207,7 @@ const Favorites = () => {
                             removeFavorite(fav.id, fav.product_type, e)
                           }
                           className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors shrink-0"
-                          title="Hapus dari favorit"
+                          title={t("favorites.removeTitle")}
                         >
                           <svg
                             className="w-5 h-5"

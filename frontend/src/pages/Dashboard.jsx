@@ -8,7 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../config/api";
 
 const Dashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [stats, setStats] = useState({
     scans: 0,
@@ -46,13 +46,13 @@ const Dashboard = () => {
           setDailyTip(randomTip);
         }
       } catch (error) {
-        console.error("Dashboard load failed", error);
+        console.error(t("dashboard.errorLoad"), error);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, t]);
 
   const getBMIStatus = (val) => {
     if (!val)
@@ -336,7 +336,7 @@ const Dashboard = () => {
                           <div className="text-right">
                             <p className="text-[10px] text-text-secondary font-medium">
                               {new Date(item.date).toLocaleDateString(
-                                user?.locale || "id-ID",
+                                user?.locale || i18n.language,
                                 {
                                   day: "numeric",
                                   month: "short",

@@ -6,14 +6,14 @@ import Button from "../ui/Button";
 import api from "../../config/api";
 
 const LanguageSwitcher = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, setUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const languages = [
     {
       code: "id-ID",
-      label: "Bahasa Indonesia",
+      label: t("header.langID"),
       flag: (
         <svg className="w-6 h-6" viewBox="0 0 24 24">
           <rect width="24" height="12" fill="#E70011" />
@@ -23,7 +23,7 @@ const LanguageSwitcher = () => {
     },
     {
       code: "en-US",
-      label: "English (US)",
+      label: t("header.langEN"),
       flag: (
         <svg className="w-6 h-6" viewBox="0 0 24 24">
           <rect width="24" height="24" fill="#B22234" />
@@ -77,7 +77,7 @@ const LanguageSwitcher = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-10 h-10 rounded-xl hover:bg-bg-base border border-transparent hover:border-border flex items-center justify-center transition-all duration-200"
-        title="Ganti Bahasa"
+        title={t("header.changeLanguageTitle")}
       >
         <svg
           className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
@@ -130,8 +130,8 @@ const LanguageSwitcher = () => {
 };
 
 const Header = () => {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  const { i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(
@@ -140,7 +140,6 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Initialize language from user or localStorage
     const preferredLang =
       user?.locale || localStorage.getItem("preferredLanguage") || "id-ID";
     if (i18n.language !== preferredLang) {
@@ -411,7 +410,7 @@ const Header = () => {
                 "/products"
               )}`}
             >
-              Katalog
+              {t("header.catalog")}
             </Link>
             <Link
               to="/scanner"
@@ -419,7 +418,7 @@ const Header = () => {
                 "/scanner"
               )}`}
             >
-              Scanner
+              {t("header.scanner")}
             </Link>
 
             <div className="relative group">
@@ -431,7 +430,7 @@ const Header = () => {
                     : "text-text-secondary hover:text-primary hover:bg-bg-base font-medium"
                 }`}
               >
-                Aktivitas
+                {t("header.activity")}
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -467,10 +466,10 @@ const Header = () => {
                   </svg>
                   <div>
                     <p className="font-bold text-sm text-text-primary">
-                      Favorit
+                      {t("header.favoritesMenuTitle")}
                     </p>
                     <p className="text-xs text-text-secondary">
-                      Produk tersimpan
+                      {t("header.favoritesMenuDesc")}
                     </p>
                   </div>
                 </Link>
@@ -494,9 +493,11 @@ const Header = () => {
                   </svg>
                   <div>
                     <p className="font-bold text-sm text-text-primary">
-                      Riwayat
+                      {t("header.historyMenuTitle")}
                     </p>
-                    <p className="text-xs text-text-secondary">Scan terakhir</p>
+                    <p className="text-xs text-text-secondary">
+                      {t("header.historyMenuDesc")}
+                    </p>
                   </div>
                 </Link>
               </div>
@@ -508,7 +509,7 @@ const Header = () => {
                 "/articles"
               )}`}
             >
-              Edukasi
+              {t("header.education")}
             </Link>
           </nav>
 
@@ -520,7 +521,7 @@ const Header = () => {
               <button
                 onClick={() => setIsDark(!isDark)}
                 className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-bg-base border border-transparent hover:border-border text-text-secondary hover:text-primary transition-all duration-200"
-                title="Ganti Tema"
+                title={t("header.changeThemeTitle")}
               >
                 {isDark ? SunIcon : MoonIcon}
               </button>
@@ -529,7 +530,7 @@ const Header = () => {
                 <div className="flex items-center gap-3 pl-4 border-l border-border">
                   <Link to="/dashboard">
                     <Button variant="ghost" size="sm" className="font-bold">
-                      Dashboard
+                      {t("header.dashboardButton")}
                     </Button>
                   </Link>
 
@@ -540,7 +541,7 @@ const Header = () => {
                         size="sm"
                         className="font-bold text-warning-text"
                       >
-                        Admin Panel
+                        {t("header.adminPanelButton")}
                       </Button>
                     </Link>
                   )}
@@ -570,7 +571,7 @@ const Header = () => {
                   <button
                     onClick={handleLogout}
                     className="text-text-secondary hover:text-error p-2 hover:bg-error/10 rounded-xl transition-colors"
-                    title="Keluar"
+                    title={t("header.logoutTitle")}
                   >
                     {LogoutIcon}
                   </button>
@@ -583,12 +584,12 @@ const Header = () => {
                       size="sm"
                       className="text-text-secondary hover:text-text-primary"
                     >
-                      Masuk
+                      {t("header.loginButton")}
                     </Button>
                   </Link>
                   <Link to="/register">
                     <Button size="sm" className="shadow-lg shadow-primary/20">
-                      Daftar Gratis
+                      {t("header.registerFreeButton")}
                     </Button>
                   </Link>
                 </div>
@@ -619,11 +620,31 @@ const Header = () => {
         <div className="md:hidden absolute top-16 left-0 w-full bg-bg-surface/95 backdrop-blur-xl border-b border-border shadow-2xl animate-slide-down p-4 z-40 flex flex-col gap-2">
           {/* Main Navigation */}
           {[
-            { to: "/products", label: "Katalog Produk", icon: CatalogIcon },
-            { to: "/scanner", label: "Scanner AI", icon: ScannerIcon },
-            { to: "/favorites", label: "Favorit Saya", icon: FavoriteIcon },
-            { to: "/history", label: "Riwayat Scan", icon: HistoryIcon },
-            { to: "/articles", label: "Pusat Edukasi", icon: EduIcon },
+            {
+              to: "/products",
+              label: t("header.catalogMobile"),
+              icon: CatalogIcon,
+            },
+            {
+              to: "/scanner",
+              label: t("header.scannerMobile"),
+              icon: ScannerIcon,
+            },
+            {
+              to: "/favorites",
+              label: t("header.favoritesMobile"),
+              icon: FavoriteIcon,
+            },
+            {
+              to: "/history",
+              label: t("header.historyMobile"),
+              icon: HistoryIcon,
+            },
+            {
+              to: "/articles",
+              label: t("header.educationMobile"),
+              icon: EduIcon,
+            },
           ].map((link) => (
             <Link
               key={link.to}
@@ -655,7 +676,7 @@ const Header = () => {
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-bg-base font-bold text-text-primary transition-colors"
               >
                 <span className="text-text-secondary">{DashboardIcon}</span>
-                Dashboard Saya
+                {t("header.dashboardMobile")}
               </Link>
               {user?.role === "admin" && (
                 <Link
@@ -681,7 +702,7 @@ const Header = () => {
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  Admin Panel
+                  {t("header.adminPanelButton")}
                 </Link>
               )}
 
@@ -690,21 +711,21 @@ const Header = () => {
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-bg-base font-bold text-text-primary transition-colors"
               >
                 <span className="text-text-secondary">{ProfileIcon}</span>
-                Edit Profil
+                {t("header.profileMobile")}
               </Link>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-error/10 text-error font-bold text-left transition-colors"
               >
                 {LogoutIcon}
-                Keluar Aplikasi
+                {t("header.logoutMobile")}
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 mt-2">
               <Link to="/login">
                 <Button variant="outline" fullWidth className="h-12 font-bold">
-                  Masuk
+                  {t("header.loginButton")}
                 </Button>
               </Link>
               <Link to="/register">
@@ -712,7 +733,7 @@ const Header = () => {
                   fullWidth
                   className="h-12 shadow-lg shadow-primary/20 font-bold"
                 >
-                  Daftar
+                  {t("header.registerMobile")}
                 </Button>
               </Link>
             </div>

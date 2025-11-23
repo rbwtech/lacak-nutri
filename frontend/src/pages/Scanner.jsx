@@ -11,18 +11,17 @@ import NutritionLabel from "../components/ui/NutritionLabel";
 import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Scanner = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scanMode, setScanMode] = useState("barcode");
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState("Memproses...");
+  const [loadingMessage, setLoadingMessage] = useState(t("scanner.processing"));
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [processingId, setProcessingId] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [chatInput, setChatInput] = useState("");
@@ -34,6 +33,8 @@ const Scanner = () => {
   const [hasZoom, setHasZoom] = useState(false);
   const [myAllergies, setMyAllergies] = useState([]);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [flashOn, setFlashOn] = useState(false);
   const [hasFlash, setHasFlash] = useState(false);
@@ -54,7 +55,7 @@ const Scanner = () => {
         const { data } = await api.get("/users/my-allergies");
         setMyAllergies(data.map((a) => a.name.toLowerCase()));
       } catch (e) {
-        console.error("Gagal load alergi", e);
+        console.error(t("scanner.errorLoadAllergies"), e);
       }
     };
 
@@ -68,7 +69,7 @@ const Scanner = () => {
       stopCamera();
       stopLiveScan();
     };
-  }, [user]);
+  }, [user, t]);
 
   const enumerateCameras = async () => {
     try {
@@ -76,7 +77,7 @@ const Scanner = () => {
       const cameras = devices.filter((d) => d.kind === "videoinput");
       setAvailableCameras(cameras);
     } catch (e) {
-      console.error("Camera enumeration failed", e);
+      console.error(t("scanner.errorCameraEnum"), e);
     }
   };
 
@@ -122,7 +123,7 @@ const Scanner = () => {
         };
       }
     } catch (err) {
-      setError("Gagal akses kamera. Periksa izin browser.");
+      setError(t("scanner.errorCameraAccess"));
       setIsScannerActive(false);
     }
   };
@@ -150,7 +151,7 @@ const Scanner = () => {
       });
       setFlashOn(!flashOn);
     } catch (e) {
-      console.error("Flash toggle failed", e);
+      console.error(t("scanner.errorFlash"), e);
     }
   };
 
@@ -338,7 +339,7 @@ const Scanner = () => {
               const cleaned = cleanBarcodeData(raw);
               handleBarcodeSuccess(cleaned);
             })
-            .catch(() => setError("Barcode tidak terbaca"));
+            .catch(() => setError(t("scanner.errorBarcodeScan")));
         } else {
           setOcrImage(dataUrl);
         }
@@ -350,7 +351,7 @@ const Scanner = () => {
   const handleBarcodeSuccess = async (code) => {
     stopCamera();
     setLoading(true);
-    setLoadingMessage("Mencari data BPOM...");
+    setLoadingMessage(t("scanner.loadingBPOM"));
 
     try {
       const { data } = await api.post("/scan/bpom", { bpom_number: code });
@@ -363,7 +364,7 @@ const Scanner = () => {
       });
       setIsFavorited(false);
     } catch (err) {
-      setError("Gagal mengambil data. Cek koneksi.");
+      setError(t("scanner.errorBPOMFetch"));
     } finally {
       setLoading(false);
     }
@@ -381,7 +382,7 @@ const Scanner = () => {
               const cleaned = cleanBarcodeData(raw);
               handleBarcodeSuccess(cleaned);
             })
-            .catch(() => setError("Barcode tidak terbaca dari file"));
+            .catch(() => setError(t("scanner.errorBarcodeFile")));
         } else {
           const reader = new FileReader();
           reader.onload = (e) => {
@@ -417,7 +418,7 @@ const Scanner = () => {
         }
       }
     },
-    [scanMode]
+    [scanMode, t]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -452,7 +453,7 @@ const Scanner = () => {
 
   const processImageAnalysis = async () => {
     if (!productName.trim()) {
-      setError("Nama produk wajib diisi");
+      setError(t("scanner.errorProductNameRequired"));
       return;
     }
 
@@ -463,24 +464,24 @@ const Scanner = () => {
     const sizeInMB = (base64Length * 0.75) / (1024 * 1024);
 
     if (sizeInMB > 5) {
-      setError("Gambar terlalu besar");
+      setError(t("scanner.errorImageTooLarge"));
       setLoading(false);
       return;
     }
 
-    setLoadingMessage("Mengoptimalkan gambar...");
+    setLoadingMessage(t("scanner.loadingOptimizing"));
 
     const progressInterval = simulateRealisticProgress((prog) => {
       setLoadingProgress(prog);
 
       if (prog < 30) {
-        setLoadingMessage("Mengoptimalkan gambar...");
+        setLoadingMessage(t("scanner.loadingOptimizing"));
       } else if (prog < 60) {
-        setLoadingMessage("Mengirim ke server...");
+        setLoadingMessage(t("scanner.loadingSending"));
       } else if (prog < 90) {
-        setLoadingMessage("Analisis AI sedang bekerja...");
+        setLoadingMessage(t("scanner.loadingAI"));
       } else {
-        setLoadingMessage("Memproses hasil...");
+        setLoadingMessage(t("scanner.loadingProcessing"));
       }
     });
 
@@ -499,11 +500,11 @@ const Scanner = () => {
 
         if (finalProgress >= 100) {
           clearInterval(finishInterval);
-          setLoadingMessage("Selesai!");
+          setLoadingMessage(t("scanner.loadingDone"));
 
           setTimeout(() => {
             if (!data.success)
-              throw new Error(data.message || "Gagal analisis");
+              throw new Error(data.message || t("scanner.errorAnalysisFailed"));
 
             const textCheck = (data.data.ingredients || "").toLowerCase();
             const allergyWarnings = myAllergies
@@ -524,7 +525,7 @@ const Scanner = () => {
 
             if (document.hidden) {
               new Notification("LacakNutri", {
-                body: "Analisis nutrisi selesai!",
+                body: t("scanner.notificationComplete"),
                 icon: "/icon-192x192.png",
               });
             }
@@ -533,15 +534,15 @@ const Scanner = () => {
       }, 50);
     } catch (err) {
       clearInterval(progressInterval);
-      console.error("Analysis error:", err);
+      console.error(t("scanner.errorAnalysis"), err);
       const errorMsg =
         err.response?.status === 413
-          ? "Gambar terlalu besar"
+          ? t("scanner.errorImageTooLarge")
           : err.response?.status === 500
-          ? "Server error, coba lagi"
+          ? t("scanner.errorServer")
           : err.message ||
             err.response?.data?.detail ||
-            "Gagal memproses gambar";
+            t("scanner.errorProcessingFailed");
       setError(errorMsg);
       setResult(null);
       setLoading(false);
@@ -573,7 +574,7 @@ const Scanner = () => {
     } catch {
       setChatHistory((prev) => [
         ...prev,
-        { role: "ai", text: "Gagal membalas" },
+        { role: "ai", text: t("scanner.errorChatFailed") },
       ]);
     } finally {
       setChatLoading(false);
@@ -582,18 +583,14 @@ const Scanner = () => {
 
   const handleAddToFavorites = async () => {
     if (!user) {
-      if (
-        window.confirm(
-          "Anda harus login untuk menambah favorit. Login sekarang?"
-        )
-      ) {
+      if (window.confirm(t("scanner.confirmLoginFav"))) {
         navigate("/login");
       }
       return;
     }
 
     if (!result || !result.scan_id) {
-      alert("Scan ID tidak tersedia. Data mungkin belum tersimpan.");
+      alert(t("scanner.errorNoScanID"));
       return;
     }
 
@@ -604,15 +601,13 @@ const Scanner = () => {
       setIsFavorited(data.is_favorited);
 
       setSuccessMessage(
-        data.is_favorited
-          ? "✓ Berhasil ditambahkan ke favorit!"
-          : "Dihapus dari favorit"
+        data.is_favorited ? t("scanner.favAdded") : t("scanner.favRemoved")
       );
       setShowSuccess(true);
     } catch (e) {
       console.error(e);
       setSuccessMessage(
-        e.response?.data?.detail || "Gagal menambahkan favorit"
+        e.response?.data?.detail || t("scanner.errorAddingFav")
       );
       setShowSuccess(true);
     }
@@ -651,12 +646,12 @@ const Scanner = () => {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-text-primary mb-2">
-              Pindai Produk
+              {t("scanner.title")}
             </h1>
             <p className="text-text-secondary">
               {scanMode === "barcode"
-                ? "Cek Legalitas BPOM"
-                : "Analisis Nutrisi Cerdas"}
+                ? t("scanner.checkLegality")
+                : t("scanner.smartAnalysis")}
             </p>
           </div>
 
@@ -672,9 +667,7 @@ const Scanner = () => {
                       : "text-text-secondary hover:bg-gray-50"
                   }`}
                 >
-                  {mode === "barcode"
-                    ? "Barcode / BPOM"
-                    : "Label Gizi (OCR + AI)"}
+                  {mode === "barcode" ? t("scanner.barcode") : t("scanner.ocr")}
                 </button>
               ))}
             </div>
@@ -738,10 +731,10 @@ const Scanner = () => {
                     <div className="absolute inset-0 pointer-events-none border-2 border-white/30 m-6 rounded-2xl flex flex-col justify-between p-4">
                       <div className="text-white/90 text-xs font-bold bg-black/40 backdrop-blur-md py-1.5 px-4 rounded-full self-center">
                         {scanMode === "barcode"
-                          ? "Arahkan ke Barcode"
+                          ? t("scanner.aimBarcode")
                           : liveScanMode
-                          ? "Live Scan Aktif"
-                          : "Pastikan Teks Terbaca"}
+                          ? t("scanner.liveScanActive")
+                          : t("scanner.ensureTextRead")}
                       </div>
                       {!liveScanMode && (
                         <div className="w-full h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(255,153,102,0.8)] animate-scanning-line"></div>
@@ -891,7 +884,7 @@ const Scanner = () => {
 
                     <div className="p-4 space-y-3 bg-bg-surface">
                       <Input
-                        placeholder="Nama Produk (wajib) *"
+                        placeholder={t("scanner.productNameRequired")}
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
                         className="border-2 border-primary/50 focus:border-primary"
@@ -903,10 +896,10 @@ const Scanner = () => {
                           fullWidth
                           onClick={() => setOcrImage(null)}
                         >
-                          Ulangi
+                          {t("scanner.retry")}
                         </Button>
                         <Button fullWidth onClick={processImageAnalysis}>
-                          Analisis AI
+                          {t("scanner.analyze")}
                         </Button>
                       </div>
                     </div>
@@ -937,11 +930,14 @@ const Scanner = () => {
                       </svg>
                     </div>
                     <p className="font-bold text-lg text-text-primary mb-1">
-                      Tap Kamera atau Upload
+                      {t("scanner.tapCameraUpload")}
                     </p>
                     <p className="text-sm text-text-secondary mb-6">
-                      Drag & drop gambar{" "}
-                      {scanMode === "barcode" ? "QR" : "label"} di sini
+                      {t("scanner.dragDrop")}{" "}
+                      {scanMode === "barcode"
+                        ? t("scanner.qrLabel")
+                        : t("scanner.labelLabel")}{" "}
+                      {t("scanner.hereLabel")}
                     </p>
                     <Button
                       onClick={(e) => {
@@ -950,7 +946,7 @@ const Scanner = () => {
                       }}
                       className="px-8 shadow-lg shadow-primary/30"
                     >
-                      Buka Kamera
+                      {t("scanner.openCamera")}
                     </Button>
                   </div>
                 )}
@@ -958,18 +954,18 @@ const Scanner = () => {
                 {scanMode === "barcode" && !isScannerActive && !ocrImage && (
                   <div className="mt-6">
                     <div className="flex items-center gap-3 justify-center mt-6 mb-4">
-                      <span className="h-px w-15 bg-border" />
+                      <span className="h-px flex-1 bg-border" />
                       <span className="text-xs font-semibold text-text-secondary tracking-wider">
-                        ATAU INPUT MANUAL
+                        {t("scanner.manualInput")}
                       </span>
-                      <span className="h-px w-15 bg-border" />
+                      <span className="h-px flex-1 bg-border" />
                     </div>
                     <label className="text-sm font-semibold text-text-primary mb-1 block">
-                      Kode BPOM / Nama Produk
+                      {t("scanner.bpomCode")}
                     </label>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Contoh: MD 12345..."
+                        placeholder={t("scanner.example")}
                         value={bpomInput}
                         onChange={(e) => setBpomInput(e.target.value)}
                         containerClass="flex-1"
@@ -980,11 +976,11 @@ const Scanner = () => {
                         onClick={() => handleBarcodeSuccess(bpomInput)}
                         disabled={!bpomInput}
                       >
-                        Cek
+                        {t("scanner.check")}
                       </Button>
                     </div>
                     <p className="text-xs text-text-secondary mt-1">
-                      Input tanpa spasi, format otomatis menyesuaikan
+                      {t("scanner.inputHint")}
                     </p>
                   </div>
                 )}
@@ -1001,13 +997,15 @@ const Scanner = () => {
                   <div className="text-center animate-fade-in-up">
                     <AnimatedStatus type={result.found ? "success" : "error"} />
                     <h2 className="text-2xl font-extrabold text-text-primary mb-6">
-                      {result.found ? "Terdaftar Resmi" : "Tidak Ditemukan"}
+                      {result.found
+                        ? t("scanner.registered")
+                        : t("scanner.notFound")}
                     </h2>
                     {result.found ? (
                       <div className="bg-bg-base p-6 rounded-3xl border border-border text-left space-y-4">
                         <div>
                           <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            Nama Produk
+                            {t("history.productName")}
                           </p>
                           <p className="font-bold text-lg text-text-primary">
                             {result.data.product_name}
@@ -1022,7 +1020,7 @@ const Scanner = () => {
                         <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Nomor Registrasi
+                              {t("history.regNumber")}
                             </p>
                             <p className="font-mono font-bold text-sm text-text-primary">
                               {result.data.bpom_number}
@@ -1030,7 +1028,7 @@ const Scanner = () => {
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Status
+                              {t("history.status")}
                             </p>
                             <p className="font-bold text-sm text-success">
                               {result.data.status}
@@ -1038,21 +1036,15 @@ const Scanner = () => {
                           </div>
                           <div className="col-span-2">
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Pendaftar / Pabrik
+                              {t("history.manufacturer")}
                             </p>
                             <p className="text-sm font-semibold text-text-primary">
                               {result.data.manufacturer}
                             </p>
-                            {result.data.address &&
-                              result.data.address !== "-" && (
-                                <p className="text-xs text-text-secondary mt-0.5 capitalize">
-                                  {result.data.address.toLowerCase()}
-                                </p>
-                              )}
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Terbit
+                              {t("history.issued")}
                             </p>
                             <p className="text-xs font-medium">
                               {result.data.issued_date}
@@ -1060,7 +1052,7 @@ const Scanner = () => {
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Kedaluwarsa
+                              {t("history.expired")}
                             </p>
                             <p className="text-xs font-medium text-error">
                               {result.data.expired_date}
@@ -1068,7 +1060,7 @@ const Scanner = () => {
                           </div>
                           <div className="col-span-2">
                             <p className="text-[10px] font-bold text-text-secondary uppercase">
-                              Kemasan
+                              {t("history.packaging")}
                             </p>
                             <p className="text-xs font-medium text-text-primary">
                               {result.data.packaging}
@@ -1094,19 +1086,17 @@ const Scanner = () => {
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
                           {isFavorited
-                            ? "Sudah Difavoritkan"
-                            : "Tambah ke Favorit"}
+                            ? t("scanner.favorited")
+                            : t("scanner.addToFavorites")}
                         </Button>
                       </div>
                     ) : (
                       <div className="bg-bg-base p-6 rounded-3xl border border-dashed border-border text-text-secondary">
                         <p className="mb-2">
-                          Nomor <strong>{result.code}</strong> tidak ditemukan
-                          di database BPOM
+                          {t("scanner.code")} <strong>{result.code}</strong>{" "}
+                          {t("scanner.bpomNotFound")}
                         </p>
-                        <p className="text-xs">
-                          Pastikan nomor benar atau scan ulang
-                        </p>
+                        <p className="text-xs">{t("scanner.checkNumber")}</p>
                       </div>
                     )}
                   </div>
@@ -1114,7 +1104,7 @@ const Scanner = () => {
                   <div className="space-y-6 animate-fade-in-up">
                     <div className="text-center">
                       <h2 className="text-2xl font-extrabold text-text-primary">
-                        {productName || "Analisis Nutrisi AI"}
+                        {productName || t("scanner.aiAnalysisTitle")}
                       </h2>
                       <div className="flex items-center justify-center gap-3 mt-3">
                         <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
@@ -1142,10 +1132,10 @@ const Scanner = () => {
                           </svg>
                           <div>
                             <h4 className="font-bold text-error text-sm">
-                              Peringatan Alergi!
+                              {t("history.allergyWarningTitle")}
                             </h4>
                             <p className="text-xs text-text-primary mt-1">
-                              Mengandung:{" "}
+                              {t("history.allergyWarningContent")}{" "}
                               <strong>
                                 {result.allergyWarnings.join(", ")}
                               </strong>
@@ -1182,7 +1172,7 @@ const Scanner = () => {
                                   d="M5 13l4 4L19 7"
                                 />
                               </svg>
-                              Keunggulan
+                              {t("history.pros")}
                             </h4>
                             <ul className="space-y-1 text-xs text-text-primary">
                               {result.data.pros.map((pro, i) => (
@@ -1207,7 +1197,7 @@ const Scanner = () => {
                                   d="M6 18L18 6M6 6l12 12"
                                 />
                               </svg>
-                              Perhatian
+                              {t("history.cons")}
                             </h4>
                             <ul className="space-y-1 text-xs text-text-primary">
                               {result.data.cons.map((con, i) => (
@@ -1222,7 +1212,7 @@ const Scanner = () => {
                     {result.data.ingredients && (
                       <div className="bg-bg-base border border-border rounded-2xl p-4">
                         <h4 className="font-bold text-text-primary text-sm mb-2">
-                          Komposisi
+                          {t("history.ingredients")}
                         </h4>
                         <p className="text-xs text-text-secondary leading-relaxed">
                           {result.data.ingredients}
@@ -1247,12 +1237,14 @@ const Scanner = () => {
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      {isFavorited ? "Sudah Difavoritkan" : "Tambah ke Favorit"}
+                      {isFavorited
+                        ? t("scanner.favorited")
+                        : t("scanner.addToFavorites")}
                     </Button>
 
                     <div className="pt-6 border-t border-border">
                       <h3 className="font-bold text-text-primary mb-4">
-                        Tanya AI
+                        {t("scanner.askAI")}
                       </h3>
                       <div className="space-y-3 mb-4 max-h-48 overflow-y-auto px-1">
                         {chatHistory.map((msg, idx) => (
@@ -1265,7 +1257,9 @@ const Scanner = () => {
                             }`}
                           >
                             <strong className="block text-xs text-text-secondary mb-1">
-                              {msg.role === "user" ? "Anda" : "AI"}
+                              {msg.role === "user"
+                                ? t("scanner.you")
+                                : t("scanner.ai")}
                             </strong>
                             {msg.text}
                           </div>
@@ -1275,7 +1269,7 @@ const Scanner = () => {
                         <input
                           type="text"
                           className="flex-1 px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none text-sm"
-                          placeholder="Tanya sesuatu..."
+                          placeholder={t("scanner.askSomething")}
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           disabled={chatLoading}
@@ -1285,7 +1279,7 @@ const Scanner = () => {
                           type="submit"
                           disabled={chatLoading || !chatInput}
                         >
-                          {chatLoading ? "..." : "Kirim"}
+                          {chatLoading ? "..." : t("scanner.send")}
                         </Button>
                       </form>
                     </div>
@@ -1297,7 +1291,7 @@ const Scanner = () => {
                   onClick={resetScan}
                   className="mt-8 h-12 font-bold"
                 >
-                  Scan Produk Lain
+                  {t("scanner.scanAnother")}
                 </Button>
               </div>
             )}
