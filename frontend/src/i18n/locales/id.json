@@ -1,4 +1,11 @@
 {
+  "nav": {
+    "home": "Beranda",
+    "scanner": "Pindai",
+    "history": "Riwayat",
+    "favorites": "Favorit",
+    "profile": "Profil"
+  },
   "profile": {
     "title": "Profil Saya",
     "edit": "Edit Profil",
@@ -50,9 +57,41 @@
     "noAllergies": "Belum ada alergi yang dipilih",
     "addAllergyHint": "Klik tab \"Semua Pilihan\" untuk menambah"
   },
+  "scanner": {
+    "title": "Pindai Produk",
+    "barcode": "Barcode / BPOM",
+    "ocr": "Label Gizi (OCR + AI)",
+    "checkLegality": "Cek Legalitas BPOM",
+    "smartAnalysis": "Analisis Nutrisi Cerdas",
+    "openCamera": "Buka Kamera",
+    "uploadFile": "Upload Gambar",
+    "dragDrop": "Drag & drop gambar di sini",
+    "manualInput": "ATAU INPUT MANUAL",
+    "bpomCode": "Kode BPOM / Nama Produk",
+    "example": "Contoh: MD 12345...",
+    "check": "Cek",
+    "productName": "Nama Produk (wajib) *",
+    "analyze": "Analisis AI",
+    "retry": "Ulangi",
+    "registered": "Terdaftar Resmi",
+    "notFound": "Tidak Ditemukan",
+    "addToFavorites": "Tambah ke Favorit",
+    "favorited": "Sudah Difavoritkan",
+    "scanAnother": "Scan Produk Lain",
+    "askAI": "Tanya AI",
+    "askSomething": "Tanya sesuatu...",
+    "send": "Kirim",
+    "you": "Anda",
+    "ai": "AI"
+  },
   "common": {
     "loading": "Memuat...",
     "success": "Berhasil!",
-    "error": "Terjadi kesalahan"
+    "error": "Terjadi kesalahan",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "close": "Tutup"
   }
 }

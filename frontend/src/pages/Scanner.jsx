@@ -20,6 +20,7 @@ const Scanner = () => {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses...");
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [processingId, setProcessingId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState(null);
@@ -427,6 +428,28 @@ const Scanner = () => {
 
   const [productName, setProductName] = useState("");
 
+  const simulateRealisticProgress = (callback) => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      if (progress < 25) {
+        progress += Math.random() * 3;
+      } else if (progress < 50) {
+        progress += Math.random() * 2;
+      } else if (progress < 75) {
+        progress += Math.random() * 1.5;
+      } else if (progress < 90) {
+        progress += Math.random() * 0.8;
+      } else if (progress < 95) {
+        progress += Math.random() * 0.3;
+      }
+
+      progress = Math.min(progress, 95);
+      callback(progress);
+    }, 500);
+
+    return interval;
+  };
+
   const processImageAnalysis = async () => {
     if (!productName.trim()) {
       setError("Nama produk wajib diisi");
@@ -434,53 +457,82 @@ const Scanner = () => {
     }
 
     setLoading(true);
-    setLoadingProgress(0);
-    setLoadingMessage("Mengoptimalkan gambar...");
     setError(null);
 
-    try {
-      const base64Length = ocrImage.length;
-      const sizeInMB = (base64Length * 0.75) / (1024 * 1024);
+    const base64Length = ocrImage.length;
+    const sizeInMB = (base64Length * 0.75) / (1024 * 1024);
 
-      if (sizeInMB > 5) {
-        throw new Error("Gambar terlalu besar. Coba ambil gambar lebih dekat.");
+    if (sizeInMB > 5) {
+      setError("Gambar terlalu besar");
+      setLoading(false);
+      return;
+    }
+
+    setLoadingMessage("Mengoptimalkan gambar...");
+
+    const progressInterval = simulateRealisticProgress((prog) => {
+      setLoadingProgress(prog);
+
+      if (prog < 30) {
+        setLoadingMessage("Mengoptimalkan gambar...");
+      } else if (prog < 60) {
+        setLoadingMessage("Mengirim ke server...");
+      } else if (prog < 90) {
+        setLoadingMessage("Analisis AI sedang bekerja...");
+      } else {
+        setLoadingMessage("Memproses hasil...");
       }
+    });
 
-      setLoadingProgress(25);
-      setLoadingMessage("Mengirim ke server...");
-      await new Promise((r) => setTimeout(r, 300));
-
-      setLoadingProgress(50);
-      setLoadingMessage("Analisis AI sedang bekerja...");
-
+    try {
       const { data } = await api.post("/scan/analyze", {
         product_name: productName,
         image_base64: ocrImage,
       });
 
-      setLoadingProgress(75);
-      setLoadingMessage("Memproses hasil...");
+      clearInterval(progressInterval);
 
-      if (!data.success) throw new Error(data.message || "Gagal analisis");
+      let finalProgress = loadingProgress;
+      const finishInterval = setInterval(() => {
+        finalProgress += 5;
+        setLoadingProgress(finalProgress);
 
-      const textCheck = (data.data.ingredients || "").toLowerCase();
-      const allergyWarnings = myAllergies
-        .filter((a) => textCheck.includes(a))
-        .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
+        if (finalProgress >= 100) {
+          clearInterval(finishInterval);
+          setLoadingMessage("Selesai!");
 
-      setLoadingProgress(100);
-      setLoadingMessage("Selesai!");
+          setTimeout(() => {
+            if (!data.success)
+              throw new Error(data.message || "Gagal analisis");
 
-      setResult({
-        type: "ocr",
-        found: true,
-        data: data.data,
-        allergyWarnings: allergyWarnings,
-        scan_id: data.data?.id,
-      });
-      setIsFavorited(false);
-      setError(null);
+            const textCheck = (data.data.ingredients || "").toLowerCase();
+            const allergyWarnings = myAllergies
+              .filter((a) => textCheck.includes(a))
+              .map((a) => a.charAt(0).toUpperCase() + a.slice(1));
+
+            setResult({
+              type: "ocr",
+              found: true,
+              data: data.data,
+              allergyWarnings: allergyWarnings,
+              scan_id: data.data?.id,
+            });
+            setIsFavorited(false);
+            setError(null);
+            setLoading(false);
+            setLoadingProgress(0);
+
+            if (document.hidden) {
+              new Notification("LacakNutri", {
+                body: "Analisis nutrisi selesai!",
+                icon: "/icon-192x192.png",
+              });
+            }
+          }, 300);
+        }
+      }, 50);
     } catch (err) {
+      clearInterval(progressInterval);
       console.error("Analysis error:", err);
       const errorMsg =
         err.response?.status === 413
@@ -492,11 +544,16 @@ const Scanner = () => {
             "Gagal memproses gambar";
       setError(errorMsg);
       setResult(null);
-    } finally {
       setLoading(false);
       setLoadingProgress(0);
     }
   };
+
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const handleChatSubmit = async (e) => {
     e.preventDefault();

@@ -1,16 +1,153 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../ui/Button";
+import api from "../../config/api";
+
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+  const { user, setUser } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const languages = [
+    {
+      code: "id-ID",
+      label: "Bahasa Indonesia",
+      flag: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <rect width="24" height="12" fill="#E70011" />
+          <rect y="12" width="24" height="12" fill="#FFFFFF" />
+        </svg>
+      ),
+    },
+    {
+      code: "en-US",
+      label: "English (US)",
+      flag: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <rect width="24" height="24" fill="#B22234" />
+          <path
+            d="M0 2.77h24M0 5.54h24M0 8.31h24M0 11.08h24M0 13.85h24M0 16.62h24M0 19.39h24"
+            stroke="#FFF"
+            strokeWidth="1.85"
+          />
+          <rect width="9.6" height="12.92" fill="#3C3B6E" />
+        </svg>
+      ),
+    },
+  ];
+
+  const currentLang =
+    languages.find((l) => l.code === i18n.language) || languages[0];
+
+  const switchLanguage = async (locale) => {
+    try {
+      i18n.changeLanguage(locale);
+      localStorage.setItem("preferredLanguage", locale);
+
+      if (user) {
+        const form = new FormData();
+        form.append("name", user.name);
+        form.append("locale", locale);
+
+        const { data } = await api.put("/users/profile", form);
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      setIsOpen(false);
+    } catch (e) {
+      console.error("Failed to switch language", e);
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isOpen && !e.target.closest(".language-switcher")) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative language-switcher">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-10 h-10 rounded-xl hover:bg-bg-base border border-transparent hover:border-border flex items-center justify-center transition-all duration-200"
+        title="Ganti Bahasa"
+      >
+        <svg
+          className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-2 w-64 bg-bg-surface rounded-2xl shadow-2xl border-2 border-border z-50 overflow-hidden animate-scale-up">
+          {languages.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => switchLanguage(lang.code)}
+              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-primary/5 transition-all text-left ${
+                currentLang.code === lang.code ? "bg-primary/10 font-bold" : ""
+              }`}
+            >
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-border flex items-center justify-center">
+                {lang.flag}
+              </div>
+              <span className="text-sm text-text-primary">{lang.label}</span>
+              {currentLang.code === lang.code && (
+                <svg
+                  className="w-5 h-5 ml-auto text-primary"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const { i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(
     () => localStorage.getItem("theme") === "dark"
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Initialize language from user or localStorage
+    const preferredLang =
+      user?.locale || localStorage.getItem("preferredLanguage") || "id-ID";
+    if (i18n.language !== preferredLang) {
+      i18n.changeLanguage(preferredLang);
+    }
+  }, [user, i18n]);
 
   useEffect(() => {
     if (isDark) {
@@ -378,7 +515,9 @@ const Header = () => {
 
           {/* DESKTOP ACTIONS */}
           <div className="flex-1 flex justify-end items-center gap-4">
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2">
+              <LanguageSwitcher />
+
               <button
                 onClick={() => setIsDark(!isDark)}
                 className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-bg-base border border-transparent hover:border-border text-text-secondary hover:text-primary transition-all duration-200"
@@ -447,7 +586,8 @@ const Header = () => {
           </div>
 
           {/* MOBILE HAMBURGER BUTTON */}
-          <div className="md:hidden flex items-center gap-3">
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSwitcher />
             <button
               onClick={() => setIsDark(!isDark)}
               className="p-2 text-text-secondary"

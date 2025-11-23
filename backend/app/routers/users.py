@@ -133,7 +133,10 @@ def get_localization_settings(
     region: str = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(LocalizationSetting).filter(LocalizationSetting.is_active == True)
+    query = db.query(LocalizationSetting).filter(
+        LocalizationSetting.is_active == True,
+        LocalizationSetting.locale.in_(['id-ID', 'en-US'])
+    )
     
     if region:
         query = query.filter(LocalizationSetting.region == region)
