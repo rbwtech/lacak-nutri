@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -10,6 +10,11 @@ from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.models.education import EducationArticle, Additive, Disease, NutritionInfo
 from app.models.food import FoodCatalog
 import secrets
+import os
+from pathlib import Path
+
+UPLOAD_DIR = Path("api/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -17,6 +22,33 @@ def admin_required(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(403, "Admin access required")
     return current_user
+
+@router.post("/upload-image")
+async def upload_image(
+    file: UploadFile = File(...),
+    type: str = "general",  # general, article, product, profile
+    admin: User = Depends(admin_required)
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(400, "File must be an image")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Ukuran maksimal 2MB")
+    
+    subdir = f"{type}s" 
+    upload_dir = UPLOAD_DIR / subdir
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    ext = file.filename.split(".")[-1].lower()
+    filename = f"{type}_{secrets.token_urlsafe(16)}.{ext}"
+    filepath = upload_dir / filename
+
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+
+    return {"success": True, "url": f"/api/uploads/{subdir}/{filename}"}
+
 
 # ============= DASHBOARD STATS =============
 @router.get("/stats")
@@ -425,6 +457,7 @@ class ArticleCreate(BaseModel):
     content: str
     category: str
     author: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 @router.get("/articles")
 def get_articles_admin(
@@ -476,18 +509,47 @@ def delete_article(
 
 # ============= FOOD CATALOG CRUD =============
 class FoodCatalogCreate(BaseModel):
-    product_name: str
-    brand: Optional[str] = None
-    bpom_number: Optional[str] = None
-    category: Optional[str] = None
+    original_code: Optional[str] = None
+    name: str
+    weight_g: Optional[float] = 100.0
+    calories: Optional[float] = 0.0
+    protein: Optional[float] = 0.0
+    fat: Optional[float] = 0.0
+    carbs: Optional[float] = 0.0
+    sugar: Optional[float] = 0.0
+    fiber: Optional[float] = 0.0
+    sodium_mg: Optional[float] = 0.0
+    potassium_mg: Optional[float] = 0.0
+    calcium_mg: Optional[float] = 0.0
+    iron_mg: Optional[float] = 0.0
+    cholesterol_mg: Optional[float] = 0.0
+    image_url: Optional[str] = None
 
 @router.get("/food-catalog")
 def get_food_catalog(
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    products = db.query(FoodCatalog).all()
-    return {"data": products}
+    products = db.query(FoodCatalog).offset(skip).limit(limit).all()
+    return {
+        "data": [{
+            "id": p.id,
+            "original_code": p.original_code,
+            "name": p.name,
+            "weight_g": float(p.weight_g) if p.weight_g else 100.0,
+            "calories": float(p.calories) if p.calories else 0.0,
+            "protein": float(p.protein) if p.protein else 0.0,
+            "fat": float(p.fat) if p.fat else 0.0,
+            "carbs": float(p.carbs) if p.carbs else 0.0,
+            "sugar": float(p.sugar) if p.sugar else 0.0,
+            "fiber": float(p.fiber) if p.fiber else 0.0,
+            "sodium_mg": float(p.sodium_mg) if p.sodium_mg else 0.0,
+            "image_url": getattr(p, 'image_url', None)
+        } for p in products],
+        "total": db.query(FoodCatalog).count()
+    }
 
 @router.post("/food-catalog")
 def create_food_product(

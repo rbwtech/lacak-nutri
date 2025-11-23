@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, func, DECIMAL
+from sqlalchemy import Column, Integer, String, Float, DateTime, func, DECIMAL, Text
 from app.core.database import Base
 
 class FoodCatalog(Base):
@@ -24,4 +24,5 @@ class FoodCatalog(Base):
     iron_mg = Column(DECIMAL(10, 2), default=0)
     cholesterol_mg = Column(DECIMAL(10, 2), default=0)
     
+    image_url = Column(Text, nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

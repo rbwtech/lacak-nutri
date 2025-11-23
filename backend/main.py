@@ -30,7 +30,7 @@ app.include_router(admin.router)
 
 @app.get("/")
 def root():
-    return {"message": "LacakNutri API is running"}
+    return {"message": "LacakNutri API v1.0.0 is runnning"}
 
 @app.get("/api/health")
 def health_check():
