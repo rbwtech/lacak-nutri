@@ -32,10 +32,12 @@ const AdminDiseases = () => {
     message: "",
     type: "success",
   });
-  const showToast = (message, type = "success") =>
-    setToast({ isOpen: true, message, type });
   const [total, setTotal] = useState(0);
 
+  const showToast = (message, type = "success") =>
+    setToast({ isOpen: true, message, type });
+
+  // FIX: Define fetch first
   const fetchDiseases = async () => {
     setLoading(true);
     try {
@@ -79,7 +81,7 @@ const AdminDiseases = () => {
     setShowModal(true);
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "diseases",
       formData: formData,
@@ -88,19 +90,22 @@ const AdminDiseases = () => {
         : t("admin.disease.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
-  };
 
-  const handleDeleteClick = (id) => {
-    setConfirmDelete({ isOpen: true, id });
+    try {
+      if (editMode) await api.put(`/admin/diseases/${currentId}`, formData);
+      else await api.post("/admin/diseases", formData);
+      showToast(actionData.successMsg);
+      fetchDiseases();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -111,17 +116,28 @@ const AdminDiseases = () => {
       successMsg: t("admin.disease.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("delete", idToDelete, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", idToDelete, actionData);
       return;
     }
-    executePendingAction();
+
+    try {
+      await api.delete(`/admin/diseases/${idToDelete}`);
+      showToast(actionData.successMsg);
+      fetchDiseases();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
+  };
+
+  const handleDeleteClick = (id) => {
+    setConfirmDelete({ isOpen: true, id });
   };
 
   return (
     <MainLayout>
+      {/* ... (Table content) ... */}
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -183,10 +199,10 @@ const AdminDiseases = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
+            {/* ... (Form Fields) ... */}
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.disease.edit") : t("admin.disease.add")}
             </h3>
-
             <div className="space-y-4">
               <Input
                 label={t("admin.disease.name")}
@@ -197,7 +213,6 @@ const AdminDiseases = () => {
                 placeholder={t("admin.disease.namePlaceholder")}
                 required
               />
-
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.disease.description")}
@@ -212,7 +227,6 @@ const AdminDiseases = () => {
                   placeholder={t("admin.disease.descriptionPlaceholder")}
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.disease.recommendations")}
@@ -230,7 +244,6 @@ const AdminDiseases = () => {
                   placeholder={t("admin.disease.recommendationsPlaceholder")}
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.disease.foodsToAvoid")}
@@ -246,7 +259,6 @@ const AdminDiseases = () => {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

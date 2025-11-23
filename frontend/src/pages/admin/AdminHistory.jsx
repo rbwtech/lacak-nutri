@@ -42,7 +42,7 @@ const AdminHistory = () => {
                 {t("admin.history.total", { count: total })}
               </p>
             </div>
-            <Button onClick={fetchHistory}>{t("common.refresh")}</Button>
+            <Button onClick={fetchHistory}>{t("admin.common.refresh")}</Button>
           </div>
 
           <Card className="p-6 mb-6">

@@ -59,12 +59,14 @@ def owner_auth_required(
     if current_user.role != "admin":
         raise HTTPException(403, "Admin access required")
         
-    if current_user.id == crud_admin.OWNER_ID:
-        if not auth_code_header or not crud_admin.verify_authorization_code(db, current_user.id, auth_code_header):
-            raise HTTPException(
-                status_code=403,
-                detail="Owner Authorization Code required or invalid."
-            )
+    if current_user.id != crud_admin.OWNER_ID:
+        return current_user
+        
+    if not auth_code_header or not crud_admin.verify_authorization_code(db, current_user.id, auth_code_header):
+        raise HTTPException(
+            status_code=403,
+            detail="Owner Authorization Code required or invalid."
+        )
 
     return current_user
 
@@ -82,16 +84,16 @@ def get_auth_code(
     if current_user.id != crud_admin.OWNER_ID:
         raise HTTPException(403, "Owner access required")
         
-    # Generate code and save to DB (valid for 5 minutes)
-    code = crud_admin.create_authorization_code(db, lifetime_minutes=5)
+    code = crud_admin.create_authorization_code(db, lifetime_minutes=120)
     
     owner_phone = crud_admin.OWNER_PHONE
-    message = f"Kode Otorisasi Admin Anda adalah: {code}. Kode ini berlaku 2 jam."
-    wa_link = f"https://wa.me/{owner_phone}?text={message.replace(' ', '%20')}"
+    
+    message = "Saya%20memerlukan%20Kode%20Otorisasi%20Owner%20Admin.%20lacaknutri.rbwtech.io"
+    wa_link = f"https://wa.me/{owner_phone}?text={message}"
     
     return {
-        "wa_link": wa_link,
-        "code_expires_in": "2 jam"
+        "wa_link": wa_link, 
+        "code_expires_in": "120 minutes"
     }
 
 
@@ -204,7 +206,7 @@ def update_user_email(
 def send_reset_password_link(
     user_id: int,
     db: Session = Depends(get_db),
-    admin: User = Depends(admin_required)
+    admin: User = OWNER_WRITE_DEPENDENCY
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

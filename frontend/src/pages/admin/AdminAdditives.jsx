@@ -78,7 +78,7 @@ const AdminAdditives = () => {
     setShowModal(true);
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "additives",
       formData: formData,
@@ -87,28 +87,44 @@ const AdminAdditives = () => {
         : t("admin.additive.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
+
+    try {
+      if (editMode) await api.put(`/admin/additives/${currentId}`, formData);
+      else await api.post("/admin/additives", formData);
+      showToast(actionData.successMsg);
+      fetchAdditives();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm(t("admin.additive.confirmDelete"))) return;
     const actionData = {
       endpoint: "additives",
       successMsg: t("admin.additive.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", id, actionData);
       return;
     }
-    executePendingAction();
+
+    try {
+      await api.delete(`/admin/additives/${id}`);
+      showToast(actionData.successMsg);
+      fetchAdditives();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   const getSafetyColor = (level) => {
@@ -138,7 +154,7 @@ const AdminAdditives = () => {
                 {t("admin.additive.title")}
               </h1>
               <p className="text-text-secondary">
-                {t("admin.additive.total", { count: additives.length })}
+                {t("admin.additive.total", { count: total })}
               </p>
             </div>
             <Button onClick={() => openModal()}>
@@ -230,15 +246,15 @@ const AdminAdditives = () => {
           </Card>
         </div>
       </div>
-
+      {/* Modal and Auth */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl p-6 my-8">
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.additive.edit") : t("admin.additive.add")}
             </h3>
-
             <div className="space-y-4">
+              {/* Inputs */}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.additive.name")}
@@ -258,7 +274,7 @@ const AdminAdditives = () => {
                   placeholder="e.g., E951"
                 />
               </div>
-
+              {/* ... Other inputs ... */}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.additive.category")}
@@ -287,7 +303,7 @@ const AdminAdditives = () => {
                   </select>
                 </div>
               </div>
-
+              {/* Textareas */}
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.additive.description")}
@@ -302,7 +318,6 @@ const AdminAdditives = () => {
                   placeholder={t("admin.additive.descriptionPlaceholder")}
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.additive.risks")}
@@ -318,7 +333,6 @@ const AdminAdditives = () => {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

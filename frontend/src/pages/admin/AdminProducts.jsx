@@ -46,6 +46,8 @@ const AdminProducts = () => {
   });
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
+
+  // FIX: Define fetch first
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -70,15 +72,14 @@ const AdminProducts = () => {
     fetchProducts();
   }, []);
 
+  // ... (handleImageUpload, openModal)
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(true);
     const formDataUpload = new FormData();
     formDataUpload.append("file", file);
     formDataUpload.append("type", "product");
-
     try {
       const { data } = await api.post("/admin/upload-image", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -135,7 +136,7 @@ const AdminProducts = () => {
     setShowModal(true);
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "food-catalog",
       formData: formData,
@@ -144,19 +145,22 @@ const AdminProducts = () => {
         : t("admin.product.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
-  };
 
-  const handleDeleteClick = (id) => {
-    setConfirmDelete({ isOpen: true, id });
+    // Non-Owner Direct
+    try {
+      if (editMode) await api.put(`/admin/food-catalog/${currentId}`, formData);
+      else await api.post("/admin/food-catalog", formData);
+      showToast(actionData.successMsg);
+      fetchProducts();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -167,19 +171,30 @@ const AdminProducts = () => {
       successMsg: t("admin.product.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("delete", idToDelete, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", idToDelete, actionData);
       return;
     }
-    executePendingAction();
+
+    // Non-Owner Direct
+    try {
+      await api.delete(`/admin/food-catalog/${idToDelete}`);
+      showToast(actionData.successMsg);
+      fetchProducts();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
+  };
+  const handleDeleteClick = (id) => {
+    setConfirmDelete({ isOpen: true, id });
   };
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* ... (Header & Table) ... */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
@@ -313,7 +328,6 @@ const AdminProducts = () => {
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.product.edit") : t("admin.product.add")}
             </h3>
-
             <div className="space-y-4">
               {/* Image Upload */}
               <div>
@@ -342,7 +356,6 @@ const AdminProducts = () => {
                   </label>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.product.code")}
@@ -362,7 +375,7 @@ const AdminProducts = () => {
                   required
                 />
               </div>
-
+              {/* Other inputs... */}
               <div className="grid grid-cols-4 gap-4">
                 <Input
                   label={t("admin.product.weight")}
@@ -411,7 +424,6 @@ const AdminProducts = () => {
                   }
                 />
               </div>
-
               <div className="grid grid-cols-4 gap-4">
                 <Input
                   label={t("admin.product.carbs")}
@@ -462,7 +474,6 @@ const AdminProducts = () => {
                   }
                 />
               </div>
-
               <div className="grid grid-cols-4 gap-4">
                 <Input
                   label={t("admin.product.potassium")}

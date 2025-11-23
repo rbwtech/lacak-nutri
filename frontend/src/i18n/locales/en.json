@@ -421,11 +421,25 @@
       "actions": "Actions",
       "update": "Update",
       "create": "Create",
-      "noDescriptionPlaceholder": "No description"
+      "noDescriptionPlaceholder": "No description",
+      "refresh": "Refresh"
     },
     "dashboard": {
       "title": "Admin Dashboard",
       "subtitle": "Manage platform data & users"
+    },
+    "auth": {
+      "title": "Owner Authorization",
+      "subtitle": "This operation requires a unique code from the Owner.",
+      "requestCode": "Request Authorization Code",
+      "contactOwner": "Contact Owner via WhatsApp",
+      "authCode": "Authorization Code (8 Digits)",
+      "submitCode": "Verify & Proceed",
+      "errorRequestCode": "Failed to request code. Check connection or Owner status.",
+      "errorInvalidCodeLength": "Code must be 8 digits.",
+      "successUpdate": "Changes saved successfully.",
+      "resetSuccessLink": "Password reset link generated successfully.",
+      "resetFailed": "Failed to generate reset link."
     },
     "user": {
       "title": "User Management",
@@ -459,7 +473,8 @@
       "product": "Product",
       "bpomNum": "BPOM Number",
       "date": "Date",
-      "score": "Score"
+      "score": "Score",
+      "refresh": "Refresh"
     },
     "additive": {
       "title": "Additive Management",

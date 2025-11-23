@@ -64,7 +64,7 @@ const AdminAllergens = () => {
     setShowModal(true);
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "allergens",
       formData: formData,
@@ -73,28 +73,44 @@ const AdminAllergens = () => {
         : t("admin.allergen.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
+
+    try {
+      if (editMode) await api.put(`/admin/allergens/${currentId}`, formData);
+      else await api.post("/admin/allergens", formData);
+      showToast(actionData.successMsg);
+      fetchAllergens();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm(t("admin.allergen.confirmDelete"))) return;
     const actionData = {
       endpoint: "allergens",
       successMsg: t("admin.allergen.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", id, actionData);
       return;
     }
-    executePendingAction();
+
+    try {
+      await api.delete(`/admin/allergens/${id}`);
+      showToast(actionData.successMsg);
+      fetchAllergens();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   return (
@@ -170,7 +186,6 @@ const AdminAllergens = () => {
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.allergen.edit") : t("admin.allergen.add")}
             </h3>
-
             <div className="space-y-4">
               <Input
                 label={t("admin.allergen.name")}
@@ -195,7 +210,6 @@ const AdminAllergens = () => {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

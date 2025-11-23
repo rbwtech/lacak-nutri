@@ -82,7 +82,7 @@ const AdminLocalization = () => {
     setShowModal(true);
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "localization",
       formData: formData,
@@ -91,34 +91,50 @@ const AdminLocalization = () => {
         : t("admin.localization.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
+
+    try {
+      if (editMode) await api.put(`/admin/localization/${currentId}`, formData);
+      else await api.post("/admin/localization", formData);
+      showToast(actionData.successMsg);
+      fetchSettings();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm(t("admin.common.confirmDelete"))) return;
     const actionData = {
       endpoint: "localization",
       successMsg: t("admin.localization.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (isOwnerAdmin() && !handleWriteOperation("delete", id, actionData)) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", id, actionData);
       return;
     }
-    executePendingAction();
+
+    try {
+      await api.delete(`/admin/localization/${id}`);
+      showToast(actionData.successMsg);
+      fetchSettings();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* ... (Header and Table) ... */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary">
@@ -242,7 +258,7 @@ const AdminLocalization = () => {
                 ? t("admin.localization.edit")
                 : t("admin.localization.add")}
             </h3>
-
+            {/* ... (Form Content, similar to previous version) ... */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -265,7 +281,6 @@ const AdminLocalization = () => {
                   placeholder="+07:00"
                 />
               </div>
-
               <Input
                 label={t("admin.localization.tzLabel")}
                 value={formData.timezone_label}
@@ -274,7 +289,6 @@ const AdminLocalization = () => {
                 }
                 placeholder="Western Indonesia Time"
               />
-
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.localization.locale")}
@@ -293,7 +307,6 @@ const AdminLocalization = () => {
                   placeholder="Bahasa Indonesia"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t("admin.localization.countryCode")}
@@ -312,7 +325,6 @@ const AdminLocalization = () => {
                   placeholder="Asia"
                 />
               </div>
-
               <label className="flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -327,7 +339,6 @@ const AdminLocalization = () => {
                 </span>
               </label>
             </div>
-
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

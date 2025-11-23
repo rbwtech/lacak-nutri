@@ -429,6 +429,19 @@
       "title": "Admin Dashboard",
       "subtitle": "Kelola data dan pengguna platform"
     },
+    "auth": {
+      "title": "Otorisasi Owner",
+      "subtitle": "Operasi ini memerlukan kode unik dari Owner.",
+      "requestCode": "Minta Kode Otorisasi",
+      "contactOwner": "Hubungi Owner via WhatsApp",
+      "authCode": "Kode Otorisasi (8 Digit)",
+      "submitCode": "Verifikasi & Lanjutkan",
+      "errorRequestCode": "Gagal meminta kode. Cek koneksi atau status Owner.",
+      "errorInvalidCodeLength": "Kode harus 8 digit.",
+      "successUpdate": "Perubahan berhasil disimpan.",
+      "resetSuccessLink": "Link reset password berhasil dibuat.",
+      "resetFailed": "Gagal membuat link reset."
+    },
     "user": {
       "title": "Manajemen Pengguna",
       "desc": "Kelola pengguna & peran",

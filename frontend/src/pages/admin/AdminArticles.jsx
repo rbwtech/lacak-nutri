@@ -5,10 +5,10 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import Toast from "../../components/ui/Toast";
-import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
-import { useOwnerAuth } from "../../hooks/useOwnerAuth";
 import api from "../../config/api";
 import { useTranslation } from "react-i18next";
+import { useOwnerAuth } from "../../hooks/useOwnerAuth";
+import OwnerAuthorizationModal from "../../components/ui/AuthorizationModal";
 
 const AdminArticles = () => {
   const { t } = useTranslation();
@@ -35,9 +35,11 @@ const AdminArticles = () => {
     message: "",
     type: "success",
   });
+
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
+  // FIX: Define fetch first
   const fetchArticles = async () => {
     setLoading(true);
     try {
@@ -65,12 +67,10 @@ const AdminArticles = () => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(true);
     const formDataUpload = new FormData();
     formDataUpload.append("file", file);
     formDataUpload.append("type", "article");
-
     try {
       const { data } = await api.post("/admin/upload-image", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -118,7 +118,7 @@ const AdminArticles = () => {
       .replace(/^-|-$/g, "");
   };
 
-  const handleCreateOrUpdate = () => {
+  const handleCreateOrUpdate = async () => {
     const actionData = {
       endpoint: "articles",
       formData: formData,
@@ -127,15 +127,24 @@ const AdminArticles = () => {
         : t("admin.article.successCreate"),
       failureMsg: t("admin.common.operationFailed"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", currentId, actionData)
-    ) {
+
+    // Check Owner
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", currentId, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
+
+    // Non-Owner Direct Execution
+    try {
+      if (editMode) await api.put(`/admin/articles/${currentId}`, formData);
+      else await api.post("/admin/articles", formData);
+      showToast(actionData.successMsg);
+      fetchArticles();
+      setShowModal(false);
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -145,18 +154,26 @@ const AdminArticles = () => {
   const handleDeleteConfirm = async () => {
     const idToDelete = confirmDelete.id;
     setConfirmDelete({ isOpen: false, id: null });
+
     const actionData = {
       endpoint: "articles",
       successMsg: t("admin.article.successDelete"),
       failureMsg: t("common.errorDelete"),
     };
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("delete", idToDelete, actionData)
-    ) {
+
+    if (isOwnerAdmin()) {
+      handleWriteOperation("delete", idToDelete, actionData);
       return;
     }
-    executePendingAction();
+
+    // Non-Owner Direct Execution
+    try {
+      await api.delete(`/admin/articles/${idToDelete}`);
+      showToast(actionData.successMsg);
+      fetchArticles();
+    } catch (e) {
+      showToast(actionData.failureMsg, "error");
+    }
   };
 
   const translateCategory = (cat) => {
@@ -266,9 +283,8 @@ const AdminArticles = () => {
             <h3 className="text-xl font-bold text-text-primary mb-4">
               {editMode ? t("admin.article.edit") : t("admin.article.add")}
             </h3>
-
             <div className="space-y-4">
-              {/* Thumbnail Upload */}
+              {/* Form Fields */}
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.article.thumbnail")}
@@ -293,19 +309,8 @@ const AdminArticles = () => {
                       disabled={uploading}
                     />
                   </label>
-                  {formData.thumbnail_url && (
-                    <button
-                      onClick={() =>
-                        setFormData({ ...formData, thumbnail_url: "" })
-                      }
-                      className="px-3 py-2 bg-error/10 text-error text-sm font-bold rounded-xl hover:bg-error/20"
-                    >
-                      {t("common.remove")}
-                    </button>
-                  )}
                 </div>
               </div>
-
               <Input
                 label={t("admin.article.name")}
                 value={formData.title}
@@ -320,7 +325,6 @@ const AdminArticles = () => {
                 placeholder={t("admin.article.titlePlaceholder")}
                 required
               />
-
               <Input
                 label={t("admin.article.slug")}
                 value={formData.slug}
@@ -329,7 +333,6 @@ const AdminArticles = () => {
                 }
                 placeholder="article-slug"
               />
-
               <div>
                 <label className="block text-sm font-bold text-text-primary mb-2">
                   {t("admin.article.content")}
@@ -344,7 +347,6 @@ const AdminArticles = () => {
                   placeholder="<p>Article content...</p>"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-text-primary mb-2">
@@ -366,7 +368,6 @@ const AdminArticles = () => {
                     <option value="tips">{t("articles.catTips")}</option>
                   </select>
                 </div>
-
                 <Input
                   label={t("admin.article.author")}
                   value={formData.author}
@@ -377,7 +378,6 @@ const AdminArticles = () => {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 mt-6">
               <Button onClick={handleCreateOrUpdate} fullWidth>
                 {editMode ? t("common.update") : t("common.create")}

@@ -23,6 +23,7 @@ const AdminUsers = () => {
     message: "",
     type: "success",
   });
+
   const showToast = (message, type = "success") =>
     setToast({ isOpen: true, message, type });
 
@@ -63,7 +64,7 @@ const AdminUsers = () => {
     setShowModal(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     const dataToSubmit =
       modalType === "role"
         ? { role: formData.role }
@@ -77,15 +78,23 @@ const AdminUsers = () => {
       path: `users/${selectedUser.id}/${modalType}`,
     };
 
-    if (
-      isOwnerAdmin() &&
-      !handleWriteOperation("submit", selectedUser.id, actionData)
-    ) {
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", selectedUser.id, actionData);
       setShowModal(false);
       return;
     }
-    executePendingAction();
-    setShowModal(false);
+
+    try {
+      await api.patch(
+        `/admin/users/${selectedUser.id}/${modalType}`,
+        dataToSubmit
+      );
+      showToast(t("admin.user.updateSuccess"), "success");
+      fetchUsers();
+      setShowModal(false);
+    } catch (e) {
+      showToast(t("admin.user.updateFailed"), "error");
+    }
   };
 
   const handleResetPassword = async (userId) => {
@@ -99,7 +108,8 @@ const AdminUsers = () => {
       path: `users/${userId}/reset-password`,
     };
 
-    if (isOwnerAdmin() && !handleWriteOperation("submit", userId, actionData)) {
+    if (isOwnerAdmin()) {
+      handleWriteOperation("submit", userId, actionData);
       return;
     }
 
@@ -117,8 +127,8 @@ const AdminUsers = () => {
         "error"
       );
     }
-    executePendingAction();
   };
+
   return (
     <MainLayout>
       <div className="bg-bg-base min-h-screen py-10">
@@ -132,7 +142,7 @@ const AdminUsers = () => {
                 {t("admin.user.total", { count: users.length })}
               </p>
             </div>
-            <Button onClick={fetchUsers}>{t("common.refresh")}</Button>
+            <Button onClick={fetchUsers}>{t("admin.common.refresh")}</Button>
           </div>
 
           <Card className="p-6 mb-6">
