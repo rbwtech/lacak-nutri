@@ -17,19 +17,20 @@
 [![GitHub](https://img.shields.io/badge/github-rbwtech%2Flacak--nutri-333333?style=for-the-badge&logo=github)](https://github.com/rbwtech/lacak-nutri)
 [![License](https://img.shields.io/badge/license-MIT-6B8E23?style=for-the-badge)](LICENSE)
 
-
 ## NAVIGATION / TABLE OF CONTENTS
-[Overview](#overview) • 
-[Demo](#demo-access) • 
-[Features](#core-features) • 
-[Tech Stack](#technology-stack) • 
-[Installation](#quick-start-installation) • 
-[Design System](#design-system) • 
-[API Docs](https://github.com/rbwtech/lacak-nutri/blob/main/API_DOCUMENTATION.MD) • 
-[License](#license) • 
-[Team](#team) • 
-[Acknowledgement](#acknowledgement) • 
+
+[Overview](#overview) •
+[Demo](#demo-access) •
+[Features](#core-features) •
+[Tech Stack](#technology-stack) •
+[Installation](#quick-start-installation) •
+[Design System](#design-system) •
+[API Docs](https://github.com/rbwtech/lacak-nutri/blob/main/API_DOCUMENTATION.MD) •
+[License](#license) •
+[Team](#team) •
+[Acknowledgement](#acknowledgement) •
 [Support](#support)
+
 </div>
 
 ---
@@ -117,22 +118,22 @@ style B fill:#222d3d,stroke:#333,stroke-width:1px
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
 
-| Field | Tipe Data | Deskripsi |
-| :--- | :--- | :--- |
-| **`nutrition`** | JSON Object | Data nutrisi terstruktur (kalori, protein, lemak, gula, sodium, dll.). |
-| **`health_score`** | Integer (0-100) | Penilaian kesehatan objektif oleh AI. |
-| **`grade`** | String (A-E) | Kategori nilai kesehatan berdasarkan `health_score`. |
-| **`summary`** | String | Ringkasan analisis nutrisi (2-3 kalimat). |
-| **`pros`, `cons`** | List of Strings | Keunggulan dan kelemahan nutrisi yang terdeteksi. |
-| **`ingredients`** | String | Daftar bahan yang diekstraksi. |
-| **`warnings`** | List of Strings | Daftar potensi peringatan (misalnya, Tinggi Gula, Aditif) **ditambah alergen yang terdeteksi dari profil pengguna**. |
+| Field              | Tipe Data       | Deskripsi                                                                                                            |
+| :----------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **`nutrition`**    | JSON Object     | Data nutrisi terstruktur (kalori, protein, lemak, gula, sodium, dll.).                                               |
+| **`health_score`** | Integer (0-100) | Penilaian kesehatan objektif oleh AI.                                                                                |
+| **`grade`**        | String (A-E)    | Kategori nilai kesehatan berdasarkan `health_score`.                                                                 |
+| **`summary`**      | String          | Ringkasan analisis nutrisi (2-3 kalimat).                                                                            |
+| **`pros`, `cons`** | List of Strings | Keunggulan dan kelemahan nutrisi yang terdeteksi.                                                                    |
+| **`ingredients`**  | String          | Daftar bahan yang diekstraksi.                                                                                       |
+| **`warnings`**     | List of Strings | Daftar potensi peringatan (misalnya, Tinggi Gula, Aditif) **ditambah alergen yang terdeteksi dari profil pengguna**. |
 
 #### Rate Limiting (Keterbatasan Penggunaan)
 
-Untuk menjaga *resource* AI, *endpoint* `/api/scan/analyze` memiliki batasan penggunaan harian:
+Untuk menjaga _resource_ AI, _endpoint_ `/api/scan/analyze` memiliki batasan penggunaan harian:
 
-  - **Pengguna Tamu (Guest)** atau **Pengguna Terdaftar Biasa**: Maksimal **10x Analisis AI per hari**.
-  - **Administrator**: Tidak memiliki batasan.
+- **Pengguna Tamu (Guest)** atau **Pengguna Terdaftar Biasa**: Maksimal **10x Analisis AI per hari**.
+- **Administrator**: Tidak memiliki batasan.
 
 ### 2\. BPOM Validation
 
@@ -159,7 +160,7 @@ sequenceDiagram
     API-->>-User: Validation result
 ```
 
-**Benefit Caching:** Hasil *scraping* disimpan dalam *database* (`bpom_cache`) untuk menghemat *resource* dan memberikan respons cepat.
+**Benefit Caching:** Hasil _scraping_ disimpan dalam _database_ (`bpom_cache`) untuk menghemat _resource_ dan memberikan respons cepat.
 
 **Sample Response:**
 
@@ -179,11 +180,11 @@ sequenceDiagram
 
 ### 3\. Allergen Cross-Reference (Personalisasi)
 
-*Endpoint* `/api/scan/analyze` secara otomatis memeriksa bahan-bahan yang diidentifikasi oleh AI terhadap daftar alergi yang tersimpan di profil pengguna.
+_Endpoint_ `/api/scan/analyze` secara otomatis memeriksa bahan-bahan yang diidentifikasi oleh AI terhadap daftar alergi yang tersimpan di profil pengguna.
 
-  * Daftar alergi pengguna diambil dari *database* (`current_user.allergies`).
-  * Daftar bahan (`ingredients`) dari hasil AI diubah menjadi huruf kecil dan diperiksa keberadaan alergen yang telah diatur oleh pengguna.
-  * Alergen yang terdeteksi ditambahkan ke dalam *field* `warnings` sebelum disimpan ke `ScanHistoryOCR` dan ditampilkan kepada pengguna.
+- Daftar alergi pengguna diambil dari _database_ (`current_user.allergies`).
+- Daftar bahan (`ingredients`) dari hasil AI diubah menjadi huruf kecil dan diperiksa keberadaan alergen yang telah diatur oleh pengguna.
+- Alergen yang terdeteksi ditambahkan ke dalam _field_ `warnings` sebelum disimpan ke `ScanHistoryOCR` dan ditampilkan kepada pengguna.
 
 ### 4\. Food Catalog (Database Makanan)
 
@@ -191,39 +192,39 @@ Akses cepat ke database internal yang berisi **4.122 data produk** makanan dan m
 
 **Fitur Utama:**
 
-  * **Pencarian Cepat (`/api/food/search`):** Mencari produk berdasarkan nama atau merek.
-  * **Detail Nutrisi:** Menampilkan informasi nilai gizi (AKG), komposisi, dan takaran saji tanpa perlu melakukan scan ulang.
-  * **Pagination:** Mendukung *infinite scroll* atau *pagination* untuk menjelajahi katalog.
+- **Pencarian Cepat (`/api/food/search`):** Mencari produk berdasarkan nama atau merek.
+- **Detail Nutrisi:** Menampilkan informasi nilai gizi (AKG), komposisi, dan takaran saji tanpa perlu melakukan scan ulang.
+- **Pagination:** Mendukung _infinite scroll_ atau _pagination_ untuk menjelajahi katalog.
 
 **Data Point:**
 
-  * 4.122 entri produk unik.
-  * Mencakup kategori: Makanan Ringan, Minuman, Produk Susu, Makanan Instan, dll.
+- 4.122 entri produk unik.
+- Mencakup kategori: Makanan Ringan, Minuman, Produk Susu, Makanan Instan, dll.
 
 ### 5\. Favorites Management
 
 Pengguna dapat menyimpan produk hasil scan atau pencarian ke dalam daftar favorit untuk akses cepat di kemudian hari.
 
-  * **Endpoint:** `/api/favorites`
-  * **Fungsi:** Simpan (`POST`), Hapus (`DELETE`), dan Lihat Daftar (`GET`) produk favorit.
-  * **Integrasi:** Terhubung langsung dengan *Food Catalog* dan *Scan History*.
+- **Endpoint:** `/api/favorites`
+- **Fungsi:** Simpan (`POST`), Hapus (`DELETE`), dan Lihat Daftar (`GET`) produk favorit.
+- **Integrasi:** Terhubung langsung dengan _Food Catalog_ dan _Scan History_.
 
 ### 6\. GiziPedia (Education Hub)
 
 **Content Structure:**
 
-  - **Categories:** Zat Gizi Makro, Zat Gizi Mikro, Aditif Makanan, Label & Istilah
-  - **Articles:** 100 artikel edukasi
-  - **Format:** Markdown-based dengan images
-  - **Search:** Full-text search dengan relevance ranking
+- **Categories:** Zat Gizi Makro, Zat Gizi Mikro, Aditif Makanan, Label & Istilah
+- **Articles:** 100 artikel edukasi
+- **Format:** Markdown-based dengan images
+- **Search:** Full-text search dengan relevance ranking
 
 **Features:**
 
-  - Rich text editor (admin)
-  - Category filtering
-  - Bookmark system
-  - Reading time estimate
-  - Related articles
+- Rich text editor (admin)
+- Category filtering
+- Bookmark system
+- Reading time estimate
+- Related articles
 
 ### 7\. Allergen Management System
 
@@ -240,8 +241,8 @@ user_allergies = [allergy.name.lower() for allergy in current_user.allergies]
 ingredients_text = result.get('ingredients', '').lower()
 
 detected_allergens = [
-    allergy.capitalize() 
-    for allergy in user_allergies 
+    allergy.capitalize()
+    for allergy in user_allergies
     if allergy in ingredients_text
 ]
 # Result: ["Kacang Tanah", "Gluten"]
@@ -251,11 +252,11 @@ detected_allergens = [
 
 Setiap aktivitas scan (OCR maupun BPOM) disimpan untuk referensi pengguna.
 
-  - **Riwayat Terpisah:** Tab khusus untuk Riwayat OCR dan Riwayat BPOM.
-  - **Detail View:** Pengguna dapat melihat kembali detail nutrisi dan hasil analisis AI dari produk yang pernah discan sebelumnya.
-  - **Admin Analytics:** Admin dapat memantau jumlah scan harian untuk mengevaluasi penggunaan sistem.
+- **Riwayat Terpisah:** Tab khusus untuk Riwayat OCR dan Riwayat BPOM.
+- **Detail View:** Pengguna dapat melihat kembali detail nutrisi dan hasil analisis AI dari produk yang pernah discan sebelumnya.
+- **Admin Analytics:** Admin dapat memantau jumlah scan harian untuk mengevaluasi penggunaan sistem.
 
------
+---
 
 ## TECHNOLOGY STACK
 
@@ -335,17 +336,24 @@ FastAPI + Python 3.11
 ```python
 fastapi>=0.100.0
 uvicorn>=0.20.0
+python-multipart>=0.0.6
 sqlalchemy>=2.0.0
 pymysql>=1.0.0
 pydantic>=2.0.0
+pydantic-settings>=2.0.0
+pytesseract
+pytz
+slowapi
+email-validator>=2.0.0
 python-jose[cryptography]>=3.3.0
 passlib>=1.7.4
-python-multipart>=0.0.6
-google-genai>=0.1.0       
+bcrypt==4.0.1
+python-dotenv>=1.0.0
+google-genai>=0.1.0
 beautifulsoup4>=4.12.0
 httpx>=0.24.0
 pillow>=10.0.0
-pytesseract
+requests>=2.31.0
 ```
 
 **Project Structure:**
@@ -392,21 +400,21 @@ users (14 columns)
 
 -- Reference Data
 allergens (
-  id, name, code, category, description, 
+  id, name, code, category, description,
   severity_level, created_by, timestamps
 )
 additives (
-  id, name, code, category, safety_level, 
+  id, name, code, category, safety_level,
   description, health_risks, timestamps
 )
 
 -- User Relations
 user_allergies (id, user_id, allergen_id, notes)
 favorites (
-  id, user_id, 
-  food_id (FK -> foods), 
-  scan_ocr_id (FK -> scan_history_ocr), 
-  scan_bpom_id (FK -> scan_history_bpom), 
+  id, user_id,
+  food_id (FK -> foods),
+  scan_ocr_id (FK -> scan_history_ocr),
+  scan_bpom_id (FK -> scan_history_bpom),
   created_at
 )
 
@@ -485,7 +493,7 @@ DBMS: MariaDB 11.4.4
 Connection: Remote (PyMySQL) via Host IP
 ```
 
------
+---
 
 ## QUICK START (INSTALLATION)
 
@@ -515,7 +523,7 @@ CREATE DATABASE lacak_nutri CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 **Import Schema:**
 
-Pastikan Anda berada di *root directory* project (`lacak-nutri/`).
+Pastikan Anda berada di _root directory_ project (`lacak-nutri/`).
 
 ```bash
 mysql -u root -p lacak_nutri < database/schema.sql
@@ -559,7 +567,7 @@ DEBUG=True
 HOST=0.0.0.0
 PORT=8000
 
-RECAPTCHA_SECRET_KEY=your_recaptcha_server_secret
+RECAPTCHA_SECRET_KEY=your_recaptcha_v3_server_secret
 EMAIL_SENDER_NAME="Lacak Nutri Admin"
 EMAIL_SENDER_ADDRESS=admin@lacaknutri.com
 
@@ -571,7 +579,7 @@ SMTP_PASSWORD=your_app_password
 
 **Run Server:**
 
-Pastikan *virtual environment* aktif dan Anda berada di folder `backend/`.
+Pastikan _virtual environment_ aktif dan Anda berada di folder `backend/`.
 
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -597,7 +605,7 @@ Buat file `.env` di dalam folder `frontend/`.
 
 ```env
 VITE_API_URL=http://localhost:8000/api
-VITE_RECAPTCHA_SITE_KEY=your_recaptcha_client_site_key
+VITE_RECAPTCHA_SITE_KEY=your_recaptcha_v3_client_site_key
 ```
 
 **Run Development Server:**
@@ -627,7 +635,7 @@ gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
------
+---
 
 ## DESIGN SYSTEM
 
@@ -637,23 +645,23 @@ Sistem desain LacakNutri menggunakan tema kustom Tailwind CSS dengan dukungan pe
 
 Warna dikelola menggunakan CSS Variables untuk mendukung pergantian tema yang mulus.
 
-| Color Token | Light Mode (Hex) | Dark Mode (Hex) | Penggunaan Utama |
-| :--- | :--- | :--- | :--- |
-| **Primary** | `#FF9966` | `#FF9966` | Brand identity, CTA buttons, links |
-| **Primary Hover** | `#FF7A4D` | `#FF7A4D` | Hover states |
-| **Secondary** | `#6B8E23` | `#8ABE53` | Status sehat, verifikasi (adjusted for contrast) |
-| **Accent** | `#A1D2D5` | `#5D8A8D` | Dekorasi, info cards, highlights |
-| **Background Base** | `#FDFDF5` | `#121212` | Latar belakang utama aplikasi |
-| **Background Surface** | `#FFFFF7` | `#1E1E1E` | Kartu (Cards), Modal, Sidebar |
-| **Text Primary** | `#333333` | `#E0E0E0` | Judul, konten utama |
-| **Text Secondary** | `#8C8C8C` | `#A0A0A0` | Label, metadata, deskripsi singkat |
-| **Border** | `#EBE3D5` | `#333333` | Garis pemisah, border input |
+| Color Token            | Light Mode (Hex) | Dark Mode (Hex) | Penggunaan Utama                                 |
+| :--------------------- | :--------------- | :-------------- | :----------------------------------------------- |
+| **Primary**            | `#FF9966`        | `#FF9966`       | Brand identity, CTA buttons, links               |
+| **Primary Hover**      | `#FF7A4D`        | `#FF7A4D`       | Hover states                                     |
+| **Secondary**          | `#6B8E23`        | `#8ABE53`       | Status sehat, verifikasi (adjusted for contrast) |
+| **Accent**             | `#A1D2D5`        | `#5D8A8D`       | Dekorasi, info cards, highlights                 |
+| **Background Base**    | `#FDFDF5`        | `#121212`       | Latar belakang utama aplikasi                    |
+| **Background Surface** | `#FFFFF7`        | `#1E1E1E`       | Kartu (Cards), Modal, Sidebar                    |
+| **Text Primary**       | `#333333`        | `#E0E0E0`       | Judul, konten utama                              |
+| **Text Secondary**     | `#8C8C8C`        | `#A0A0A0`       | Label, metadata, deskripsi singkat               |
+| **Border**             | `#EBE3D5`        | `#333333`       | Garis pemisah, border input                      |
 
 **Status Colors (Hardcoded):**
 
-  - Success: `#4CAF50`
-  - Warning: `#FFC107`
-  - Error: `#EF5350`
+- Success: `#4CAF50`
+- Warning: `#FFC107`
+- Error: `#EF5350`
 
 ### Typography
 
@@ -672,20 +680,20 @@ Konfigurasi Tailwind (`tailwind.config.js`) mencakup kustomisasi berikut:
 
 **Border Radius:**
 
-  - `rounded-xl`: 12px
-  - `rounded-2xl`: 16px
-  - `rounded-3xl`: 24px
+- `rounded-xl`: 12px
+- `rounded-2xl`: 16px
+- `rounded-3xl`: 24px
 
 **Box Shadow:**
 
-  - `shadow-soft`: `0 8px 24px rgba(0, 0, 0, 0.05)`
+- `shadow-soft`: `0 8px 24px rgba(0, 0, 0, 0.05)`
 
 **Animations:**
 
-  - **Blob:** Animasi background fluid (`blob 7s infinite`).
-  - **Fade In:** Transisi masuk elemen (`fadeIn 0.5s ease-out`).
+- **Blob:** Animasi background fluid (`blob 7s infinite`).
+- **Fade In:** Transisi masuk elemen (`fadeIn 0.5s ease-out`).
 
------
+---
 
 ## LICENSE
 
