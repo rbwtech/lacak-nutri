@@ -1,12 +1,20 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
 
 const Footer = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+
   return (
     <footer className="bg-bg-surface border-t border-border mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${
+            user ? "5" : "4"
+          } gap-8`}
+        >
+          {/* Brand Section */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="p-1 rounded-lg shadow-md">
@@ -25,6 +33,7 @@ const Footer = () => {
             </p>
           </div>
 
+          {/* Features Section */}
           <div>
             <h4 className="font-semibold text-text-primary mb-3">
               {t("footer.featuresTitle")}
@@ -57,6 +66,33 @@ const Footer = () => {
             </ul>
           </div>
 
+          {user && (
+            <div>
+              <h4 className="font-semibold text-text-primary mb-3">
+                {t("header.activity")}
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/favorites"
+                    className="text-label text-text-secondary hover:text-primary"
+                  >
+                    {t("header.favoritesMenuTitle")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/history"
+                    className="text-label text-text-secondary hover:text-primary"
+                  >
+                    {t("header.historyMenuTitle")}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* Info Section */}
           <div>
             <h4 className="font-semibold text-text-primary mb-3">
               {t("footer.infoTitle")}
@@ -89,6 +125,7 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Legal Section */}
           <div>
             <h4 className="font-semibold text-text-primary mb-3">
               {t("footer.legalTitle")}

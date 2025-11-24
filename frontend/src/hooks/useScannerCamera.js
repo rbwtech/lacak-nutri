@@ -276,7 +276,10 @@ export const useScannerCamera = ({
       setError(null);
 
       try {
-        const baseConstraints = preferredBackCameraId
+        const shouldUseBackCameraId =
+          facingMode === "environment" && preferredBackCameraId;
+
+        const baseConstraints = shouldUseBackCameraId
           ? { deviceId: { exact: preferredBackCameraId } }
           : { facingMode: { ideal: facingMode } };
 
