@@ -78,7 +78,7 @@ const Articles = () => {
     if (scrollRef.current) {
       window.scrollTo(0, scrollRef.current);
     }
-  }, [products]);
+  }, [articles]);
 
   return (
     <MainLayout>
@@ -269,7 +269,7 @@ const Articles = () => {
                 {/* Nomor halaman */}
                 <div className="flex items-center gap-3 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
                   <span className="text-xs text-text-secondary font-bold">
-                    {t("products.pageLabel")}
+                    {t("articles.pageLabel")}
                   </span>
                   <input
                     type="number"
@@ -286,7 +286,7 @@ const Articles = () => {
                     className="w-12 p-1 text-center border-b-2 border-primary/20 focus:border-primary bg-transparent text-sm font-bold outline-none transition-colors"
                   />
                   <span className="text-xs text-text-secondary">
-                    {t("products.ofLabel")} {totalPages}
+                    {t("articles.ofLabel")} {totalPages}
                   </span>
                 </div>
 
