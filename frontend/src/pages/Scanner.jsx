@@ -10,6 +10,7 @@ import AnimatedStatus from "../components/ui/AnimatedStatus";
 import NutritionLabel from "../components/ui/NutritionLabel";
 import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
+import { useSmartCaptcha } from "../hooks/useSmartCaptcha";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -48,6 +49,7 @@ const Scanner = () => {
   const streamRef = useRef(null);
   const scanIntervalRef = useRef(null);
   const liveScanIntervalRef = useRef(null);
+  const { getToken } = useSmartCaptcha();
 
   useEffect(() => {
     const fetchAllergies = async () => {
@@ -354,7 +356,18 @@ const Scanner = () => {
     setLoadingMessage(t("scanner.loadingBPOM"));
 
     try {
-      const { data } = await api.post("/scan/bpom", { bpom_number: code });
+      const token = await getToken("scan_ocr");
+
+      if (!token) throw new Error("Gagal memverifikasi keamanan (Captcha).");
+      const { data } = await api.post(
+        "/scan/bpom",
+        { bpom_number: code },
+        {
+          headers: {
+            "X-Recaptcha-Token": token,
+          },
+        }
+      );
       setResult({
         type: "bpom",
         found: data.found,
@@ -485,11 +498,23 @@ const Scanner = () => {
     });
 
     try {
-      const { data } = await api.post("/scan/analyze", {
-        product_name: productName,
-        image_base64: ocrImage,
-        language: i18n.language,
-      });
+      const token = await getToken("scan_ocr");
+
+      if (!token) throw new Error("Gagal memverifikasi keamanan (Captcha).");
+
+      const { data } = await api.post(
+        "/scan/analyze",
+        {
+          product_name: productName,
+          image_base64: ocrImage,
+          language: i18n.language,
+        },
+        {
+          headers: {
+            "X-Recaptcha-Token": token,
+          },
+        }
+      );
 
       clearInterval(progressInterval);
 
@@ -1312,7 +1337,6 @@ const Scanner = () => {
           </Card>
         </div>
       </div>
-
       <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}

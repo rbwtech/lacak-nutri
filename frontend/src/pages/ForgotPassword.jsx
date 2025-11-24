@@ -3,38 +3,33 @@ import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { useTranslation } from "react-i18next";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useSmartCaptcha } from "../hooks/useSmartCaptcha";
 import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
+  const { getToken } = useSmartCaptcha();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
-  const [recaptchaToken, setRecaptchaToken] = useState(null);
-  const recaptchaRef = useRef(null);
-  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-
-  const onRecaptchaChange = (token) => {
-    setRecaptchaToken(token);
-    setError(null);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      setError(t("auth.recaptchaRequired") || "Harap verifikasi reCAPTCHA.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const payload = { email, recaptcha_token: recaptchaToken };
+      const token = await getToken("forgot_password");
+
+      if (!token) {
+        throw new Error(
+          t("auth.recaptchaRequired") || "Verifikasi keamanan gagal."
+        );
+      }
+
+      const payload = { email, recaptcha_token: token };
       await axios.post(`${API_BASE_URL}/auth/forgot-password-request`, payload);
 
       setSubmitted(true);
@@ -65,10 +60,6 @@ const ForgotPassword = () => {
 
       setError(errorMsg);
     } finally {
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-        setRecaptchaToken(null);
-      }
       setLoading(false);
     }
   };
@@ -106,16 +97,6 @@ const ForgotPassword = () => {
                 className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
                 required
               />
-              {RECAPTCHA_SITE_KEY && (
-                <div className="flex justify-center">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={RECAPTCHA_SITE_KEY}
-                    onChange={onRecaptchaChange}
-                    onExpired={() => setRecaptchaToken(null)}
-                  />
-                </div>
-              )}
 
               {error && (
                 <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">

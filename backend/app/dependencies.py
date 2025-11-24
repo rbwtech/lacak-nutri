@@ -1,7 +1,8 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from typing import Optional
+import httpx
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
@@ -50,3 +51,28 @@ def get_current_user_optional(
         return user
     except JWTError:
         return None
+    
+async def verify_recaptcha_v3(
+    recaptcha_token: str = Header(..., alias="X-Recaptcha-Token")
+):
+    if not settings.RECAPTCHA_SECRET_KEY:
+        return True # Skip if debug/no key
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={
+                "secret": settings.RECAPTCHA_SECRET_KEY,
+                "response": recaptcha_token
+            }
+        )
+        result = response.json()
+
+        if not result.get("success") or result.get("score", 0) < 0.5:
+            print(f"Bot detected! Score: {result.get('score')}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Aktivitas mencurigakan terdeteksi. Akses ditolak."
+            )
+            
+    return True

@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, status
+from fastapi import APIRouter, HTTPException, Depends, Header, status, Request
+from app.core.limiter import limiter
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.core.database import get_db
 from app.services.bpom_endpoint import BPOMScraper
 from app.services.ai_service import GeminiService
 from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, ChatRequest
-from app.dependencies import get_current_user_optional, get_current_user
+from app.dependencies import get_current_user_optional, get_current_user, verify_recaptcha_v3
 from app.crud import scan as crud_scan 
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.models.user import User
@@ -21,7 +22,8 @@ async def scan_bpom(
     request: BPOMRequest, 
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional),
-    x_session_id: Optional[str] = Header(None)
+    x_session_id: Optional[str] = Header(None),
+    human_verified: bool = Depends(verify_recaptcha_v3)
 ):
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
@@ -58,29 +60,35 @@ async def scan_bpom(
     return {"found": True, "message": "Data ditemukan", "data": result}
 
 @router.post("/analyze")
+@limiter.limit("10/day") 
 async def analyze_ocr(
-    request: AnalyzeImageRequest,
+    request: Request, 
+    body: AnalyzeImageRequest, 
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional),
-    x_session_id: Optional[str] = Header(None)
+    x_session_id: Optional[str] = Header(None), 
+    is_human: bool = Depends(verify_recaptcha_v3) 
 ):
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
-
+    
     if not (current_user and getattr(current_user, 'role', '') == 'admin'):
-        scan_count_today = crud_scan.get_daily_ocr_scans_count(db, user_id, session_id)
+        scan_count_today = crud_scan.get_daily_ocr_scans_count(
+            db, 
+            user_id=user_id, 
+            session_id=session_id
+        )
         
         if scan_count_today >= MAX_FREE_OCR_SCANS_PER_DAY:
-            limit = MAX_FREE_OCR_SCANS_PER_DAY
-            detail_msg = f"Batas harian {limit}x Analisis AI tercapai."
-            raise HTTPException(
+             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=detail_msg
+                detail=f"Batas harian tercapai. Login untuk akses lebih banyak."
             )
     
     try:
         service = GeminiService()
-        language_from_request = getattr(request, 'language', None)
+        language_from_request = getattr(body, 'language', None) 
+        
         if current_user and getattr(current_user, 'locale', None):
             language = current_user.locale.split('-')[0].lower()
         elif language_from_request:
@@ -88,7 +96,7 @@ async def analyze_ocr(
         else:
             language = 'id'
             
-        result = await service.analyze_nutrition_image(request.image_base64, language=language)
+        result = await service.analyze_nutrition_image(body.image_base64, language=language)
     except Exception as e:
          raise HTTPException(status_code=500, detail=str(e))
 
@@ -106,8 +114,8 @@ async def analyze_ocr(
 
     nutrition_data = result.get('nutrition')
     ai_analysis = result.get('summary')
-    product_name = request.product_name
-    image_data = request.image_base64
+    product_name = body.product_name 
+    image_data = body.image_base64 
     pros = result.get('pros')
     cons = result.get('cons')
     warnings = detected_allergens
@@ -246,7 +254,7 @@ def get_ocr_detail(
             "ingredients": scan.ingredients,
             "warnings": scan.warnings,
             "health_score": scan.health_score,
-            "grade": scan.grade,  
+            "grade": scan.grade,   
             "is_favorited": scan.is_favorited,
             "created_at": scan.created_at.isoformat()
         }

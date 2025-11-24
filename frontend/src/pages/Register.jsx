@@ -4,12 +4,13 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { useTranslation } from "react-i18next";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useSmartCaptcha } from "../hooks/useSmartCaptcha";
 
 const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { getToken } = useSmartCaptcha();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,23 +19,16 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState(null);
-  const recaptchaRef = useRef(null);
-  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: null, submit: null });
   };
 
-  const onRecaptchaChange = (token) => {
-    setRecaptchaToken(token);
-    setErrors((prev) => ({ ...prev, submit: null }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
 
     if (formData.password !== formData.confirmPassword) {
       setErrors({ confirmPassword: t("auth.passwordMismatch") });
@@ -42,29 +36,26 @@ const Register = () => {
       return;
     }
 
-    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      setErrors({
-        submit: t("auth.recaptchaRequired") || "Harap verifikasi reCAPTCHA.",
-      });
-      setLoading(false);
-      return;
-    }
-
     try {
+      const token = await getToken("register");
+
+      if (!token) {
+        throw new Error(
+          t("auth.recaptchaRequired") || "Verifikasi keamanan gagal (Captcha)."
+        );
+      }
+
       await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        recaptcha_token: recaptchaToken,
+        recaptcha_token: token,
       });
+
       navigate("/dashboard");
     } catch (error) {
-      setErrors({ submit: error.message });
+      setErrors({ submit: error.message || t("common.operationFailed") });
     } finally {
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-        setRecaptchaToken(null);
-      }
       setLoading(false);
     }
   };
@@ -130,17 +121,6 @@ const Register = () => {
             error={errors.confirmPassword}
             className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
           />
-
-          {RECAPTCHA_SITE_KEY && (
-            <div className="flex justify-center">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={RECAPTCHA_SITE_KEY}
-                onChange={onRecaptchaChange}
-                onExpired={() => setRecaptchaToken(null)}
-              />
-            </div>
-          )}
 
           {errors.submit && (
             <div className="p-3 rounded-xl bg-error/10 text-error text-sm text-center font-semibold">

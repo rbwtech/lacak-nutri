@@ -1,14 +1,19 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
+from app.core.limiter import limiter 
 from app.routers import auth, users, food, scan, education, favorites, admin
 import os
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
-origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"]
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -30,7 +35,7 @@ app.include_router(admin.router)
 
 @app.get("/")
 def root():
-    return {"message": "LacakNutri API v1.0.0 is runnning"}
+    return {"message": "LacakNutri API v1.0.0 is running"}
 
 @app.get("/api/health")
 def health_check():
