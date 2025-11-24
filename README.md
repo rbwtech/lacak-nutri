@@ -98,22 +98,37 @@ Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan men
 
 ### 1\. Vision-Powered Nutrition Analysis (VLM & AI)
 
-**Engine:** Google Gemini 2.5 Flash
+**Engine:** Google Gemini 2.5 / 2.0 Flash
 
 **AI Analysis Pipeline (`/api/scan/analyze`)**:
 
 ```mermaid
 graph TD
-A[User Uploads Image] --> B["GeminiService analyze_nutrition_image"]
-B -- Prompt + Image --> C(Gemini VLM Analysis)
-C -- Structured JSON --> D[Backend Service]
-D -- Extract Ingredients --> E{Check User Allergies}
-E -- Detected Allergens --> F(Create ScanHistoryOCR)
-F --> G[Display Scan Result]
+    User([User Uploads Image]) --> Frontend[Frontend: Get Recaptcha v3 Token]
+    Frontend --> API[API Request + Token]
 
-%% Style blocks
-style C fill:#222d3d,stroke:#333,stroke-width:2px
-style B fill:#222d3d,stroke:#333,stroke-width:1px
+    %% Security Layer
+    subgraph Security Check
+        API --> RL{Check Rate Limit}
+        RL -- "Limit Exceeded (IP)" --> Error429[Return 429 Too Many Requests]
+        RL -- "Quota OK" --> CV{Verify Captcha}
+        CV -- "Score < 0.5 (Bot)" --> Error403[Return 403 Forbidden]
+    end
+
+    %% Main Logic
+    CV -- "Verified Human" --> B["GeminiService analyze_nutrition_image"]
+    B -- Prompt + Image --> C(Gemini VLM Analysis)
+    C -- Structured JSON --> D[Backend Service]
+    D -- Extract Ingredients --> E{Check User Allergies}
+    E -- Detected Allergens --> F(Create ScanHistoryOCR)
+    F --> G([Display Scan Result])
+
+    %% Styling
+    style C fill:#222d3d,stroke:#333,stroke-width:2px
+    style B fill:#222d3d,stroke:#333,stroke-width:1px
+    style Security Check fill:#ffebee,stroke:#f44336,stroke-width:2px,stroke-dasharray: 5 5
+    style Error429 fill:#ffcdd2,stroke:#f44336
+    style Error403 fill:#ffcdd2,stroke:#f44336
 ```
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
@@ -145,19 +160,45 @@ Fitur ini memvalidasi produk menggunakan nomor registrasi BPOM yang diinput (MD/
 
 ```mermaid
 sequenceDiagram
-    User->>+API: POST /scan/bpom (Nomor BPOM)
-    API->>+CRUD: Check cache (ScanHistoryBPOM)
-    alt Data Cached
-        CRUD-->>API: Return cached data
-        API->>CRUD: Create Scan History (No new scraping)
-    else Cache Miss
-        API->>+BPOMScraper: Search BPOM (Scraping)
-        BPOMScraper->>BPOMScraper: Handle CSRF Token & POST Request
-        BPOMScraper-->>API: Product details (or None)
-        API->>CRUD: Create BPOM Cache
-        API->>CRUD: Create Scan History
+    participant User
+    participant Frontend
+    participant API as Backend API
+    participant Google as Google Server
+    participant CRUD as Database/Cache
+    participant BPOMScraper
+
+    User->>Frontend: Input BPOM / Click Scan
+    activate Frontend
+    Frontend->>Google: Request reCAPTCHA v3 Token
+    Google-->>Frontend: Return Token
+
+    Frontend->>+API: POST /scan/bpom (BPOM No + Token)
+
+    Note over API: 1. Check Rate Limit (IP Based)<br/>2. Validate Captcha Token
+
+    API->>Google: Verify Token (Server-to-Server)
+    Google-->>API: { success: true, score: 0.9 }
+
+    alt Score Low or Rate Limit Hit
+        API-->>Frontend: 403 Forbidden / 429 Too Many Requests
+        Frontend-->>User: Show Error Message
+    else Security Passed
+        API->>+CRUD: Check cache (ScanHistoryBPOM)
+
+        alt Data Cached
+            CRUD-->>API: Return cached data
+            API->>CRUD: Create Scan History (No scraping)
+        else Cache Miss
+            API->>+BPOMScraper: Search BPOM (Scraping)
+            BPOMScraper-->>API: Product details
+            API->>CRUD: Create BPOM Cache
+            API->>CRUD: Create Scan History
+        end
+
+        API-->>-Frontend: Validation Result JSON
+        Frontend-->>User: Display Product Data
     end
-    API-->>-User: Validation result
+    deactivate Frontend
 ```
 
 **Benefit Caching:** Hasil _scraping_ disimpan dalam _database_ (`bpom_cache`) untuk menghemat _resource_ dan memberikan respons cepat.
@@ -258,6 +299,33 @@ Setiap aktivitas scan (OCR maupun BPOM) disimpan untuk referensi pengguna.
 
 ---
 
+## SECURITY & PROTECTION MECHANISMS
+
+Aplikasi ini menerapkan standar keamanan tinggi untuk mencegah _abuse_ dan _brute-force attacks_.
+
+### 1. Google reCAPTCHA v3 (Invisible / Smart)
+
+Sistem membedakan antara manusia dan bot tanpa mengganggu pengalaman pengguna (tanpa puzzle "pilih lampu merah").
+
+- **Frontend:** Menggunakan `react-google-recaptcha-v3` untuk menghasilkan token berdasarkan interaksi user.
+- **Backend:** Middleware memverifikasi token ke server Google sebelum memproses request sensitif.
+- **Penerapan:** Login, Register, Forgot Password, Scan BPOM, dan Scan AI.
+
+### 2. IP-Based Rate Limiting
+
+Menggunakan `slowapi` untuk membatasi jumlah request dari satu IP address dalam periode waktu tertentu.
+
+- **Login/Register/Reset Password:** Maksimal **5 request/menit** (Mencegah Brute Force).
+- **Forgot Password:** Maksimal **3 request/jam** (Mencegah Spam Email).
+- **AI Analysis:** Maksimal **10 request/hari** (Guest) untuk menghemat kuota API Gemini.
+
+### 3. Session & Quota Management
+
+- **Guest Mode:** User tanpa login bisa mencoba scan terbatas (dilacak via IP & Session Header).
+- **Registered User:** Riwayat tersimpan permanen.
+
+---
+
 ## TECHNOLOGY STACK
 
 ### Frontend Architecture
@@ -298,22 +366,31 @@ React 18 (Vite 6)
 
 ```
 frontend/
-├── src/
-│   ├── components/        # UI Components
-│   │   ├── layout/        # Header, Footer, MainLayout
-│   │   ├── ui/            # Reusable (Button, Card, Modal, Input, Toast)
-│   │   └── features/      # NutritionLabel
-│   ├── pages/             # Page Components (Home, Scanner, History, Admin...)
-│   │   └── admin/         # Admin Specific Pages (Dashboard, Products, Users)
-│   ├── hooks/             # Custom hooks (useAuth, useCommon, useOwnerAuth)
-│   ├── context/           # Global State (AuthContext)
-│   ├── config/            # API Configuration (api.js)
-│   ├── routes/            # Route Definitions (AdminRoute, ProtectedRoute)
-│   ├── i18n/              # Localization (id/en)
-│   ├── utils/             # Helper functions (helpers.js)
-│   └── assets/            # Static Assets
 ├── public/
 └── vite.config.js
+
+frontend/src/
+├── assets/
+├── components/
+│   ├── layouts/        # Header, Footer, MainLayout
+│   ├── scanner/        # Komponen Scanner Modular
+│   │   ├── CameraView.jsx
+│   │   └── ScanResult.jsx
+│   └── ui/             # Reusable UI Components (Button, Card, Modal, dll)
+├── config/             # Konfigurasi Axios/API
+├── context/            # Global State (AuthContext)
+├── hooks/              # Custom Hooks
+│   ├── useScannerCamera.js
+│   ├── useSmartCaptcha.js
+│   └── ...
+├── i18n/               # Multi-language (ID/EN)
+├── pages/              # Halaman Aplikasi
+│   ├── admin/          # Dashboard Admin
+│   ├── Scanner.jsx     # Halaman Utama Scanner
+│   ├── Login.jsx
+│   └── ...
+├── routes/             # Routing & Protection (ProtectedRoute)
+└── utils/              # Helper functions
 ```
 
 ### Backend Architecture
@@ -359,25 +436,26 @@ requests>=2.31.0
 **Project Structure:**
 
 ```
+Backend (FastAPI)
 backend/
 ├── app/
-│   ├── routers/           # API Endpoints (Routes)
-│   │   ├── auth.py        # Authentication
-│   │   ├── admin.py       # Admin Operations
-│   │   ├── scan.py        # OCR & AI Analysis
-│   │   ├── food.py        # Food Catalog Operations
-│   │   ├── favorites.py   # User Favorites
-│   │   ├── education.py   # Articles & GiziPedia
-│   │   └── users.py       # User Profile Management
-│   ├── crud/              # Database Operations (Create, Read, Update, Delete)
-│   ├── models/            # SQLAlchemy Database Models
-│   ├── schemas/           # Pydantic Response/Request Models
-│   ├── services/          # External Logics
-│   │   ├── ai_service.py     # Gemini AI Integration
-│   │   └── bpom_endpoint.py  # BPOM Scraping Logic
-│   ├── core/              # Config, Database, Security
-│   └── main.py            # FastAPI Entry Point
-├── uploads/               # Local Storage for Images
+│   ├── core/           # Konfigurasi inti (DB, Security, Limiter)
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── limiter.py  <-- Rate Limiter Instance
+│   │   └── security.py
+│   ├── crud/           # Database Operations (Create, Read, Update, Delete)
+│   ├── models/         # SQLAlchemy ORM Models (Tabel Database)
+│   ├── routers/        # API Endpoints (Controller)
+│   │   ├── auth.py     <-- Login/Register logic
+│   │   ├── scan.py     <-- Logic Scanner Utama
+│   │   └── ...
+│   ├── schemas/        # Pydantic Models (Data Validation)
+│   ├── services/       # External Services Logic
+│   │   ├── ai_service.py      <-- Integrasi Google Gemini
+│   │   └── bpom_endpoint.py   <-- Scraper BPOM
+│   └── dependencies.py # Dependency Injection (Auth, Captcha)
+├── main.py             # Entry Point Aplikasi
 └── requirements.txt
 ```
 
@@ -478,11 +556,10 @@ Deployment: Manual Build (dist/) -> Nginx Serve
 **Backend Hosting:**
 
 ```yaml
-Platform: Railway / Render (Containerized)
+Setup: Systemctl
 Runtime: Python 3.11
 Server: Uvicorn
 Environment: Production
-Base URL: https://backend-url.railway.app
 ```
 
 **Database:**
