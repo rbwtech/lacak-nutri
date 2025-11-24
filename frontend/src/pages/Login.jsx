@@ -138,6 +138,29 @@ const Login = () => {
             </Link>
           </p>
         </div>
+
+        <div className="mt-6 border-t border-border/50 pt-6 text-center">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-primary transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            {t("auth.backToHome")}
+          </Link>
+        </div>
       </div>
     </div>
   );

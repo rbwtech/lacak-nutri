@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProtectedRoute, AdminRoute } from "./routes";
 import {
   AdminAdditives,
@@ -37,6 +37,19 @@ import {
 } from "./pages";
 import { useTheme } from "./hooks/useCommon";
 
+const HomeRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-base">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return user ? <Navigate to="/dashboard" replace /> : <Home />;
+};
 const queryClient = new QueryClient();
 
 function App() {
@@ -50,7 +63,7 @@ function App() {
         >
           <Routes>
             {/* --- PUBLIC ROUTES (Guest & User) --- */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

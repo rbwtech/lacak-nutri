@@ -12,7 +12,9 @@ from app.schemas.user import ForgotPasswordRequest, PasswordReset
 from datetime import timedelta, datetime, timezone
 import subprocess
 import os
+import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -47,7 +49,7 @@ def create_reset_token(email: str):
     return create_access_token(to_encode, expires_delta=timedelta(minutes=expire_minutes))
 
 def send_reset_email(recipient_email: str, reset_link: str):
-    """Sends email via local Postfix (sendmail) with proper MIME formatting."""
+    """Sends email via SMTP (Brevo) securely."""
     
     subject = "LacakNutri: Reset Kata Sandi Anda"
     
@@ -69,35 +71,49 @@ def send_reset_email(recipient_email: str, reset_link: str):
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="color: #FF9966;">Permintaan Reset Password</h2>
             <p>Halo,</p>
-            <p>Kami menerima permintaan reset kata sandi untuk akun Anda.</p>
-            <p style="margin: 20px 0;">
-                <a href="{reset_link}" class="button" style="color: white !important;">
+            <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun LacakNutri Anda.</p>
+            <p style="margin: 25px 0;">
+                <a href="{reset_link}" class="button">
                     Reset Kata Sandi Sekarang
                 </a>
             </p>
-            <p><small>Tautan ini berlaku selama 30 menit.</small></p>
+            <p>Atau salin tautan ini ke browser Anda:</p>
+            <p style="font-size: 12px; color: #666;">{reset_link}</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p><small>Tautan ini berlaku selama 30 menit. Jika Anda tidak merasa meminta reset password, abaikan email ini.</small></p>
         </div>
     </body>
     </html>
     """
 
-    msg = MIMEText(body_html, "html", "utf-8")
+    # Setup Email Message
+    msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = formataddr((settings.EMAIL_SENDER_NAME, settings.EMAIL_SENDER_ADDRESS))
     msg["To"] = recipient_email
-    
+
+    # Attach HTML body
+    msg.attach(MIMEText(body_html, "html", "utf-8"))
+
     try:
-        subprocess.run(
-            ['/usr/sbin/sendmail', '-t', '-i'], 
-            input=msg.as_string().encode('utf-8'),
-            check=True,
-            capture_output=True
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"ERROR: Sendmail failed. Return code: {e.returncode}. Stderr: {e.stderr.decode()}")
+        # Koneksi ke SMTP Server Brevo
+        print(f"Connecting to SMTP: {settings.SMTP_SERVER}:{settings.SMTP_PORT}...")
+        with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
+            server.starttls() 
+            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+            server.sendmail(
+                settings.EMAIL_SENDER_ADDRESS, 
+                recipient_email, 
+                msg.as_string()
+            )
+        print(f"SUCCESS: Reset email sent to {recipient_email}")
+        
+    except smtplib.SMTPAuthenticationError:
+        print("ERROR: SMTP Authentication failed. Check username/password.")
     except Exception as e:
-        print(f"ERROR: Failed to send email: {e}")
+        print(f"ERROR: Failed to send email via SMTP: {e}")
 
 @router.post("/register", response_model=schemas.Token)
 async def register(user_in: schemas.UserRegisterRequest, db: Session = Depends(get_db)): 
