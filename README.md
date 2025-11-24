@@ -88,17 +88,17 @@ Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan men
 
 **AI Analysis Pipeline (`/api/scan/analyze`)**:
 
-```mermaid
 graph TD
-    A[User Uploads Image (base64)] --> B{GeminiService.analyze_nutrition_image};
-    B -- Prompt + Image --> C(Gemini VLM Analysis);
-    C -- Structured JSON --> D[Backend Service];
-    D -- Extract Ingredients --> E{Check User Allergies};
-    E -- Detected Allergens --> F(Create ScanHistoryOCR);
-    F --> G[Display Comprehensive Scan Result];
-    style C fill:#f9f,stroke:#333,stroke-width:2px;
-    style B fill:#f2f2f2,stroke:#333,stroke-width:1px;
-```
+A[User Uploads Image (base64)] --> B{GeminiService.analyze_nutrition_image}
+B -- Prompt + Image --> C(Gemini VLM Analysis)
+C -- Structured JSON --> D[Backend Service]
+D -- Extract Ingredients --> E{Check User Allergies}
+E -- Detected Allergens --> F(Create ScanHistoryOCR)
+F --> G[Display Comprehensive Scan Result]
+
+    %% Style blocks
+    style C fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#f2f2f2,stroke:#333,stroke-width:1px
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
 
