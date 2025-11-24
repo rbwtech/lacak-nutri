@@ -14,7 +14,7 @@ from datetime import date
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
 
-MAX_FREE_OCR_SCANS_PER_DAY = 4
+MAX_FREE_OCR_SCANS_PER_DAY = 5
 
 @router.post("/bpom", response_model=ScanResponse)
 async def scan_bpom(
@@ -59,21 +59,31 @@ async def analyze_ocr(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
-    scan_count_today = crud_scan.get_daily_ocr_scans_count(db, user_id, session_id)
+    if current_user and getattr(current_user, 'is_admin', False):
+        pass  
+    else:
+        scan_count_today = crud_scan.get_daily_ocr_scans_count(db, user_id, session_id)
+        
+        if scan_count_today >= MAX_FREE_OCR_SCANS_PER_DAY:
+            limit = MAX_FREE_OCR_SCANS_PER_DAY
+            if user_id:
+                detail_msg = f"Anda telah mencapai batas maksimal {limit}x Analisis AI per hari. Silakan coba lagi besok."
+            else:
+                detail_msg = f"Anda sebagai Tamu telah mencapai batas maksimal {limit}x Analisis AI per hari. Silakan buat akun untuk batas yang lebih longgar, atau coba lagi besok."
+                
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=detail_msg
+            )
     
-    if scan_count_today >= MAX_FREE_OCR_SCANS_PER_DAY:
-        if user_id:
-            detail_msg = "Anda telah mencapai batas maksimal 4x Analisis AI per hari. Silakan coba lagi besok."
-        else:
-            detail_msg = "Anda sebagai Tamu telah mencapai batas maksimal 4x Analisis AI per hari. Silakan buat akun untuk batas yang lebih longgar, atau coba lagi besok."
-            
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=detail_msg
-        )
-
     service = GeminiService()
-    language = getattr(request, 'language', 'id')
+    language_from_request = getattr(request, 'language', None)
+    if current_user and getattr(current_user, 'locale', None):
+        language = current_user.locale.split('-')[0].lower()
+    elif language_from_request:
+        language = language_from_request
+    else:
+        language = 'id'
     result = await service.analyze_nutrition_image(request.image_base64, language=language)
 
     user_allergies = []

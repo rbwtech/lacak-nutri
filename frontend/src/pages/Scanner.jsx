@@ -535,14 +535,27 @@ const Scanner = () => {
     } catch (err) {
       clearInterval(progressInterval);
       console.error(t("scanner.errorAnalysis"), err);
-      const errorMsg =
-        err.response?.status === 413
-          ? t("scanner.errorImageTooLarge")
-          : err.response?.status === 500
-          ? t("scanner.errorServer")
-          : err.message ||
-            err.response?.data?.detail ||
-            t("scanner.errorProcessingFailed");
+
+      let errorMsg;
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status) {
+        if (detail) {
+          errorMsg = detail;
+        } else if (status === 413) {
+          errorMsg = t("scanner.errorImageTooLarge");
+        } else if (status === 500) {
+          errorMsg = t("scanner.errorServer");
+        } else if (status === 429) {
+          errorMsg = t("scanner.errorTooManyRequests");
+        } else {
+          errorMsg = t("scanner.errorProcessingFailed");
+        }
+      } else {
+        // Network error atau error client-side
+        errorMsg = err.message || t("scanner.errorProcessingFailed");
+      }
+
       setError(errorMsg);
       setResult(null);
       setLoading(false);

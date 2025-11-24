@@ -41,7 +41,7 @@ class GeminiService:
             return True
         return False
 
-    async def analyze_nutrition_image(self, image_base64: str):
+    async def analyze_nutrition_image(self, image_base64: str, language: str = 'id'):
         if not self.client:
             raise Exception("API Key tidak tersedia")
 
@@ -60,12 +60,44 @@ class GeminiService:
             logger.error(f"Image processing failed: {e}")
             raise Exception("Gagal memproses gambar. Pastikan format valid.")
 
-        prompt = """Analisis label nutrisi produk ini secara profesional.
+        if language == 'en':
+            prompt_header = "Professionally analyze the nutrition label of this product."
+            output_instruction = "OUTPUT MUST BE VALID JSON WITHOUT MARKDOWN:"
+            rules_title = "IMPORTANT RULES:"
+            summary_desc = "2-3 sentences of objective analysis"
+            pros_desc = "2-3 nutritional advantages"
+            cons_desc = "2-3 nutritional disadvantages"
+            warnings_desc = '["High Sugar", "High Salt", "Artificial Sweeteners", "Preservatives", etc.]'
+            required_fill = "MUST fill ALL fields with valid values."
+            
+            example_summary = "This product has a relatively high sugar content and is low in fiber. Suitable as an occasional snack but not recommended for routine consumption."
+            example_pros = ["Contains calcium", "Low cholesterol"]
+            example_cons = ["High sugar", "Low fiber", "Fairly high sodium"]
+            example_ingredients = "Wheat flour, sugar, palm oil, milk powder, vanilla flavor"
+            example_warnings = ["High Sugar", "Contains Gluten"]
 
-OUTPUT HARUS JSON VALID TANPA MARKDOWN:
+        else: 
+            prompt_header = "Analisis label nutrisi produk ini secara profesional."
+            output_instruction = "OUTPUT HARUS JSON VALID TANPA MARKDOWN:"
+            rules_title = "ATURAN PENTING:"
+            summary_desc = "2-3 kalimat analisis objektif"
+            pros_desc = "2-3 keunggulan nutrisi"
+            cons_desc = "2-3 kekurangan nutrisi"
+            warnings_desc = '["Tinggi Gula", "Tinggi Garam", "Pemanis Buatan", "Pengawet", dll]'
+            required_fill = "WAJIB mengisi SEMUA field dengan nilai yang valid."
 
-{
-    "nutrition": {
+            example_summary = "Produk ini memiliki kandungan gula yang cukup tinggi dan rendah serat. Cocok sebagai camilan sesekali namun tidak disarankan untuk konsumsi rutin."
+            example_pros = ["Mengandung kalsium", "Rendah kolesterol"]
+            example_cons = ["Tinggi gula", "Rendah serat", "Sodium cukup tinggi"]
+            example_ingredients = "Tepung terigu, gula, minyak sawit, susu bubuk, perisa vanila"
+            example_warnings = ["Tinggi Gula", "Mengandung Gluten"]
+
+        prompt = f"""{prompt_header}
+
+{output_instruction}
+
+{{
+    "nutrition": {{
         "calories": 200,
         "protein": 5.2,
         "fat": 8.5,
@@ -77,19 +109,19 @@ OUTPUT HARUS JSON VALID TANPA MARKDOWN:
         "calcium": 120,
         "iron": 3,
         "potassium": 250
-    },
+    }},
     "health_score": 68,
     "grade": "C",
-    "summary": "Produk ini memiliki kandungan gula yang cukup tinggi dan rendah serat. Cocok sebagai camilan sesekali namun tidak disarankan untuk konsumsi rutin.",
-    "pros": ["Mengandung kalsium", "Rendah kolesterol"],
-    "cons": ["Tinggi gula", "Rendah serat", "Sodium cukup tinggi"],
-    "ingredients": "Tepung terigu, gula, minyak sawit, susu bubuk, perisa vanila",
-    "warnings": ["Tinggi Gula", "Mengandung Gluten"]
-}
+    "summary": "{example_summary}",
+    "pros": {example_pros},
+    "cons": {example_cons},
+    "ingredients": "{example_ingredients}",
+    "warnings": {example_warnings}
+}}
 
-ATURAN PENTING:
+{rules_title}
 - Baca SEMUA angka dengan teliti
-- health_score: 0-100 (100=sangat sehat, 0=tidak sehat)
+- health_score: 0-100 (100=very healthy, 0=unhealthy)
   - >80: Grade A (Sangat Baik)
   - 65-80: Grade B (Baik)
   - 50-64: Grade C (Cukup)
@@ -98,13 +130,13 @@ ATURAN PENTING:
 - Kriteria scoring:
   - Kurangi score untuk: gula tinggi (>15g), sodium tinggi (>400mg), lemak jenuh tinggi
   - Tambah score untuk: protein tinggi, serat tinggi, vitamin lengkap
-- summary: 2-3 kalimat analisis objektif
-- pros: 2-3 keunggulan nutrisi
-- cons: 2-3 kekurangan nutrisi
-- warnings: ["Tinggi Gula", "Tinggi Garam", "Pemanis Buatan", "Pengawet", dll]
+- summary: {summary_desc}
+- pros: {pros_desc}
+- cons: {cons_desc}
+- warnings: {warnings_desc}
 - Jika data tidak terbaca, estimasi berdasarkan jenis produk yang terlihat
 
-WAJIB mengisi SEMUA field dengan nilai yang valid."""
+{required_fill}"""
 
         max_attempts = len(self.api_keys) * 2 
         response = None
@@ -224,7 +256,7 @@ Jawab singkat (max 3 kalimat), edukatif, tanpa bold/italic."""
         for attempt in range(max_attempts):
             try:
                 response = self.client.models.generate_content(
-                    model="gemini-2.0-flash",
+                    model="gemini-2.5-flash",
                     contents=prompt
                 )
                 return response.text.strip().replace("**", "").replace("*", "")
