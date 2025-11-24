@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.crud import user as crud_user
 from app.schemas import user as schemas
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, decode_token
 from app.dependencies import get_current_user
 from app.models.user import User
 import httpx
@@ -38,60 +38,17 @@ async def verify_recaptcha(token: str):
             )
         return True
 
-@router.post("/register", response_model=schemas.Token)
-async def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    await verify_recaptcha(user_in.recaptcha_token)
-    
-    user = crud_user.get_user_by_email(db, email=user_in.email)
-    if user:
-        raise HTTPException(status_code=400, detail="Email sudah terdaftar.")
-
-    user_data = user_in.model_dump(exclude={"recaptcha_token"})
-    user_create_data = schemas.UserCreate(**user_data, password=user_in.password) 
-    
-    new_user = crud_user.create_user(db, user=user_create_data)
-    
-    access_token = create_access_token(data={"sub": new_user.email})
-    
-    return {"access_token": access_token, "token_type": "bearer", "user": new_user}
-
-@router.post("/login", response_model=schemas.Token)
-async def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
-    await verify_recaptcha(user_in.recaptcha_token)
-
-    user = crud_user.get_user_by_email(db, email=user_in.email)
-    if not user or not verify_password(user_in.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Email atau password salah.")
-    
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer", "user": user}
-
-@router.post("/change-password")
-def change_password(
-    pass_data: schemas.PasswordChange,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if not verify_password(pass_data.current_password, current_user.password_hash):
-        raise HTTPException(status_code=400, detail="Password lama salah.")
-    
-    crud_user.update_password(db, db_user=current_user, new_password=pass_data.new_password)
-    return {"message": "Password berhasil diubah"}
-
 def create_reset_token(email: str):
-    """Creates a short-lived JWT for password reset."""
+    """Creates a short-lived JWT (30 min) for password reset."""
     expire_minutes = 30
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
-    to_encode = {"sub": email, "exp": expire.timestamp(), "type": "reset"} 
-    
-    from app.core.security import create_access_token
+    to_encode = {"sub": email, "type": "reset"} 
     return create_access_token(to_encode, expires_delta=timedelta(minutes=expire_minutes))
 
 def send_reset_email(recipient_email: str, reset_link: str):
-    """Sends email via local Postfix using sendmail command line interface."""
+    """Sends email via local Postfix (sendmail)."""
     sender = "lacaknutri@rbwtech.io" 
     subject = "LacakNutri: Reset Kata Sandi Anda"
-
+    
     body = f"""
     <html>
     <head>
@@ -134,8 +91,40 @@ def send_reset_email(recipient_email: str, reset_link: str):
             capture_output=True
         )
     except Exception as e:
-        print(f"Failed to send email locally: {e}") 
-        
+        print(f"ERROR: Failed to send email via sendmail to {recipient_email}: {e}") 
+
+@router.post("/register", response_model=schemas.Token)
+async def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    await verify_recaptcha(user_in.recaptcha_token)
+    
+    user = crud_user.get_user_by_email(db, email=user_in.email)
+    if user:
+        raise HTTPException(status_code=400, detail="Email sudah terdaftar.")
+    
+    # --- FIX START ---
+    user_data_dict = user_in.model_dump(exclude={"recaptcha_token"})
+    # Add a dummy token to satisfy the Pydantic model validation
+    user_data_dict["recaptcha_token"] = "verified_internal"
+    
+    user_create_data = schemas.UserCreate(**user_data_dict)
+    # --- FIX END ---
+    
+    new_user = crud_user.create_user(db, user=user_create_data)
+    
+    access_token = create_access_token(data={"sub": new_user.email})
+    
+    return {"access_token": access_token, "token_type": "bearer", "user": new_user}
+
+@router.post("/login", response_model=schemas.Token)
+async def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
+    await verify_recaptcha(user_in.recaptcha_token)
+
+    user = crud_user.get_user_by_email(db, email=user_in.email)
+    if not user or not verify_password(user_in.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Email atau password salah.")
+    
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 @router.post("/forgot-password-request")
 async def forgot_password_request(
@@ -148,9 +137,7 @@ async def forgot_password_request(
     
     if user:
         reset_token = create_reset_token(user.email)
-        frontend_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173") 
-        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
-        
+        reset_link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={reset_token}"
         send_reset_email(user.email, reset_link)
 
     return {"message": "Jika email terdaftar, instruksi reset password telah dikirim."}
@@ -160,15 +147,13 @@ async def reset_password(
     pass_data: PasswordReset,
     db: Session = Depends(get_db)
 ):
-    from app.core.security import decode_token
-    
     try:
         payload = decode_token(pass_data.token) 
         token_type = payload.get("type")
         email = payload.get("sub")
         
         if token_type != "reset":
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token tidak valid.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tautan reset tidak valid.")
             
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tautan reset tidak valid atau sudah kedaluwarsa.")
@@ -183,3 +168,24 @@ async def reset_password(
     crud_user.update_password(db, db_user=user, new_password=pass_data.new_password)
     
     return {"message": "Kata sandi berhasil diatur ulang."}
+
+@router.put("/profile", response_model=schemas.UserResponse)
+def update_profile(
+    user_update: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    updated_user = crud_user.update_user(db, db_user=current_user, user_update=user_update)
+    return updated_user
+
+@router.post("/change-password")
+def change_password(
+    pass_data: schemas.PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(pass_data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Password lama salah.")
+    
+    crud_user.update_password(db, db_user=current_user, new_password=pass_data.new_password)
+    return {"message": "Password berhasil diubah"}
