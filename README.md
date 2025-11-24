@@ -103,32 +103,57 @@ Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan men
 **AI Analysis Pipeline (`/api/scan/analyze`)**:
 
 ```mermaid
-graph TD
-    User([User Uploads Image]) --> Frontend[Frontend: Get Recaptcha v3 Token]
-    Frontend --> API[API Request + Token]
+flowchart TD
+    %% Input
+    U([User Uploads Image]):::input --> FE[Frontend: Get Recaptcha v3 Token]:::frontend
+    FE --> API[[API Request + Token]]:::api
 
     %% Security Layer
-    subgraph Security Check
-        API --> RL{Check Rate Limit}
-        RL -- "Limit Exceeded (IP)" --> Error429[Return 429 Too Many Requests]
-        RL -- "Quota OK" --> CV{Verify Captcha}
-        CV -- "Score < 0.5 (Bot)" --> Error403[Return 403 Forbidden]
+    subgraph SECURITY["Security Layer"]
+      RL{Rate Limit?}:::decision
+      CV{Captcha Score?}:::decision
     end
+    API --> RL
+    RL -- "Too Many (IP)" --> ERR429([429: Too Many Requests]):::error
+    RL -- "OK" --> CV
+    CV -- "Score < 0.5" --> ERR403([403: Forbidden]):::error
+    CV -- "Score >= 0.5" --> GEM["analyze_nutrition_image (GeminiService)"]:::service
 
-    %% Main Logic
-    CV -- "Verified Human" --> B["GeminiService analyze_nutrition_image"]
-    B -- Prompt + Image --> C(Gemini VLM Analysis)
-    C -- Structured JSON --> D[Backend Service]
-    D -- Extract Ingredients --> E{Check User Allergies}
-    E -- Detected Allergens --> F(Create ScanHistoryOCR)
-    F --> G([Display Scan Result])
+    %% Main Analysis
+    GEM -- "Prompt + Image" --> GVLM["Gemini VLM Analysis"]:::ai
+    GVLM -- "Structured JSON" --> BE[Backend Service]:::backend
+    BE -- "Extract Ingredients" --> ALRGY{User Allergies Found?}:::decision
+
+    ALRGY -- "Allergens Detected" --> HIST[Create ScanHistoryOCR]:::storage
+    HIST --> SHOW([Display Scan Result]):::result
+
+    ALRGY -- "No Allergens" --> SHOW
 
     %% Styling
-    style C fill:#222d3d,stroke:#333,stroke-width:2px
-    style B fill:#222d3d,stroke:#333,stroke-width:1px
-    style Security Check fill:#ffebee,stroke:#f44336,stroke-width:2px,stroke-dasharray: 5 5
-    style Error429 fill:#203040,stroke:#f44336
-    style Error403 fill:#203040,stroke:#f44336
+    classDef input fill:#f7faa7,stroke:#fbc02d,stroke-width:2px;
+    classDef frontend fill:#b3e5fc,stroke:#039be5,stroke-width:2px;
+    classDef api fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+    classDef backend fill:#fffde7,stroke:#bfae6c,stroke-width:1.5px;
+    classDef decision fill:#ffe0b2,stroke:#fb8c00,stroke-width:2px;
+    classDef service fill:#ede7f6,stroke:#6c5ce7,stroke-width:2px;
+    classDef ai fill:#e1bee7,stroke:#8e24aa,stroke-width:1.5px;
+    classDef result fill:#c8e6c9,stroke:#388e3c,stroke-width:2px;
+    classDef error fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px;
+    classDef storage fill:#bbdefb,stroke:#1976d2,stroke-width:1.5px;
+    classDef SECURITY fill:#ffe5b4,stroke:#fb8c00,stroke-width:2px,stroke-dasharray: 6 4;
+
+    %% Assignment of classes
+    class U input;
+    class FE frontend;
+    class API api;
+    class RL,CV,ALRGY decision;
+    class GEM service;
+    class GVLM ai;
+    class BE backend;
+    class SHOW result;
+    class ERR429,ERR403 error;
+    class HIST storage;
+    class SECURITY SECURITY;
 ```
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
