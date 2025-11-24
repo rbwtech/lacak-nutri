@@ -14,7 +14,7 @@ from datetime import date
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
 
-MAX_FREE_OCR_SCANS_PER_DAY = 5
+MAX_FREE_OCR_SCANS_PER_DAY = 10
 
 @router.post("/bpom", response_model=ScanResponse)
 async def scan_bpom(

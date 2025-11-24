@@ -12,6 +12,8 @@ from app.schemas.user import ForgotPasswordRequest, PasswordReset
 from datetime import timedelta, datetime, timezone
 import subprocess
 import os
+from email.mime.text import MIMEText
+from email.utils import formataddr
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -45,11 +47,12 @@ def create_reset_token(email: str):
     return create_access_token(to_encode, expires_delta=timedelta(minutes=expire_minutes))
 
 def send_reset_email(recipient_email: str, reset_link: str):
-    """Sends email via local Postfix (sendmail)."""
-    sender = "lacaknutri@rbwtech.io" 
+    """Sends email via local Postfix (sendmail) with proper MIME formatting."""
+    
     subject = "LacakNutri: Reset Kata Sandi Anda"
     
-    body = f"""
+    # Template HTML
+    body_html = f"""
     <html>
     <head>
         <style>
@@ -67,47 +70,48 @@ def send_reset_email(recipient_email: str, reset_link: str):
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
             <p>Halo,</p>
-            <p>Anda menerima email ini karena kami menerima permintaan reset kata sandi untuk akun Anda.</p>
+            <p>Kami menerima permintaan reset kata sandi untuk akun Anda.</p>
             <p style="margin: 20px 0;">
                 <a href="{reset_link}" class="button" style="color: white !important;">
                     Reset Kata Sandi Sekarang
                 </a>
             </p>
-            <p>Tautan ini akan kedaluwarsa dalam 30 menit.</p>
-            <p>Jika Anda tidak meminta reset kata sandi, silakan abaikan email ini.</p>
-            <p>Terima kasih,<br>Tim LacakNutri</p>
+            <p><small>Tautan ini berlaku selama 30 menit.</small></p>
         </div>
     </body>
     </html>
     """
 
-    message = f"From: {sender}\nTo: {recipient_email}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: text/html\n\n{body}"
+    msg = MIMEText(body_html, "html", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = formataddr((settings.EMAIL_SENDER_NAME, settings.EMAIL_SENDER_ADDRESS))
+    msg["To"] = recipient_email
     
     try:
         subprocess.run(
             ['/usr/sbin/sendmail', '-t', '-i'], 
-            input=message.encode('utf-8'),
+            input=msg.as_string().encode('utf-8'),
             check=True,
             capture_output=True
         )
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: Sendmail failed. Return code: {e.returncode}. Stderr: {e.stderr.decode()}")
     except Exception as e:
-        print(f"ERROR: Failed to send email via sendmail to {recipient_email}: {e}") 
+        print(f"ERROR: Failed to send email: {e}")
 
 @router.post("/register", response_model=schemas.Token)
-async def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+async def register(user_in: schemas.UserRegisterRequest, db: Session = Depends(get_db)): 
     await verify_recaptcha(user_in.recaptcha_token)
     
     user = crud_user.get_user_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(status_code=400, detail="Email sudah terdaftar.")
-    
-    # --- FIX START ---
-    user_data_dict = user_in.model_dump(exclude={"recaptcha_token"})
-    # Add a dummy token to satisfy the Pydantic model validation
-    user_data_dict["recaptcha_token"] = "verified_internal"
-    
-    user_create_data = schemas.UserCreate(**user_data_dict)
-    # --- FIX END ---
+
+    user_create_data = schemas.UserCreate(
+        email=user_in.email,
+        name=user_in.name,
+        password=user_in.password
+    )
     
     new_user = crud_user.create_user(db, user=user_create_data)
     

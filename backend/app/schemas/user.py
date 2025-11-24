@@ -10,6 +10,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+
+class UserRegisterRequest(UserBase):
+    password: str
     recaptcha_token: str
 
 class UserLogin(BaseModel):
