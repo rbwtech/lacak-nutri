@@ -46,7 +46,6 @@ class User(Base):
     name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user)
     
-    # Profile
     age = Column(Integer, nullable=True)
     weight = Column(Float, nullable=True)
     height = Column(Float, nullable=True)
@@ -58,7 +57,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
     allergies = relationship("Allergen", secondary=user_allergies, backref="users")
     bpom_scans = relationship("ScanHistoryBPOM", back_populates="user")
     ocr_scans = relationship("ScanHistoryOCR", back_populates="user")

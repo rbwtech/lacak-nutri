@@ -16,7 +16,7 @@ def create_authorization_code(db: Session, lifetime_minutes: int = 120) -> str:
         OwnerAuthorizationCode.expires_at < datetime.now()
     ).delete()
     
-    code = secrets.token_hex(4).upper() # Menghasilkan 8 karakter hex
+    code = secrets.token_hex(4).upper() # Hasilnya 8 karakter hex
     expires_at = datetime.now() + timedelta(minutes=lifetime_minutes)
     
     db_code = OwnerAuthorizationCode(

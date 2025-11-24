@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 from app.schemas.food import ProductDetail
 
-# --- TOGGLE FAVORITE (Langsung di History) ---
 def toggle_favorite(db: Session, user_id: int, scan_type: str, scan_id: int):
     item = None
     if scan_type == "bpom":
@@ -19,7 +18,6 @@ def toggle_favorite(db: Session, user_id: int, scan_type: str, scan_id: int):
     if not item:
         return None
     
-    # Flip status
     item.is_favorited = not item.is_favorited
     db.commit()
     db.refresh(item)
@@ -29,15 +27,12 @@ def toggle_favorite(db: Session, user_id: int, scan_type: str, scan_id: int):
         "is_favorited": item.is_favorited
     }
 
-# --- LIST FAVORITES (Ambil dari History yang di-Love) ---
 def get_favorites_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    # 1. Ambil dari Scan History BPOM (is_favorited = True)
     bpom_favs = db.query(ScanHistoryBPOM).filter(
         ScanHistoryBPOM.user_id == user_id,
         ScanHistoryBPOM.is_favorited == True
     ).order_by(ScanHistoryBPOM.created_at.desc()).all()
     
-    # 2. Ambil dari Scan History OCR (is_favorited = True)
     ocr_favs = db.query(ScanHistoryOCR).filter(
         ScanHistoryOCR.user_id == user_id,
         ScanHistoryOCR.is_favorited == True
@@ -74,8 +69,5 @@ def get_favorites_by_user(db: Session, user_id: int, skip: int = 0, limit: int =
             "created_at": item.created_at
         })
     
-    # Sort gabungan berdasarkan waktu (terbaru diatas)
     result.sort(key=lambda x: x['created_at'], reverse=True)
-    
-    # Pagination
     return result[skip : skip + limit]

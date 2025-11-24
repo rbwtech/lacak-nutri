@@ -24,7 +24,6 @@ def create_user(db: Session, user: UserCreate):
     return db_user
 
 def update_user(db: Session, db_user: User, user_update: UserUpdate):
-    # Ubah Pydantic model ke dictionary, abaikan yang tidak diisi (unset)
     update_data = user_update.model_dump(exclude_unset=True)
     
     for key, value in update_data.items():
