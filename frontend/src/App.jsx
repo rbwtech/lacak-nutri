@@ -18,6 +18,7 @@ import {
   Login,
   Register,
   ForgotPassword,
+  ResetPassword,
   Dashboard,
   Products,
   Profile,
@@ -53,6 +54,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Core Features (Bisa Guest sesuai SRS) */}
             <Route path="/products" element={<Products />} />

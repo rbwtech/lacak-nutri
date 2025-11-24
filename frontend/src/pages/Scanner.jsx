@@ -17,7 +17,7 @@ const Scanner = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [scanMode, setScanMode] = useState("barcode");
+  const [scanMode, setScanMode] = useState("ocr");
   const [bpomInput, setBpomInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(t("scanner.processing"));
@@ -1108,7 +1108,8 @@ const Scanner = () => {
                       </h2>
                       <div className="flex items-center justify-center gap-3 mt-3">
                         <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
-                          Health Score: {result.data.health_score || 0}/100
+                          Health Score:{" "}
+                          {Math.round(result.data.health_score || 0)}/100
                         </div>
                         <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold text-sm">
                           Grade {result.data.grade || "?"}

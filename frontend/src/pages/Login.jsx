@@ -80,7 +80,6 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
-            error={loginError}
           />
 
           <div>
@@ -91,7 +90,6 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-bg-base/50 dark:bg-bg-base/30 border-primary/20 focus:border-primary h-12"
-              error={loginError}
             />
             <div className="text-right mt-1">
               <Link

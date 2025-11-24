@@ -258,7 +258,16 @@
     "passwordPlaceholder": "••••••••",
     "passwordHint": "Minimal 8 karakter",
     "confirmPassword": "Ulangi Password",
-    "recaptchaRequired": "Harap verifikasi reCAPTCHA."
+    "recaptchaRequired": "Harap verifikasi reCAPTCHA.",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "resetPasswordTitle": "Reset Your Password",
+    "resetPasswordSubtitle": "Enter your new password below",
+    "resetPasswordButton": "Reset Now",
+    "invalidResetLink": "Invalid Reset Link",
+    "resetLinkMissing": "The password reset link is missing or has expired.",
+    "backToLogin": "Back to Login Page",
+    "pleaseLoginAgain": "Your password has been successfully changed. Please log in with your new password."
   },
   "nutritionLabel": {
     "title": "Informasi Nilai Gizi",

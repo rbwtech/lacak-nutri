@@ -8,7 +8,10 @@ from app.dependencies import get_current_user
 from app.models.user import User
 import httpx
 from app.core.config import settings
-from app.schemas.user import ForgotPasswordRequest
+from app.schemas.user import ForgotPasswordRequest, PasswordReset
+from datetime import timedelta, datetime, timezone
+import subprocess
+import os
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -63,20 +66,6 @@ async def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
-@router.post("/forgot-password-request")
-async def forgot_password_request(
-    request: ForgotPasswordRequest,
-    db: Session = Depends(get_db)
-):
-    await verify_recaptcha(request.recaptcha_token)
-    
-    user = crud_user.get_user_by_email(db, email=request.email)
-    
-    if user:
-        print(f"Password reset simulated for {request.email}")
-    
-    return {"message": "Jika email terdaftar, instruksi reset password telah dikirim."}
-
 @router.post("/change-password")
 def change_password(
     pass_data: schemas.PasswordChange,
@@ -88,3 +77,109 @@ def change_password(
     
     crud_user.update_password(db, db_user=current_user, new_password=pass_data.new_password)
     return {"message": "Password berhasil diubah"}
+
+def create_reset_token(email: str):
+    """Creates a short-lived JWT for password reset."""
+    expire_minutes = 30
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
+    to_encode = {"sub": email, "exp": expire.timestamp(), "type": "reset"} 
+    
+    from app.core.security import create_access_token
+    return create_access_token(to_encode, expires_delta=timedelta(minutes=expire_minutes))
+
+def send_reset_email(recipient_email: str, reset_link: str):
+    """Sends email via local Postfix using sendmail command line interface."""
+    sender = "lacaknutri@rbwtech.io" 
+    subject = "LacakNutri: Reset Kata Sandi Anda"
+
+    body = f"""
+    <html>
+    <head>
+        <style>
+            .button {{
+                display: inline-block;
+                padding: 10px 20px;
+                background-color: #FF9966;
+                color: white !important;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+            }}
+        </style>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <p>Halo,</p>
+            <p>Anda menerima email ini karena kami menerima permintaan reset kata sandi untuk akun Anda.</p>
+            <p style="margin: 20px 0;">
+                <a href="{reset_link}" class="button" style="color: white !important;">
+                    Reset Kata Sandi Sekarang
+                </a>
+            </p>
+            <p>Tautan ini akan kedaluwarsa dalam 30 menit.</p>
+            <p>Jika Anda tidak meminta reset kata sandi, silakan abaikan email ini.</p>
+            <p>Terima kasih,<br>Tim LacakNutri</p>
+        </div>
+    </body>
+    </html>
+    """
+
+    message = f"From: {sender}\nTo: {recipient_email}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: text/html\n\n{body}"
+    
+    try:
+        subprocess.run(
+            ['/usr/sbin/sendmail', '-t', '-i'], 
+            input=message.encode('utf-8'),
+            check=True,
+            capture_output=True
+        )
+    except Exception as e:
+        print(f"Failed to send email locally: {e}") 
+        
+
+@router.post("/forgot-password-request")
+async def forgot_password_request(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    await verify_recaptcha(request.recaptcha_token)
+    
+    user = crud_user.get_user_by_email(db, email=request.email)
+    
+    if user:
+        reset_token = create_reset_token(user.email)
+        frontend_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173") 
+        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+        
+        send_reset_email(user.email, reset_link)
+
+    return {"message": "Jika email terdaftar, instruksi reset password telah dikirim."}
+
+@router.post("/reset-password")
+async def reset_password(
+    pass_data: PasswordReset,
+    db: Session = Depends(get_db)
+):
+    from app.core.security import decode_token
+    
+    try:
+        payload = decode_token(pass_data.token) 
+        token_type = payload.get("type")
+        email = payload.get("sub")
+        
+        if token_type != "reset":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token tidak valid.")
+            
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tautan reset tidak valid atau sudah kedaluwarsa.")
+        
+    user = crud_user.get_user_by_email(db, email=email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pengguna tidak ditemukan.")
+    
+    if len(pass_data.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password baru minimal 8 karakter.")
+        
+    crud_user.update_password(db, db_user=user, new_password=pass_data.new_password)
+    
+    return {"message": "Kata sandi berhasil diatur ulang."}

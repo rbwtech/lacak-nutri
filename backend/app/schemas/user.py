@@ -21,6 +21,10 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
     recaptcha_token: str
 
+class PasswordReset(BaseModel):
+    token: str
+    new_password: str
+
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     age: Optional[int] = None
