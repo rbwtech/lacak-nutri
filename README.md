@@ -22,6 +22,7 @@
 [Overview](#overview) •
 [Demo](#demo-access) •
 [Features](#core-features) •
+[Security](#security--protection-mechanisms)
 [Tech Stack](#technology-stack) •
 [Installation](#quick-start-installation) •
 [Design System](#design-system) •
