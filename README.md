@@ -9,7 +9,7 @@
               ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝
 ```
 
-### Smart Nutrition Tracking & BPOM Validation Platform
+### Platform Analisis Nutrisi dan Validasi BPOM Berbasis Artificial Intelligence
 
 **Transparansi Instan, Keputusan Terinformasi**
 
@@ -17,21 +17,20 @@
 [![GitHub](https://img.shields.io/badge/github-rbwtech%2Flacak--nutri-333333?style=for-the-badge&logo=github)](https://github.com/rbwtech/lacak-nutri)
 [![License](https://img.shields.io/badge/license-MIT-6B8E23?style=for-the-badge)](LICENSE)
 
+
 ## NAVIGATION / TABLE OF CONTENTS
-- [Overview](#overview)
-- [Demo Access](#demo-access)
-- [Core Features](#core-features)
-- [Technology Stack](#technology-stack)
-- [Quick Start (Installation)](#quick-start-installation)
-- [Design System](#design-system)
-- [API Docs](API_DOCUMENTATION.MD)
-- [License](#license)
-- [Team](#team)
-- [Acknowledgement](#acknowledgement)
-- [Support](#support)
-
+[Overview](#overview) • 
+[Demo](#demo-access) • 
+[Features](#core-features) • 
+[Tech Stack](#technology-stack) • 
+[Installation](#quick-start-installation) • 
+[Design System](#design-system) • 
+[API Docs](API_DOCUMENTATION.MD) • 
+[License](#license) • 
+[Team](#team) • 
+[Acknowledgement](#acknowledgement) • 
+[Support](#support) •
 [API Docs](https://github.com/rbwtech/lacak-nutri/blob/main/API_DOCUMENTATION.MD)
-
 </div>
 
 ---
