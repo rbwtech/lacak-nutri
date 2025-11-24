@@ -25,12 +25,11 @@
 [Tech Stack](#technology-stack) • 
 [Installation](#quick-start-installation) • 
 [Design System](#design-system) • 
-[API Docs](API_DOCUMENTATION.MD) • 
+[API Docs](https://github.com/rbwtech/lacak-nutri/blob/main/API_DOCUMENTATION.MD) • 
 [License](#license) • 
 [Team](#team) • 
 [Acknowledgement](#acknowledgement) • 
-[Support](#support) •
-[API Docs](https://github.com/rbwtech/lacak-nutri/blob/main/API_DOCUMENTATION.MD)
+[Support](#support)
 </div>
 
 ---
