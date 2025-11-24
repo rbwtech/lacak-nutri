@@ -150,7 +150,7 @@ sequenceDiagram
 
 ### 3. AI-Powered Composition Analysis
 
-**Engine:** Google Gemini 2.0 Flash
+**Engine:** Google Gemini 2.5 Flash
 
 **Analysis Pipeline:**
 
@@ -1382,15 +1382,14 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Made with ❤️ by Trio WakwaW Team                   │
-│                                                      │
-│  • Project Lead: [Name]                             │
-│  • Backend Developer: [Name]                         │
-│  • Frontend Developer: [Name]                        │
-│                                                      │
-│  🌐 Website: https://lacaknutri.rbwtech.io          │
-│  📧 Contact: lacaknutri@rbwtech.io                   │
-│  📦 GitHub: github.com/rbwtech/lacak-nutri           │
+│  Made with ❤️ by Trio WakwaW Team
+│
+│  • Radipta Basri Wijaya
+│  • Agung Nugraha
+│  • Bayu Wicaksono
+│
+│  🌐 Website: https://lacaknutri.rbwtech.io
+│  📦 GitHub: github.com/rbwtech/lacak-nutri
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -1413,7 +1412,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 **Competition:**
 
-- UINIC 7.0 Web Development - Universitas Islam Nahdlatul Ulama Jepara
+- UINIC 7.0 Web Development - Universitas Islam Negeri Sunan Kalijaga Yogyakarta
 
 ---
 
@@ -1426,10 +1425,7 @@ Report via [GitHub Issues](https://github.com/rbwtech/lacak-nutri/issues)
 Submit via [GitHub Discussions](https://github.com/rbwtech/lacak-nutri/discussions)
 
 **General Inquiries:**  
-Email: lacaknutri@rbwtech.io
-
-**Live Chat:**  
-Available on website footer (9 AM - 5 PM WIB)
+WhatsApp: wa.me/6285182381003
 
 ---
 
