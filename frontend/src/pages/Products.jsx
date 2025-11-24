@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
@@ -20,6 +20,7 @@ const Products = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState(12);
+  const scrollRef = useRef(0);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -54,37 +55,16 @@ const Products = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
+      scrollRef.current = window.scrollY;
       setPage(newPage);
     }
   };
 
-  const renderPaginationNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, page - 2);
-    let end = Math.min(totalPages, start + maxVisible - 1);
-
-    if (end - start < maxVisible - 1) {
-      start = Math.max(1, end - maxVisible + 1);
+  useEffect(() => {
+    if (scrollRef.current) {
+      window.scrollTo(0, scrollRef.current);
     }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-            i === page
-              ? "bg-primary text-white shadow-md"
-              : "bg-white border border-border text-text-secondary hover:bg-gray-50"
-          }`}
-        >
-          {i}
-        </button>
-      );
-    }
-    return pages;
-  };
+  }, [products]);
 
   return (
     <MainLayout>
@@ -232,9 +212,9 @@ const Products = () => {
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex flex-wrap justify-center items-center gap-4 mt-12">
+              <div className="flex justify-center items-center gap-2 mt-12 flex-nowrap">
                 {/* Tombol kiri */}
-                <div className="flex items-center gap-2 order-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -253,8 +233,8 @@ const Products = () => {
                   </Button>
                 </div>
 
-                {/* Input Halaman */}
-                <div className="flex items-center gap-3 order-2 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
+                {/* Nomor halaman */}
+                <div className="flex items-center gap-3 bg-bg-surface px-4 py-2 rounded-xl border border-border shadow-sm">
                   <span className="text-xs text-text-secondary font-bold">
                     {t("products.pageLabel")}
                   </span>
@@ -278,7 +258,7 @@ const Products = () => {
                 </div>
 
                 {/* Tombol kanan */}
-                <div className="flex items-center gap-2 order-3">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"

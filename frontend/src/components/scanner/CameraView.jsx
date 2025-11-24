@@ -213,27 +213,40 @@ const CameraView = ({
             />
           )}
 
-          <div className="flex items-center gap-8">
-            <Button
-              variant="ghost"
-              onClick={stopCamera}
-              className={`text-white hover:bg-white/10 rounded-full w-12 h-12
-        ${scanMode !== "ocr" ? "mx-auto" : ""}
-      `}
-            >
-              ✕
-            </Button>
-            {scanMode === "ocr" && (
+          {scanMode !== "ocr" && (
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                onClick={stopCamera}
+                className="text-white hover:bg-white/10 rounded-full w-12 h-12"
+              >
+                ✕
+              </Button>
+            </div>
+          )}
+
+          {scanMode === "ocr" && (
+            <div className="flex items-center gap-8">
+              <Button
+                variant="ghost"
+                onClick={stopCamera}
+                className="text-white hover:bg-white/10 rounded-full w-12 h-12"
+              >
+                ✕
+              </Button>
+
               <button
                 onClick={captureImage}
                 className="w-20 h-20 bg-white rounded-full border-[6px] border-white/30 shadow-xl active:scale-90 transition-transform flex items-center justify-center"
               >
                 <div className="w-16 h-16 bg-white rounded-full border-4 border-primary"></div>
               </button>
-            )}
-            {scanMode === "ocr" ? <div className="w-12 h-12"></div> : null}
-          </div>
+
+              <div className="w-12 h-12"></div>
+            </div>
+          )}
         </div>
+
         {liveScanMode && liveOcrText && (
           <div className="absolute bottom-32 left-4 right-4 bg-black/80 backdrop-blur-md text-white p-3 rounded-xl max-h-32 overflow-y-auto text-xs z-30 font-mono">
             {liveOcrText}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "../components/layouts";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import SuccessModal from "../components/ui/SuccessModal";
 import api from "../config/api";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,8 @@ const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,10 +39,12 @@ const Favorites = () => {
   const removeFavorite = async (id, type, e) => {
     e.stopPropagation();
     try {
-      await api.post(`/favorites/${type}/${id}/toggle`);
+      const { data } = await api.post(`/favorites/${type}/${id}/toggle`);
       setFavorites((prev) =>
         prev.filter((f) => !(f.id === id && f.product_type === type))
       );
+      setSuccessMessage(t("history.removedFromFav"));
+      setShowSuccess(true);
     } catch (e) {
       alert(t("favorites.errorRemove"));
     }
@@ -134,7 +139,8 @@ const Favorites = () => {
                       className="p-4 hover:shadow-lg transition-all cursor-pointer group"
                       onClick={() => viewDetail(fav)}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        {/* ICON */}
                         <div
                           className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                             fav.product_type === "bpom"
@@ -166,12 +172,10 @@ const Favorites = () => {
                           </svg>
                         </div>
 
+                        {/* INFO */}
                         <div
                           className="flex-1 min-w-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            viewDetail(fav);
-                          }}
+                          onClick={() => viewDetail(fav)}
                         >
                           <h3 className="font-bold text-text-primary text-lg mb-1 group-hover:text-primary transition-colors cursor-pointer wrap-break-words">
                             {fav.product_name || t("favorites.noName")}
@@ -201,7 +205,8 @@ const Favorites = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-1 shrink-0">
+
+                        <div className="flex ml-auto gap-2 sm:gap-2">
                           <button
                             onClick={(e) =>
                               removeFavorite(fav.id, fav.product_type, e)
@@ -223,29 +228,29 @@ const Favorites = () => {
                               />
                             </svg>
                           </button>
-                        </div>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            viewDetail(fav);
-                          }}
-                          className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
-                        >
-                          <svg
-                            className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              viewDetail(fav);
+                            }}
+                            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-5 h-5 text-text-secondary hover:text-primary transition-colors"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -255,6 +260,13 @@ const Favorites = () => {
           )}
         </div>
       </div>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        message={successMessage}
+        type="favorite"
+      />
     </MainLayout>
   );
 };

@@ -4,7 +4,6 @@ const AnimatedStatus = ({ type = "success" }) => {
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    // Trigger animasi setelah mount
     setTimeout(() => setAnimate(true), 100);
   }, []);
 

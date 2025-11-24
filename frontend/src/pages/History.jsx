@@ -168,7 +168,8 @@ const History = () => {
                       className="p-4 hover:shadow-lg transition-all cursor-pointer group"
                       onClick={() => viewDetail(item)}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-4 flex-col sm:flex-row">
+                        {/* ICON */}
                         <div
                           className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                             item.type === "bpom"
@@ -201,14 +202,19 @@ const History = () => {
                         </div>
 
                         <div
-                          className="flex-1 min-w-0"
+                          className="flex-1 min-w-0 w-full sm:w-auto"
                           onClick={(e) => {
                             e.stopPropagation();
                             viewDetail(item);
                           }}
                         >
                           <h3 className="font-bold text-text-primary group-hover:text-primary transition-colors cursor-pointer wrap-break-words">
-                            {item.title}
+                            {item.title}{" "}
+                            {item.score && (
+                              <span className="inline-block mb-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
+                                {item.score}/100
+                              </span>
+                            )}
                           </h3>
                           <p className="text-sm text-text-secondary">
                             {item.subtitle}
@@ -216,12 +222,6 @@ const History = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 ml-auto justify-end">
-                          {item.score && (
-                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold shrink-0">
-                              {item.score}/100
-                            </span>
-                          )}
-
                           <button
                             onClick={(e) => toggleFavorite(item, e)}
                             className="p-2 hover:bg-bg-base rounded-lg transition-colors shrink-0"
@@ -244,14 +244,12 @@ const History = () => {
                             </svg>
                           </button>
 
-                          <div className="text-right shrink-0">
-                            <p className="text-xs text-text-secondary">
-                              {new Date(item.date).toLocaleDateString(
-                                i18n.language,
-                                { dateStyle: "medium" }
-                              )}
-                            </p>
-                          </div>
+                          <p className="text-xs text-text-secondary">
+                            {new Date(item.date).toLocaleDateString(
+                              i18n.language,
+                              { dateStyle: "medium" }
+                            )}
+                          </p>
 
                           <button
                             onClick={(e) => {
