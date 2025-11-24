@@ -79,8 +79,10 @@ Password: demo123
 
 ## ✨ Core Features
 
+```
 Disclaimer:
 Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan menganalisis label dari gambar secara langsung. Ini lebih dari sekadar OCR; ini adalah analisis gambar terstruktur. Tesseract hanya digunakan untuk raw text extraction di endpoint terpisah (/api/scan/ocr-text).
+```
 
 ### 1\. Vision-Powered Nutrition Analysis (VLM & AI)
 
@@ -88,17 +90,19 @@ Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan men
 
 **AI Analysis Pipeline (`/api/scan/analyze`)**:
 
+```mermaid
 graph TD
-A[User Uploads Image (base64)] --> B{GeminiService.analyze_nutrition_image}
+A[User Uploads Image] --> B["GeminiService analyze_nutrition_image"]
 B -- Prompt + Image --> C(Gemini VLM Analysis)
 C -- Structured JSON --> D[Backend Service]
 D -- Extract Ingredients --> E{Check User Allergies}
 E -- Detected Allergens --> F(Create ScanHistoryOCR)
-F --> G[Display Comprehensive Scan Result]
+F --> G[Display Scan Result]
 
-    %% Style blocks
-    style C fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#f2f2f2,stroke:#333,stroke-width:1px
+%% Style blocks
+style C fill:#222d3d,stroke:#333,stroke-width:2px
+style B fill:#222d3d,stroke:#333,stroke-width:1px
+```
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
 
@@ -121,30 +125,30 @@ Untuk menjaga _resource_ AI, _endpoint_ `/api/scan/analyze` memiliki batasan pen
 
 ### 2. BPOM Validation
 
+Fitur ini memvalidasi produk menggunakan nomor registrasi BPOM yang diinput (MD/ML/SI/DBL) atau dipindai QR-nya.
+
+**Mekanisme:** **Web Scraping** (menggunakan `httpx` dan `BeautifulSoup4`) dari situs resmi BPOM (`https://cekbpom.pom.go.id`).
+
+**Alur Validasi BPOM (`/api/scan/bpom`)**:
+
 ```mermaid
 sequenceDiagram
-    User->>+API: POST /scan/bpom
-    API->>+Cache: Check cache (30d TTL)
-    alt Cache Hit
-        Cache-->>API: Return cached data
+    User->>+API: POST /scan/bpom (Nomor BPOM)
+    API->>+CRUD: Check cache (ScanHistoryBPOM)
+    alt Data Cached
+        CRUD-->>API: Return cached data
+        API->>CRUD: Create Scan History (No new scraping)
     else Cache Miss
-        API->>+BPOM: Scrape cekbpom.pom.go.id
-        BPOM-->>API: Product details
-        API->>Cache: Save to cache
+        API->>+BPOMScraper: Search BPOM (Scraping)
+        BPOMScraper->>BPOMScraper: Handle CSRF Token & POST Request
+        BPOMScraper-->>API: Product details (or None)
+        API->>CRUD: Create BPOM Cache
+        API->>CRUD: Create Scan History
     end
     API-->>-User: Validation result
 ```
 
-**Capabilities:**
-
-- QR code scanner
-- Manual input (MD/ML/SI/DBL number)
-- Real-time BPOM scraping
-- Cache mechanism (30 hari)
-- Status indicators:
-  - ✅ **TERDAFTAR** (Verified Green)
-  - ⚠️ **TIDAK DITEMUKAN** (Warm Amber)
-  - ❌ **DITARIK/BERMASALAH** (Soft Red)
+**Benefit Caching:** Hasil *scraping* disimpan dalam *database* (`bpom_cache`) untuk menghemat *resource* dan memberikan respons cepat, terutama jika produk yang sama divalidasi berkali-kali.
 
 **Sample Response:**
 
@@ -162,54 +166,13 @@ sequenceDiagram
 }
 ```
 
-### 3. AI-Powered Composition Analysis
+### 3. Allergen Cross-Reference (Personalisasi)
 
-**Engine:** Google Gemini 2.5 Flash
+*Endpoint* `/api/scan/analyze` secara otomatis memeriksa bahan-bahan yang diidentifikasi oleh AI terhadap daftar alergi yang tersimpan di profil pengguna.
 
-**Analysis Pipeline:**
-
-```python
-OCR_Data → Gemini Prompt Engineering → Structured Response
-↓
-{
-  health_score: 1-10,
-  summary: "Ringkasan singkat",
-  risks: ["High sugar", "Contains MSG"],
-  benefits: ["Good protein source"],
-  ingredients_analysis: {...},
-  recommendations: [...]
-}
-```
-
-**Prompt Strategy:**
-
-- System role: Ahli nutrisi Indonesia
-- Context: Extracted nutrition facts + detected ingredients
-- Output: JSON structure dengan health_score, detected ingredients, allergen warnings
-
-**Sample Analysis:**
-
-```
-Product: Indomie Goreng
-Health Score: 6/10
-
-Summary: Sumber karbohidrat cepat dengan protein moderate.
-Tinggi sodium (47% AKG) dan lemak jenuh (32% AKG).
-
-Detected Ingredients:
-- MSG (Monosodium Glutamate) - Penguat rasa
-- Sodium Benzoate - Pengawet
-- Tartrazine - Pewarna sintetis
-
-Allergen Warnings:
-⚠️ Mengandung GLUTEN (tepung terigu)
-⚠️ Sodium tinggi - tidak cocok hipertensi
-
-Recommendations:
-✓ Konsumsi maksimal 1-2x seminggu
-✓ Kombinasi dengan sayuran untuk serat
-✗ Hindari konsumsi malam hari
-```
+  * Daftar alergi pengguna diambil dari *database* (`current_user.allergies`).
+  * Daftar bahan (`ingredients`) dari hasil AI diubah menjadi huruf kecil dan diperiksa keberadaan alergen yang telah diatur oleh pengguna.
+  * Alergen yang terdeteksi ditambahkan ke dalam *field* `warnings` sebelum disimpan ke `ScanHistoryOCR` dan ditampilkan kepada pengguna.
 
 ### 4. GiziPedia (Education Hub)
 
