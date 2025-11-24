@@ -74,8 +74,23 @@ export const FAQ = () => {
 };
 
 // --- Contact Page ---
+import { useState } from "react";
+
 export const Contact = () => {
   const { t } = useTranslation();
+  const whatsappNumber = "6285182381003";
+
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSend = () => {
+    const text = `Name: ${name}\nMessage: ${message}`;
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+      text
+    )}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -99,26 +114,28 @@ export const Contact = () => {
             </div>
           </Card>
           <Card title={t("static.contactCard2Title")}>
-            <form className="space-y-4">
+            <div className="space-y-4">
               <input
                 type="text"
                 placeholder={t("static.contactNamePlaceholder")}
-                className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-              <input
-                type="email"
-                placeholder={t("static.contactEmailPlaceholder")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none"
               />
               <textarea
                 rows="4"
                 placeholder={t("static.contactMessagePlaceholder")}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none"
               ></textarea>
-              <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold hover:bg-primary-hover transition-colors">
-                {t("static.contactSend")}
+              <button
+                onClick={handleSend}
+                className="bg-green-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition-colors"
+              >
+                {t("static.contactSend")} via WhatsApp
               </button>
-            </form>
+            </div>
           </Card>
         </div>
       </div>
