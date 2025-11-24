@@ -82,32 +82,42 @@ Password: demo123
 Disclaimer:
 Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan menganalisis label dari gambar secara langsung. Ini lebih dari sekadar OCR; ini adalah analisis gambar terstruktur. Tesseract hanya digunakan untuk raw text extraction di endpoint terpisah (/api/scan/ocr-text).
 
-### 1. OCR Nutrition Scanner
+### 1\. Vision-Powered Nutrition Analysis (VLM & AI)
+
+**Engine:** Google Gemini 2.5 Flash
+
+**AI Analysis Pipeline (`/api/scan/analyze`)**:
 
 ```mermaid
-graph LR
-    A[Upload Image] --> B[Tesseract OCR]
-    B --> C[Extract Nutrients]
-    C --> D[Structure Data]
-    D --> E[Display Results]
+graph TD
+    A[User Uploads Image (base64)] --> B{GeminiService.analyze_nutrition_image};
+    B -- Prompt + Image --> C(Gemini VLM Analysis);
+    C -- Structured JSON --> D[Backend Service];
+    D -- Extract Ingredients --> E{Check User Allergies};
+    E -- Detected Allergens --> F(Create ScanHistoryOCR);
+    F --> G[Display Comprehensive Scan Result];
+    style C fill:#f9f,stroke:#333,stroke-width:2px;
+    style B fill:#f2f2f2,stroke:#333,stroke-width:1px;
 ```
 
-**Capabilities:**
+**Hasil Structured JSON yang Dikelola oleh AI Service:**
 
-- Camera/gallery upload
-- Multi-language OCR (ID/EN)
-- Real-time extraction
-- Nutritional facts parsing (kalori, lemak, protein, karbohidrat, sodium, gula)
-- AKG% calculation
+| Field              | Tipe Data       | Deskripsi                                                                                                            |
+| :----------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **`nutrition`**    | JSON Object     | Data nutrisi terstruktur (kalori, protein, lemak, gula, sodium, dll.).                                               |
+| **`health_score`** | Integer (0-100) | Penilaian kesehatan objektif oleh AI.                                                                                |
+| **`grade`**        | String (A-E)    | Kategori nilai kesehatan berdasarkan `health_score`.                                                                 |
+| **`summary`**      | String          | Ringkasan analisis nutrisi (2-3 kalimat).                                                                            |
+| **`pros`, `cons`** | List of Strings | Keunggulan dan kelemahan nutrisi yang terdeteksi.                                                                    |
+| **`ingredients`**  | String          | Daftar bahan yang diekstraksi.                                                                                       |
+| **`warnings`**     | List of Strings | Daftar potensi peringatan (misalnya, Tinggi Gula, Aditif) **ditambah alergen yang terdeteksi dari profil pengguna**. |
 
-**Use Case:**
+#### Rate Limiting (Keterbatasan Penggunaan)
 
-```
-User scans "Indomie Goreng" nutrition label
-→ OCR extracts: Kalori 390kkal, Lemak 14g, Protein 9g...
-→ System calculates AKG%: Kalori 19.5%, Lemak 21.5%...
-→ Display structured card with color-coded warnings
-```
+Untuk menjaga _resource_ AI, _endpoint_ `/api/scan/analyze` memiliki batasan penggunaan harian:
+
+- **Pengguna Tamu (Guest)** atau **Pengguna Terdaftar Biasa**: Maksimal **10x Analisis AI per hari**.
+- **Administrator**: Tidak memiliki batasan.
 
 ### 2. BPOM Validation
 
