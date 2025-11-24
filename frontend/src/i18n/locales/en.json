@@ -4,6 +4,7 @@
     "scanner": "Scanner",
     "history": "History",
     "favorites": "Favorites",
+    "dashboard": "Dashboard",
     "profile": "Profile"
   },
   "dashboard": {
