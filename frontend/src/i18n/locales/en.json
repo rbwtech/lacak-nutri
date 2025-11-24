@@ -258,6 +258,7 @@
     "password": "Password",
     "passwordPlaceholder": "••••••••",
     "passwordHint": "Minimum 8 characters",
+    "passwordChanged": "Password changed successfully. Please login again.",
     "confirmPassword": "Repeat Password",
     "recaptchaRequired": "Please verify reCAPTCHA.",
     "newPassword": "New Password",
@@ -331,7 +332,7 @@
     "legalTitle": "Legal",
     "privacy": "Privacy",
     "terms": "Terms & Conditions",
-    "copyright": "© 2025 LacakNutri. Built for UINIC 7.0 Web Development Competition."
+    "copyright": "© 2025 LacakNutri by Trio WakwaW. Built for UINIC 7.0 Web Development Competition."
   },
   "articles": {
     "mainTitle": "Nutrition Education Center",

@@ -71,7 +71,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4 relative overflow-hidden animate-fade-in">
       {/* Background Blobs */}
       <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>

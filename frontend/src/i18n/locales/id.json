@@ -259,6 +259,7 @@
     "password": "Password",
     "passwordPlaceholder": "••••••••",
     "passwordHint": "Minimal 8 karakter",
+    "passwordChanged": "Password berhasil diubah. Mohon login kembali.",
     "confirmPassword": "Ulangi Password",
     "recaptchaRequired": "Harap verifikasi reCAPTCHA.",
     "newPassword": "Password Baru",
@@ -332,7 +333,7 @@
     "legalTitle": "Legal",
     "privacy": "Privasi",
     "terms": "Syarat & Ketentuan",
-    "copyright": "© 2025 LacakNutri. Built for UINIC 7.0 Web Development Competition."
+    "copyright": "© 2025 LacakNutri by Trio WakwaW. Built for UINIC 7.0 Web Development Competition."
   },
   "articles": {
     "mainTitle": "Pusat Edukasi Gizi",
