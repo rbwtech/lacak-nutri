@@ -30,11 +30,13 @@
 ### JWT Token Structure
 
 **Header:**
+
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Token Payload:**
+
 ```json
 {
   "sub": "user@example.com",
@@ -50,12 +52,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### Guest Access
 
 Endpoints marked with `(Optional Auth)` can be accessed without token:
+
 - OCR scan (with 10 scans/day limit via X-Session-ID)
 - BPOM validation
 - Education articles
 - Food catalog search
 
 Guest requests should include:
+
 ```
 X-Session-ID: unique-session-identifier
 ```
@@ -63,11 +67,13 @@ X-Session-ID: unique-session-identifier
 ### reCAPTCHA Protection
 
 Public endpoints require reCAPTCHA v3 token:
+
 - `/auth/register`
 - `/auth/login`
 - `/auth/forgot-password-request`
 
 **Request Field:**
+
 ```json
 {
   "recaptcha_token": "03AGdBq24..."
@@ -83,14 +89,17 @@ Public endpoints require reCAPTCHA v3 token:
 ### OCR Analysis Rate Limits
 
 **Guest Users:**
+
 - 10 scans per day per X-Session-ID
 - Reset: Daily at 00:00 UTC
 
 **Authenticated Users:**
+
 - 10 scans per day per user_id
 - Reset: Daily at 00:00 UTC
 
 **Admin Users:**
+
 - Unlimited
 
 ### Rate Limit Response (HTTP 429)
@@ -103,9 +112,9 @@ Public endpoints require reCAPTCHA v3 token:
 
 ### Other Endpoints
 
-No strict rate limiting, but abuse detection in place:
-- Automated blocking after 1000+ requests/minute
-- BPOM cache prevents excessive scraping
+- **Login/Register/Reset Password:** Maximum **5 requests/minute**.
+- **Forgot Password:** Maximum **3 requests/hour**.
+- **AI Analysis:** Maximum **10 requests/day** (Guest / Users).
 
 ---
 
@@ -123,18 +132,18 @@ No strict rate limiting, but abuse detection in place:
 
 ### HTTP Status Codes
 
-| Code | Meaning | Description |
-|------|---------|-------------|
-| 200 | OK | Request successful |
-| 201 | Created | Resource created |
-| 400 | Bad Request | Invalid input |
-| 401 | Unauthorized | Missing or invalid token |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource not found |
-| 409 | Conflict | Duplicate resource |
-| 422 | Unprocessable Entity | Validation failed |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Internal Server Error | Server error |
+| Code | Meaning               | Description              |
+| ---- | --------------------- | ------------------------ |
+| 200  | OK                    | Request successful       |
+| 201  | Created               | Resource created         |
+| 400  | Bad Request           | Invalid input            |
+| 401  | Unauthorized          | Missing or invalid token |
+| 403  | Forbidden             | Insufficient permissions |
+| 404  | Not Found             | Resource not found       |
+| 409  | Conflict              | Duplicate resource       |
+| 422  | Unprocessable Entity  | Validation failed        |
+| 429  | Too Many Requests     | Rate limit exceeded      |
+| 500  | Internal Server Error | Server error             |
 
 ### Common Error Codes
 
@@ -165,6 +174,7 @@ Register new user account.
 **Public:** Yes (reCAPTCHA required)
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -175,11 +185,13 @@ Register new user account.
 ```
 
 **Validation Rules:**
+
 - Email: Valid format, unique
 - Name: 2-100 characters
 - Password: Minimum 8 characters
 
 **Response (200):**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
@@ -195,6 +207,7 @@ Register new user account.
 ```
 
 **Error (400):**
+
 ```json
 {
   "detail": "Email sudah terdaftar."
@@ -210,6 +223,7 @@ Authenticate user and get JWT token.
 **Public:** Yes (reCAPTCHA required)
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -219,6 +233,7 @@ Authenticate user and get JWT token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
@@ -235,6 +250,7 @@ Authenticate user and get JWT token.
 ```
 
 **Error (400):**
+
 ```json
 {
   "detail": "Email atau password salah."
@@ -250,6 +266,7 @@ Request password reset email.
 **Public:** Yes (reCAPTCHA required)
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -258,6 +275,7 @@ Request password reset email.
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Jika email terdaftar, instruksi reset password telah dikirim."
@@ -265,11 +283,13 @@ Request password reset email.
 ```
 
 **Email Content:**
+
 - Professional HTML template
 - Reset link valid for 30 minutes
 - Format: `https://lacaknutri.rbwtech.io/reset-password?token=<jwt>`
 
 **SMTP Configuration:**
+
 - Provider: Brevo (smtp-relay.brevo.com)
 - Port: 587 (STARTTLS)
 - From: noreply@lacaknutri.rbwtech.io
@@ -283,6 +303,7 @@ Reset password using token from email.
 **Public:** Yes
 
 **Request:**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
@@ -291,10 +312,12 @@ Reset password using token from email.
 ```
 
 **Token Validation:**
+
 - Checks `type: "reset"` in payload
 - Must not be expired (30 min lifetime)
 
 **Response (200):**
+
 ```json
 {
   "message": "Kata sandi berhasil diatur ulang."
@@ -302,6 +325,7 @@ Reset password using token from email.
 ```
 
 **Error (400):**
+
 ```json
 {
   "detail": "Tautan reset tidak valid atau sudah kedaluwarsa."
@@ -317,6 +341,7 @@ Update user profile information.
 **Auth Required:** Yes
 
 **Request:**
+
 ```json
 {
   "name": "John Smith",
@@ -328,6 +353,7 @@ Update user profile information.
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": 1,
@@ -351,6 +377,7 @@ Change current password.
 **Auth Required:** Yes
 
 **Request:**
+
 ```json
 {
   "current_password": "OldPass123!",
@@ -359,6 +386,7 @@ Change current password.
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Password berhasil diubah"
@@ -366,6 +394,7 @@ Change current password.
 ```
 
 **Error (400):**
+
 ```json
 {
   "detail": "Password lama salah."
@@ -385,6 +414,7 @@ Validate BPOM registration number.
 **Auth Required:** Optional
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>  (Optional)
 X-Session-ID: <session_id>    (For guests)
@@ -392,6 +422,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "bpom_number": "MD 272831023097"
@@ -399,6 +430,7 @@ Content-Type: application/json
 ```
 
 **BPOM Number Formats:**
+
 - MD (Makanan Dalam Negeri)
 - ML (Makanan Luar Negeri)
 - SI (Suplemen Dalam Negeri)
@@ -407,6 +439,7 @@ Content-Type: application/json
 - TR (Obat Tradisional)
 
 **Response (200 - Found):**
+
 ```json
 {
   "found": true,
@@ -429,6 +462,7 @@ Content-Type: application/json
 ```
 
 **Response (200 - Not Found):**
+
 ```json
 {
   "found": false,
@@ -438,12 +472,14 @@ Content-Type: application/json
 ```
 
 **Cache Behavior:**
+
 - Valid cache: 30 days
 - Cache key: bpom_number
 - Returns cached data if available
 - Scrapes cekbpom.pom.go.id if cache miss
 
 **Scraping Flow:**
+
 1. Check `bpom_cache` table
 2. If expired/missing, GET cekbpom.pom.go.id (extract CSRF)
 3. POST to /produk-dt/all with CSRF + search query
@@ -462,6 +498,7 @@ Analyze nutrition label using OCR + AI.
 **Rate Limited:** Yes (10/day)
 
 **Headers:**
+
 ```
 Authorization: Bearer <token>  (Optional)
 X-Session-ID: <session_id>    (For guests)
@@ -469,6 +506,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
@@ -478,11 +516,13 @@ Content-Type: application/json
 ```
 
 **Fields:**
+
 - `image_base64`: Base64-encoded image (max 2MB)
 - `product_name`: Product name (optional)
 - `language`: `id` (Bahasa) or `en` (English), defaults to user locale
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -509,10 +549,7 @@ Content-Type: application/json
       "Mengandung MSG dan pewarna sintetis",
       "Rendah serat dan mikronutrien"
     ],
-    "warnings": [
-      "Gluten",
-      "MSG"
-    ],
+    "warnings": ["Gluten", "MSG"],
     "health_score": 6,
     "grade": "C",
     "created_at": "2025-11-24T12:00:00Z"
@@ -521,6 +558,7 @@ Content-Type: application/json
 ```
 
 **Health Score Calculation:**
+
 ```
 Scale: 1-10 (10 = Excellent, 1 = Poor)
 
@@ -536,6 +574,7 @@ Factors:
 ```
 
 **Grade Mapping:**
+
 ```
 A: 9-10 (Excellent)
 B: 7-8  (Good)
@@ -545,11 +584,13 @@ F: 1-2  (Very Poor)
 ```
 
 **Allergen Detection:**
+
 - Cross-references detected ingredients with user allergies
 - Returns warnings array if matches found
 - Ingredient matching: case-insensitive, fuzzy
 
 **AI Prompt Engineering:**
+
 ```python
 System: "Kamu adalah ahli nutrisi Indonesia yang ramah dan membantu."
 
@@ -565,6 +606,7 @@ Format JSON only."
 ```
 
 **Error (429):**
+
 ```json
 {
   "detail": "Anda telah mencapai batas maksimal 10x Analisis AI per hari. Silakan coba lagi besok."
@@ -580,6 +622,7 @@ Extract raw text from image using Tesseract OCR.
 **Auth Required:** Optional
 
 **Request:**
+
 ```json
 {
   "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
@@ -587,6 +630,7 @@ Extract raw text from image using Tesseract OCR.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -595,6 +639,7 @@ Extract raw text from image using Tesseract OCR.
 ```
 
 **OCR Configuration:**
+
 - Language: `ind+eng` (Indonesian + English)
 - Engine: Tesseract 5.0
 - Preprocessing: Grayscale + threshold
@@ -608,6 +653,7 @@ Chat about product using AI.
 **Auth Required:** Optional
 
 **Request:**
+
 ```json
 {
   "product_context": {
@@ -621,6 +667,7 @@ Chat about product using AI.
 ```
 
 **Response (200):**
+
 ```json
 {
   "answer": "Untuk penderita diabetes, konsumsi Indomie Goreng sebaiknya dibatasi karena:\n\n1. Tinggi karbohidrat sederhana (58g) yang cepat menaikkan gula darah\n2. Rendah serat (2g) sehingga tidak membantu kontrol glikemik\n3. Tinggi sodium yang dapat memperburuk komplikasi diabetes\n\nRekomendasi:\n- Konsumsi maksimal 1x seminggu\n- Kombinasi dengan sayuran dan protein\n- Minum air putih cukup\n- Cek gula darah setelah konsumsi"
@@ -628,6 +675,7 @@ Chat about product using AI.
 ```
 
 **AI Context:**
+
 - Previous product analysis
 - User allergies (if authenticated)
 - Medical knowledge base
@@ -641,6 +689,7 @@ Get BPOM scan detail from history.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -668,6 +717,7 @@ Get OCR scan detail from history.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -703,6 +753,7 @@ Get all available allergens.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 [
   {
@@ -724,6 +775,7 @@ Get all available allergens.
 ```
 
 **Allergen Categories:**
+
 - System allergens (created_by: NULL) - Cannot be deleted
 - User custom allergens (created_by: user_id) - Can be deleted by owner
 
@@ -736,6 +788,7 @@ Get current user's allergen preferences.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 [
   {
@@ -760,6 +813,7 @@ Update user allergen preferences.
 **Auth Required:** Yes
 
 **Request:**
+
 ```json
 {
   "allergen_ids": [2, 4, 8, 10]
@@ -767,6 +821,7 @@ Update user allergen preferences.
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Preferensi alergi berhasil disimpan",
@@ -775,6 +830,7 @@ Update user allergen preferences.
 ```
 
 **Behavior:**
+
 - Replaces entire allergen list
 - Validates allergen IDs exist
 - Updates user_allergies association table
@@ -788,6 +844,7 @@ Add custom allergen.
 **Auth Required:** Yes
 
 **Request:**
+
 ```json
 {
   "name": "Jamur Kuping"
@@ -795,11 +852,13 @@ Add custom allergen.
 ```
 
 **Validation:**
+
 - Name: 3-50 characters
 - Allowed: Letters, spaces, hyphens, parentheses
 - Auto-capitalizes first letter
 
 **Response (200):**
+
 ```json
 {
   "message": "Alergi berhasil ditambahkan",
@@ -812,6 +871,7 @@ Add custom allergen.
 ```
 
 **Behavior:**
+
 - Creates new allergen if not exists
 - Automatically adds to user's allergy list
 - Sets created_by to user_id
@@ -825,6 +885,7 @@ Remove allergen from preferences or delete custom allergen.
 **Auth Required:** Yes
 
 **Response (200 - System Allergen):**
+
 ```json
 {
   "message": "Alergi dihapus dari preferensi Anda"
@@ -832,6 +893,7 @@ Remove allergen from preferences or delete custom allergen.
 ```
 
 **Response (200 - Custom Allergen):**
+
 ```json
 {
   "message": "Alergi kustom berhasil dihapus permanen"
@@ -839,6 +901,7 @@ Remove allergen from preferences or delete custom allergen.
 ```
 
 **Error (403):**
+
 ```json
 {
   "detail": "Anda tidak dapat menghapus alergi sistem permanen"
@@ -854,11 +917,13 @@ Get available localization settings.
 **Auth Required:** No
 
 **Query Params:**
+
 ```
 region: string (optional) - Filter by region (Asia, Europe, etc.)
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -890,10 +955,12 @@ region: string (optional) - Filter by region (Asia, Europe, etc.)
 ```
 
 **Supported Locales:**
+
 - `id-ID` (Bahasa Indonesia)
 - `en-US` (English)
 
 **Timezone Coverage:**
+
 - 40+ timezones worldwide
 - Grouped by region
 - Includes UTC offset
@@ -909,6 +976,7 @@ Update user profile with photo upload.
 **Content-Type:** `multipart/form-data`
 
 **Request:**
+
 ```
 name: "John Doe"
 age: 26
@@ -921,11 +989,13 @@ photo: <file>
 ```
 
 **File Upload:**
+
 - Allowed: JPEG, PNG, WebP
 - Max size: 2MB
 - Saved to: `/uploads/profiles/user_{id}_{random}.{ext}`
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -954,6 +1024,7 @@ Update user language preference only.
 **Auth Required:** Yes
 
 **Request:**
+
 ```json
 {
   "locale": "en-US"
@@ -961,6 +1032,7 @@ Update user language preference only.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -974,6 +1046,7 @@ Update user language preference only.
 ```
 
 **Validation:**
+
 - Must be `id-ID` or `en-US`
 
 ---
@@ -985,11 +1058,13 @@ Get user scan history with timezone conversion.
 **Auth Required:** Yes
 
 **Query Params:**
+
 ```
 type: string (optional) - Filter: "bpom" or "ocr"
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1015,6 +1090,7 @@ type: string (optional) - Filter: "bpom" or "ocr"
 ```
 
 **Timezone Handling:**
+
 - Converts UTC timestamps to user timezone
 - Format: ISO 8601 with timezone offset
 - Defaults to Asia/Jakarta if timezone not set
@@ -1028,10 +1104,12 @@ Get detailed history item.
 **Auth Required:** Yes
 
 **Path Params:**
+
 - `type`: "bpom" or "ocr"
 - `id`: Scan history ID
 
 **Response (200 - BPOM):**
+
 ```json
 {
   "success": true,
@@ -1048,6 +1126,7 @@ Get detailed history item.
 ```
 
 **Response (200 - OCR):**
+
 ```json
 {
   "success": true,
@@ -1070,6 +1149,7 @@ Get user statistics summary.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 {
   "favorites": 5,
@@ -1087,6 +1167,7 @@ Get dashboard data with recent scans.
 **Auth Required:** Yes
 
 **Response (200):**
+
 ```json
 {
   "stats": {
@@ -1119,6 +1200,7 @@ Get dashboard data with recent scans.
 ```
 
 **Recent Scans:**
+
 - Combined BPOM + OCR history
 - Sorted by created_at DESC
 - Limited to 5 items
@@ -1136,6 +1218,7 @@ Get articles with search and pagination.
 **Auth Required:** No
 
 **Query Params:**
+
 ```
 category: string (default: "all") - Filter: "gizi", "aditif", "penyakit", "label", "tips", "all"
 q: string (optional) - Search query
@@ -1144,6 +1227,7 @@ size: int (default: 9, min: 1, max: 50)
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1168,6 +1252,7 @@ size: int (default: 9, min: 1, max: 50)
 ```
 
 **Categories:**
+
 ```
 gizi    - Zat Gizi Makro & Mikro
 aditif  - Bahan Tambahan Pangan
@@ -1187,6 +1272,7 @@ Get article detail by slug.
 **Path Example:** `/education/articles/memahami-akg-persen`
 
 **Response (200):**
+
 ```json
 {
   "id": 1,
@@ -1204,6 +1290,7 @@ Get article detail by slug.
 ```
 
 **Behavior:**
+
 - Increments view_count on each request
 - Content in Markdown format
 - Supports images via URL
@@ -1217,6 +1304,7 @@ Get nutrition dictionary.
 **Auth Required:** No
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1224,7 +1312,7 @@ Get nutrition dictionary.
     "name": "Energi Total",
     "category": "makro",
     "unit": "kkal",
-    "daily_value": 2150.00,
+    "daily_value": 2150.0,
     "description": "Jumlah energi yang dihasilkan dari makanan.",
     "benefits": "Bahan bakar utama aktivitas tubuh.",
     "sources": "Karbohidrat, Lemak, Protein"
@@ -1234,7 +1322,7 @@ Get nutrition dictionary.
     "name": "Karbohidrat Total",
     "category": "makro",
     "unit": "g",
-    "daily_value": 325.00,
+    "daily_value": 325.0,
     "description": "Sumber energi utama tubuh.",
     "benefits": "Memberikan energi cepat untuk otak dan otot.",
     "sources": "Nasi, roti, kentang, oat"
@@ -1243,6 +1331,7 @@ Get nutrition dictionary.
 ```
 
 **Categories:**
+
 - `makro`: Macronutrients
 - `mikro`: Micronutrients (vitamins, minerals)
 
@@ -1255,6 +1344,7 @@ Get food additives dictionary.
 **Auth Required:** No
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1279,11 +1369,13 @@ Get food additives dictionary.
 ```
 
 **Safety Levels:**
+
 - `safe`: Generally safe
 - `moderate`: Use with caution
 - `avoid`: Recommended to avoid
 
 **Categories:**
+
 ```
 pemanis    - Sweeteners
 pengawet   - Preservatives
@@ -1302,6 +1394,7 @@ Get disease-specific dietary guidelines.
 **Auth Required:** No
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1322,6 +1415,7 @@ Get disease-specific dietary guidelines.
 ```
 
 **Covered Diseases:**
+
 - Diabetes Melitus
 - Hipertensi
 - Dislipidemia (Kolesterol)
@@ -1346,6 +1440,7 @@ Search food ingredient database.
 **Auth Required:** No
 
 **Query Params:**
+
 ```
 q: string (default: "") - Search query
 page: int (default: 1, min: 1)
@@ -1353,6 +1448,7 @@ size: int (default: 20, min: 1, max: 100)
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1383,11 +1479,13 @@ size: int (default: 20, min: 1, max: 100)
 ```
 
 **Search Behavior:**
+
 - Fuzzy match on name field
 - Case-insensitive
 - Returns nutritional data per 100g
 
 **Use Case:**
+
 - Ingredient lookup for recipes
 - Nutritional comparison
 - Diet planning
@@ -1405,10 +1503,12 @@ Toggle favorite status.
 **Auth Required:** Yes
 
 **Path Params:**
+
 - `scan_type`: "bpom" or "ocr"
 - `scan_id`: ID of scan history
 
 **Response (200):**
+
 ```json
 {
   "is_favorited": true
@@ -1416,6 +1516,7 @@ Toggle favorite status.
 ```
 
 **Behavior:**
+
 - Toggles boolean flag
 - Only owner can favorite their scans
 
@@ -1428,12 +1529,14 @@ Get all favorited items.
 **Auth Required:** Yes
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 100)
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1457,6 +1560,7 @@ limit: int (default: 100)
 ```
 
 **Combined Response:**
+
 - Merges BPOM + OCR favorites
 - Sorted by created_at DESC
 
@@ -1471,10 +1575,12 @@ limit: int (default: 100)
 ### Authorization Levels
 
 **Regular Admin:**
+
 - Read access to all endpoints
 - Limited write access
 
 **Owner Admin (id=1):**
+
 - Full CRUD access
 - Requires 2FA via WhatsApp authorization code
 
@@ -1487,16 +1593,19 @@ Upload image for articles/products.
 **Content-Type:** `multipart/form-data`
 
 **Request:**
+
 ```
 file: <image file>
 type: "general" | "article" | "product" | "profile"
 ```
 
 **File Validation:**
-- Content-Type: Must be image/*
+
+- Content-Type: Must be image/\*
 - Max size: 2MB
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1505,6 +1614,7 @@ type: "general" | "article" | "product" | "profile"
 ```
 
 **Storage:**
+
 - Path: `/uploads/{type}s/{filename}`
 - Filename: `{type}_{random}.{ext}`
 
@@ -1517,6 +1627,7 @@ Request Owner authorization code (for Owner only).
 **Auth Required:** Owner (id=1)
 
 **Response (200):**
+
 ```json
 {
   "wa_link": "https://wa.me/6281234567890?text=Saya%20memerlukan%20Kode%20Otorisasi%20Owner%20Admin.%20lacaknutri.rbwtech.io",
@@ -1525,18 +1636,21 @@ Request Owner authorization code (for Owner only).
 ```
 
 **Workflow:**
+
 1. Owner requests code via GET /auth-code
 2. Opens WhatsApp link to contact admin phone
 3. Receives 8-digit alphanumeric code
 4. Uses code in X-Authorization-Code header for write operations
 
 **Code Properties:**
+
 - Length: 8 characters (uppercase alphanumeric)
 - Lifetime: 120 minutes
 - Single-use: Deleted after use
 - Stored in: `authorization_codes` table
 
 **Usage Example:**
+
 ```
 POST /admin/users/5/role
 Headers:
@@ -1555,6 +1669,7 @@ Get dashboard statistics.
 **Auth Required:** Admin
 
 **Response (200):**
+
 ```json
 {
   "users": 1234,
@@ -1577,6 +1692,7 @@ List all users with search and pagination.
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50, max: 100)
@@ -1584,6 +1700,7 @@ search: string (optional) - Search name/email
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1614,12 +1731,14 @@ Update user role (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Headers:**
+
 ```
 Authorization: Bearer <owner_token>
 X-Authorization-Code: A3B4C5D6
 ```
 
 **Request:**
+
 ```json
 {
   "role": "admin"
@@ -1627,10 +1746,12 @@ X-Authorization-Code: A3B4C5D6
 ```
 
 **Allowed Roles:**
+
 - `user`
 - `admin`
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1647,6 +1768,7 @@ Update user email (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "email": "newemail@example.com"
@@ -1654,6 +1776,7 @@ Update user email (Owner only).
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1662,6 +1785,7 @@ Update user email (Owner only).
 ```
 
 **Error (400):**
+
 ```json
 {
   "detail": "Email already in use"
@@ -1677,6 +1801,7 @@ Generate password reset link (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1697,6 +1822,7 @@ Get all BPOM scan history.
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50)
@@ -1704,6 +1830,7 @@ search: string (optional) - Search product/BPOM number
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1731,6 +1858,7 @@ Get all OCR scan history.
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50)
@@ -1738,6 +1866,7 @@ search: string (optional) - Search product name
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1765,6 +1894,7 @@ List all allergens.
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50)
@@ -1772,6 +1902,7 @@ search: string (optional)
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1795,6 +1926,7 @@ Create new allergen (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "name": "Wijen",
@@ -1803,6 +1935,7 @@ Create new allergen (Owner only).
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1840,6 +1973,7 @@ List food additives.
 **Auth Required:** Admin
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1866,6 +2000,7 @@ Create additive (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "name": "Aspartam",
@@ -1900,6 +2035,7 @@ List diseases.
 **Auth Required:** Admin
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1924,6 +2060,7 @@ Create disease entry (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "name": "Kolesterol Tinggi",
@@ -1956,6 +2093,7 @@ List localization settings.
 **Auth Required:** Admin
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1984,6 +2122,7 @@ Create localization setting (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "timezone": "Asia/Singapore",
@@ -2020,6 +2159,7 @@ List all articles (admin view).
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50)
@@ -2027,6 +2167,7 @@ search: string (optional)
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -2056,6 +2197,7 @@ Create new article (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "title": "Bahaya Gula Berlebih",
@@ -2068,6 +2210,7 @@ Create new article (Owner only).
 ```
 
 **Slug Validation:**
+
 - Must be URL-safe
 - Must be unique
 - Auto-generated from title if not provided
@@ -2095,6 +2238,7 @@ List food products.
 **Auth Required:** Admin
 
 **Query Params:**
+
 ```
 skip: int (default: 0)
 limit: int (default: 50)
@@ -2102,6 +2246,7 @@ search: string (optional) - Search name/code
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -2133,6 +2278,7 @@ Add food product (Owner only).
 **Auth Required:** Owner + Auth Code
 
 **Request:**
+
 ```json
 {
   "original_code": "01002",
@@ -2165,4 +2311,4 @@ Update food product (Owner only).
 
 Delete food product (Owner only).
 
------
+---

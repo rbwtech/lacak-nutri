@@ -330,7 +330,7 @@ Menggunakan `slowapi` untuk membatasi jumlah request dari satu IP address dalam 
 
 - **Login/Register/Reset Password:** Maksimal **5 request/menit** (Mencegah Brute Force).
 - **Forgot Password:** Maksimal **3 request/jam** (Mencegah Spam Email).
-- **AI Analysis:** Maksimal **10 request/hari** (Guest) untuk menghemat kuota API Gemini.
+- **AI Analysis:** Maksimal **10 request/hari** (Guest / User) untuk menghemat kuota API Gemini.
 
 ### 3. Session & Quota Management
 
