@@ -135,7 +135,7 @@ const CameraView = ({
 
               {qrBoxPositions.length > 1 && (
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  Tap to Select
+                  {t("scanner.tapToSelect")}
                 </div>
               )}
             </div>
@@ -200,7 +200,6 @@ const CameraView = ({
             </button>
           )} */}
         </div>
-
         <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6 z-40 px-6">
           {hasZoom && (
             <input
@@ -213,15 +212,17 @@ const CameraView = ({
               className="w-40 h-1 bg-white/30 rounded-lg accent-primary"
             />
           )}
+
           <div className="flex items-center gap-8">
             <Button
               variant="ghost"
               onClick={stopCamera}
-              className="text-white hover:bg-white/10 rounded-full w-12 h-12"
+              className={`text-white hover:bg-white/10 rounded-full w-12 h-12
+        ${scanMode !== "ocr" ? "mx-auto" : ""}
+      `}
             >
               ✕
             </Button>
-
             {scanMode === "ocr" && (
               <button
                 onClick={captureImage}
@@ -230,9 +231,9 @@ const CameraView = ({
                 <div className="w-16 h-16 bg-white rounded-full border-4 border-primary"></div>
               </button>
             )}
+            {scanMode === "ocr" ? <div className="w-12 h-12"></div> : null}
           </div>
         </div>
-
         {liveScanMode && liveOcrText && (
           <div className="absolute bottom-32 left-4 right-4 bg-black/80 backdrop-blur-md text-white p-3 rounded-xl max-h-32 overflow-y-auto text-xs z-30 font-mono">
             {liveOcrText}

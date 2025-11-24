@@ -276,12 +276,16 @@ export const useScannerCamera = ({
       setError(null);
 
       try {
+        const baseConstraints = preferredBackCameraId
+          ? { deviceId: { exact: preferredBackCameraId } }
+          : { facingMode: { ideal: facingMode } };
+
         const constraints = {
-          video: preferredBackCameraId
-            ? { deviceId: { exact: preferredBackCameraId } }
-            : { facingMode: { ideal: facingMode } },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          video: {
+            ...baseConstraints,
+            width: { ideal: 4096 },
+            height: { ideal: 2160 },
+          },
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -291,6 +295,9 @@ export const useScannerCamera = ({
         const capabilities = track.getCapabilities
           ? track.getCapabilities()
           : {};
+        const settings = track.getSettings ? track.getSettings() : {};
+
+        console.log("Camera resolution:", settings.width, "x", settings.height);
 
         setHasZoom(!!capabilities.zoom);
         setHasFlash(!!capabilities.torch);
@@ -322,6 +329,7 @@ export const useScannerCamera = ({
       startLiveScan,
       t,
       setError,
+      preferredBackCameraId,
     ]
   );
 
@@ -338,8 +346,9 @@ export const useScannerCamera = ({
 
   const switchCamera = useCallback(() => {
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+    setZoomLevel(1);
     stopCamera();
-    setTimeout(() => startCamera(liveScanMode), 60);
+    setTimeout(() => startCamera(liveScanMode), 300);
   }, [startCamera, stopCamera, liveScanMode]);
 
   const handleZoom = useCallback((e) => {
