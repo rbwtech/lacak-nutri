@@ -47,7 +47,7 @@ QR Code → BPOM Validation (Scraping) → BPOM Result
 
 ---
 
-## 🚀 Demo Access
+## DEMO ACCESS
 
 ### Live Instance
 
@@ -77,7 +77,7 @@ Password: demo123
 
 ---
 
-## Core Features
+## CORE FEATURES
 
 ```
 Disclaimer:
@@ -246,36 +246,39 @@ Setiap aktivitas scan (OCR maupun BPOM) disimpan untuk referensi pengguna.
 
 -----
 
-## 🛠 Technology Stack
+## TECHNOLOGY STACK
 
 ### Frontend Architecture
 
 ```
-React 18 (Vite 5)
-├── Routing: React Router v6
+React 18 (Vite 6)
+├── Routing: React Router v7
 ├── State: TanStack Query v5 + Context API
-├── UI: Tailwind CSS 3
+├── UI: Tailwind CSS 3 + Framer Motion (Animation) + Lucide React (Icons)
 ├── Forms: React Hook Form + Zod validation
 ├── HTTP: Axios
-├── Scanner: html5-qrcode + Tesseract.js
+├── Scanner: html5-qrcode
 ├── Charts: Chart.js + react-chartjs-2
-└── Build: Vite 5 (ES modules)
+└── Build: Vite 6 (ES modules)
 ```
 
-**Key Dependencies:**
+**Key Dependencies (`package.json`):**
 
 ```json
 {
-  "react": "^18.2.0",
-  "@tanstack/react-query": "^5.0.0",
-  "react-router-dom": "^6.20.0",
-  "tailwindcss": "^3.4.0",
-  "axios": "^1.6.0",
+  "react": "^18.3.1",
+  "vite": "^6.0.5",
+  "react-router-dom": "^7.1.1",
+  "@tanstack/react-query": "^5.64.1",
+  "tailwindcss": "^3.4.17",
+  "axios": "^1.7.9",
   "html5-qrcode": "^2.3.8",
-  "tesseract.js": "^5.0.0",
-  "chart.js": "^4.4.0",
-  "react-hook-form": "^7.48.0",
-  "zod": "^3.22.0"
+  "chart.js": "^4.4.7",
+  "react-chartjs-2": "^5.3.0",
+  "react-hook-form": "^7.54.2",
+  "zod": "^3.24.1",
+  "framer-motion": "^11.16.0",
+  "lucide-react": "^0.471.0"
 }
 ```
 
@@ -284,16 +287,19 @@ React 18 (Vite 5)
 ```
 frontend/
 ├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── layout/        # Navbar, Footer, Sidebar
-│   │   ├── common/        # Button, Card, Modal
-│   │   └── features/      # OCRScanner, BPOMValidator
-│   ├── pages/             # Route pages
-│   ├── hooks/             # Custom hooks (useAuth, useScanner)
-│   ├── context/           # Global state (AuthContext)
-│   ├── api/               # API service layer
-│   ├── utils/             # Helper functions
-│   └── assets/            # Images, fonts
+│   ├── components/        # UI Components
+│   │   ├── layout/        # Header, Footer, MainLayout
+│   │   ├── ui/            # Reusable (Button, Card, Modal, Input, Toast)
+│   │   └── features/      # NutritionLabel
+│   ├── pages/             # Page Components (Home, Scanner, History, Admin...)
+│   │   └── admin/         # Admin Specific Pages (Dashboard, Products, Users)
+│   ├── hooks/             # Custom hooks (useAuth, useCommon, useOwnerAuth)
+│   ├── context/           # Global State (AuthContext)
+│   ├── config/            # API Configuration (api.js)
+│   ├── routes/            # Route Definitions (AdminRoute, ProtectedRoute)
+│   ├── i18n/              # Localization (id/en)
+│   ├── utils/             # Helper functions (helpers.js)
+│   └── assets/            # Static Assets
 ├── public/
 └── vite.config.js
 ```
@@ -305,28 +311,30 @@ FastAPI + Python 3.11
 ├── ORM: SQLAlchemy 2.0
 ├── Database: PyMySQL (MariaDB connector)
 ├── Validation: Pydantic v2
-├── Auth: JWT (python-jose) + bcrypt
-├── AI: google-generativeai (Gemini)
-├── OCR: Tesseract (external binary)
-├── Scraping: httpx + BeautifulSoup4
-├── Image: Pillow
+├── Auth: JWT (python-jose) + Passlib (bcrypt)
+├── AI: google-genai (Google DeepMind SDK terbaru)
+├── OCR: Pytesseract (Tesseract OCR Wrapper)
+├── Scraping: HTTPX + BeautifulSoup4
+├── Image Processing: Pillow
 └── Server: Uvicorn (ASGI)
 ```
 
-**Key Dependencies:**
+**Key Dependencies (`requirements.txt`):**
 
 ```python
-fastapi==0.109.0
-sqlalchemy==2.0.25
-pydantic==2.5.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
-google-generativeai==0.3.2
-httpx==0.26.0
-beautifulsoup4==4.12.2
-Pillow==10.2.0
-pymysql==1.1.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+sqlalchemy>=2.0.0
+pymysql>=1.0.0
+pydantic>=2.0.0
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+google-genai>=0.1.0       
+beautifulsoup4>=4.12.0
+httpx>=0.24.0
+pillow>=10.0.0
+pytesseract
 ```
 
 **Project Structure:**
@@ -334,141 +342,107 @@ pymysql==1.1.0
 ```
 backend/
 ├── app/
-│   ├── api/                 # Route handlers
-│   │   ├── auth.py          # Login, register
-│   │   ├── scan.py          # OCR, BPOM, AI
-│   │   ├── education.py     # GiziPedia CRUD
-│   │   ├── user.py          # Profile, allergies
-│   │   └── admin.py         # Admin operations
-│   ├── core/
-│   │   ├── config.py        # Environment config
-│   │   ├── security.py      # JWT utils
-│   │   └── database.py      # DB session
-│   ├── models/              # SQLAlchemy models
-│   ├── schemas/             # Pydantic schemas
-│   ├── services/            # Business logic
-│   │   ├── ocr_service.py
-│   │   ├── bpom_service.py
-│   │   ├── ai_service.py
-│   │   └── allergen_service.py
-│   └── main.py              # FastAPI app
-├── uploads/                 # User uploaded images
+│   ├── routers/           # API Endpoints (Routes)
+│   │   ├── auth.py        # Authentication
+│   │   ├── admin.py       # Admin Operations
+│   │   ├── scan.py        # OCR & AI Analysis
+│   │   ├── food.py        # Food Catalog Operations
+│   │   ├── favorites.py   # User Favorites
+│   │   ├── education.py   # Articles & GiziPedia
+│   │   └── users.py       # User Profile Management
+│   ├── crud/              # Database Operations (Create, Read, Update, Delete)
+│   ├── models/            # SQLAlchemy Database Models
+│   ├── schemas/           # Pydantic Response/Request Models
+│   ├── services/          # External Logics
+│   │   ├── ai_service.py     # Gemini AI Integration
+│   │   └── bpom_endpoint.py  # BPOM Scraping Logic
+│   ├── core/              # Config, Database, Security
+│   └── main.py            # FastAPI Entry Point
+├── uploads/               # Local Storage for Images
 └── requirements.txt
 ```
 
 ### Database Schema
 
-**Technology:** MariaDB 11.4.4 (MySQL-compatible)
+**Technology:** MariaDB 11.4.4 (via PyMySQL)
 
 **Schema Design:**
 
 ```sql
--- Core Tables
-users (11 columns)
+-- Users & Authentication
+users (14 columns)
 ├── id (PK)
-├── email (UNIQUE)
-├── password_hash
-├── full_name
-├── role (enum: user, admin)
+├── email (UNIQUE), password_hash, full_name
+├── role (enum: user, admin, owner)
 ├── gender, age, height, weight
+├── activity_level (enum: sedentary, light, moderate, active, very_active)
+├── reset_token, reset_token_expires
 └── created_at, updated_at
 
-allergens (5 columns)
-├── id (PK)
-├── name (VARCHAR 100)
-├── category (enum: food, additive)
-├── description (TEXT)
-└── severity_level (enum: low, medium, high)
+-- Reference Data
+allergens (
+  id, name, code, category, description, 
+  severity_level, created_by, timestamps
+)
+additives (
+  id, name, code, category, safety_level, 
+  description, health_risks, timestamps
+)
 
-user_allergies (4 columns)
-├── id (PK)
-├── user_id (FK → users)
-├── allergen_id (FK → allergens)
-└── notes (TEXT)
+-- User Relations
+user_allergies (id, user_id, allergen_id, notes)
+favorites (
+  id, user_id, 
+  food_id (FK -> foods), 
+  scan_ocr_id (FK -> scan_history_ocr), 
+  scan_bpom_id (FK -> scan_history_bpom), 
+  created_at
+)
 
--- Scan History
-scan_history_ocr (18 columns)
-├── id (PK)
-├── user_id (FK → users, nullable)
-├── image_path
-├── ocr_text (TEXT)
-├── calories, fat, protein, carbs, sodium, sugar (DECIMAL)
-├── health_score (1-10)
-├── ai_analysis (JSON)
-├── detected_ingredients (JSON)
-├── allergen_warnings (JSON)
-├── created_at, updated_at
+-- Core Data: Scan History
+scan_history_ocr (14 columns)
+├── id (PK), user_id (FK)
+├── image_data (LONGTEXT/Base64)
+├── product_name
+├── ocr_raw_data (JSON)      -- Stores calories, protein, etc.
+├── ai_analysis (TEXT)       -- AI Summary
+├── pros (JSON), cons (JSON)
+├── ingredients (TEXT)
+├── warnings (JSON)          -- Includes allergen warnings
+├── health_score (INT), grade (VARCHAR)
+└── is_favorited (BOOL), created_at
 
 scan_history_bpom (10 columns)
-├── id (PK)
-├── user_id (FK → users, nullable)
-├── registration_number
-├── product_name, brand
-├── status (enum: TERDAFTAR, TIDAK_DITEMUKAN, DITARIK)
-├── raw_data (JSON)
-├── created_at, updated_at
+├── id (PK), user_id (FK)
+├── bpom_number, product_name, brand, manufacturer
+├── status (TERDAFTAR, dll)
+├── raw_response (JSON)      -- Full scraped data
+└── is_favorited (BOOL), created_at
 
--- BPOM Cache
-bpom_cache (8 columns)
+-- Core Data: Food Catalog
+foods (18 columns)
 ├── id (PK)
-├── registration_number (UNIQUE)
-├── product_name, brand
-├── status
-├── raw_data (JSON)
-├── cached_at, expires_at
+├── name, brand, barcode
+├── serving_size, calories, proteins, fats, carbs
+├── fiber, sugar, sodium
+├── ingredients, image_url
+├── external_id, data_source
+└── timestamps
 
--- Education
-articles (11 columns)
-├── id (PK)
-├── title, slug (UNIQUE)
-├── content (LONGTEXT)
-├── category_id (FK → article_categories)
-├── author_id (FK → users)
-├── thumbnail_url
-├── reading_time_minutes
-├── views, published_at
-└── created_at, updated_at
-
-article_categories (4 columns)
-├── id (PK)
-├── name, slug (UNIQUE)
-└── description
+-- Caching & Content
+bpom_cache (id, bpom_number, data (JSON), timestamps)
+articles (id, title, slug, content, category_id, status, views, timestamps)
+article_categories (id, name, slug, description)
 ```
 
-**Indexes:**
-
-```sql
--- Performance optimization
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_scan_history_ocr_user_id ON scan_history_ocr(user_id);
-CREATE INDEX idx_scan_history_bpom_registration ON scan_history_bpom(registration_number);
-CREATE INDEX idx_bpom_cache_registration ON bpom_cache(registration_number);
-CREATE INDEX idx_articles_slug ON articles(slug);
-CREATE INDEX idx_articles_published ON articles(published_at);
-```
-
-**ERD Visualization:**
+**ERD Logic (Simplified):**
 
 ```
-        ┌──────────┐
-        │  users   │
-        └────┬─────┘
-             │
-      ┌──────┴──────────────────────┐
-      │                              │
-      ▼                              ▼
-┌───────────────┐           ┌──────────────┐
-│user_allergies │◄──────────┤  allergens   │
-└───────────────┘           └──────────────┘
-      ▲
-      │
-┌─────┴──────┬───────────────────┐
-│            │                   │
-▼            ▼                   ▼
-scan_history_ocr    scan_history_bpom    articles
-                                          │
-                                          ▼
-                                    article_categories
+      [foods] <───────┐
+                      │
+  [scan_history_ocr] ─┼──► [favorites] ◄── [users] ──► [user_allergies] ──► [allergens]
+                      │
+ [scan_history_bpom] ─┘
 ```
 
 ### Infrastructure & Deployment
@@ -477,44 +451,32 @@ scan_history_ocr    scan_history_bpom    articles
 
 ```yaml
 Platform: VPS (Dedicated Server)
-IP: 153.92.5.156
 Web Server: Nginx 1.24
-SSL: Let's Encrypt (auto-renewal)
-CDN: Cloudflare (DNS + DDoS protection)
-Deployment: Git pull + npm build
+SSL: Let's Encrypt
+Deployment: Manual Build (dist/) -> Nginx Serve
 ```
 
 **Backend Hosting:**
 
 ```yaml
-Platform: Railway/Render (Auto-scaling)
+Platform: Railway / Render (Containerized)
 Runtime: Python 3.11
 Server: Uvicorn
 Environment: Production
-Health Check: /api/health
+Base URL: https://backend-url.railway.app
 ```
 
 **Database:**
 
 ```yaml
-Server: VPS (aaPanel managed)
+Server: VPS (aaPanel Managed)
 DBMS: MariaDB 11.4.4
-Access: Local + Remote (secured)
-Backup: Daily automated (7-day retention)
+Connection: Remote (PyMySQL) via Host IP
 ```
 
-**Domain & DNS:**
+-----
 
-```
-lacaknutri.rbwtech.io
-├── A Record → 153.92.5.156 (Frontend)
-├── CNAME api → backend-url.railway.app
-└── SSL/TLS → Let's Encrypt
-```
-
----
-
-## 📦 Quick Start
+## QUICK START (INSTALLATION)
 
 ### Prerequisites
 
@@ -525,14 +487,14 @@ MariaDB 11.4.4
 Git
 ```
 
-### 1. Clone Repository
+### 1\. Clone Repository
 
 ```bash
 git clone https://github.com/rbwtech/lacak-nutri.git
 cd lacak-nutri
 ```
 
-### 2. Database Setup
+### 2\. Database Setup
 
 **Create Database:**
 
@@ -542,12 +504,14 @@ CREATE DATABASE lacak_nutri CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 **Import Schema:**
 
+Pastikan Anda berada di *root directory* project (`lacak-nutri/`).
+
 ```bash
 mysql -u root -p lacak_nutri < database/schema.sql
 mysql -u root -p lacak_nutri < database/seed.sql
 ```
 
-### 3. Backend Configuration
+### 3\. Backend Configuration
 
 **Install Dependencies:**
 
@@ -560,50 +524,56 @@ pip install -r requirements.txt
 
 **Environment Variables (.env):**
 
+Buat file `.env` di dalam folder `backend/` dan isi sesuai konfigurasi berikut:
+
 ```env
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
+DB_NAME=lacak_nutri
+DB_USER=root
+DB_PASSWORD=your_password
 
-SECRET_KEY=
+SECRET_KEY=generate_your_secure_secret_key_here
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=43200
 
-GEMINI_API_KEY=
+GEMINI_API_KEY=your_google_gemini_api_key
 
 UPLOAD_DIR=./uploads
 MAX_UPLOAD_SIZE=10485760
 
-CORS_ORIGINS=
+CORS_ORIGINS=http://localhost:5173
 
 DEBUG=True
 HOST=0.0.0.0
 PORT=8000
 
-RECAPTCHA_SECRET_KEY=
-EMAIL_SENDER_NAME=
-EMAIL_SENDER_ADDRESS=
+RECAPTCHA_SECRET_KEY=your_recaptcha_server_secret
+EMAIL_SENDER_NAME="Lacak Nutri Admin"
+EMAIL_SENDER_ADDRESS=admin@lacaknutri.com
 
-SMTP_SERVER=
-SMTP_PORT=
-SMTP_USERNAME=
-SMTP_PASSWORD=
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
 ```
 
 **Run Server:**
 
+Pastikan *virtual environment* aktif dan Anda berada di folder `backend/`.
+
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Server: http://localhost:8000  
-API Docs: http://localhost:8000/docs
+Server: `http://localhost:8000`
+API Docs: `http://localhost:8000/docs`
 
-### 4. Frontend Configuration
+### 4\. Frontend Configuration
 
 **Install Dependencies:**
+
+Buka terminal baru dan masuk ke folder frontend.
 
 ```bash
 cd frontend
@@ -612,9 +582,11 @@ npm install
 
 **Environment Variables (.env):**
 
+Buat file `.env` di dalam folder `frontend/`.
+
 ```env
 VITE_API_URL=http://localhost:8000/api
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
+VITE_RECAPTCHA_SITE_KEY=your_recaptcha_client_site_key
 ```
 
 **Run Development Server:**
@@ -623,30 +595,30 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 npm run dev
 ```
 
-Frontend: http://localhost:5173
+Frontend: `http://localhost:5173`
 
-### 5. Production Build
+### 5\. Production Build
 
 **Frontend:**
 
 ```bash
 npm run build
-# Output: dist/
+# Output akan berada di folder: dist/
 ```
 
 **Backend:**
 
 ```bash
-# Using Gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+# Menggunakan Gunicorn (Linux/Mac)
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
-# Or Uvicorn (production)
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+# Atau Uvicorn langsung (Windows/Simple Deploy)
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
----
+-----
 
-## 🔌 API Documentation
+## API DOCUMENTATION
 
 **Base URL:** `https://lacaknutri.rbwtech.io/api`
 
@@ -663,8 +635,8 @@ Register new user
 ```json
 {
   "email": "user@example.com",
-  "password": "securepass123",
-  "full_name": "John Doe",
+  "password": "password_anda",
+  "full_name": "Basri Wijaya",
   "age": 25,
   "gender": "male",
   "height": 170,
@@ -681,7 +653,7 @@ Register new user
     "user": {
       "id": 1,
       "email": "user@example.com",
-      "full_name": "John Doe",
+      "full_name": "Basri Wijaya",
       "role": "user"
     },
     "token": "eyJhbGciOiJIUzI1NiIs..."
@@ -698,7 +670,7 @@ Login user
 ```json
 {
   "email": "user@example.com",
-  "password": "securepass123"
+  "password": "password_anda"
 }
 ```
 
@@ -943,383 +915,67 @@ Delete scan record
 
 Create new article
 
----
+-----
 
-## 🎨 Design System
+## DESIGN SYSTEM
+
+Sistem desain LacakNutri menggunakan tema kustom Tailwind CSS dengan dukungan penuh untuk **Light Mode** dan **Dark Mode**.
 
 ### Color Palette
 
-**Primary Colors:**
+Warna dikelola menggunakan CSS Variables untuk mendukung pergantian tema yang mulus.
 
-```css
---color-primary: #ff9966; /* Peach Warm - CTA, logo */
---color-primary-hover: #ff7a4d; /* Deep Coral - hover state */
---color-secondary: #6b8e23; /* Sage Green - healthy indicators */
---color-accent: #a1d2d5; /* Soft Teal - info cards */
-```
+| Color Token | Light Mode (Hex) | Dark Mode (Hex) | Penggunaan Utama |
+| :--- | :--- | :--- | :--- |
+| **Primary** | `#FF9966` | `#FF9966` | Brand identity, CTA buttons, links |
+| **Primary Hover** | `#FF7A4D` | `#FF7A4D` | Hover states |
+| **Secondary** | `#6B8E23` | `#8ABE53` | Status sehat, verifikasi (adjusted for contrast) |
+| **Accent** | `#A1D2D5` | `#5D8A8D` | Dekorasi, info cards, highlights |
+| **Background Base** | `#FDFDF5` | `#121212` | Latar belakang utama aplikasi |
+| **Background Surface** | `#FFFFF7` | `#1E1E1E` | Kartu (Cards), Modal, Sidebar |
+| **Text Primary** | `#333333` | `#E0E0E0` | Judul, konten utama |
+| **Text Secondary** | `#8C8C8C` | `#A0A0A0` | Label, metadata, deskripsi singkat |
+| **Border** | `#EBE3D5` | `#333333` | Garis pemisah, border input |
 
-**Background & Surface:**
+**Status Colors (Hardcoded):**
 
-```css
---color-bg-primary: #fdfdf5; /* Cream White - main bg */
---color-bg-secondary: #ffffff; /* Pure White - cards */
-```
-
-**Text & Borders:**
-
-```css
---color-text-primary: #333333; /* Dark Charcoal - headings */
---color-text-secondary: #8c8c8c; /* Muted Gray - labels */
---color-border: #ebe3d5; /* Pale Tan - borders */
-```
-
-**Status Colors:**
-
-```css
---color-success: #4caf50; /* Verified Green */
---color-warning: #ffc107; /* Warm Amber */
---color-error: #ef5350; /* Soft Red */
-```
+  - Success: `#4CAF50`
+  - Warning: `#FFC107`
+  - Error: `#EF5350`
 
 ### Typography
 
 **Font Family:**
+Menggunakan **Manrope** dari Google Fonts sebagai font utama, dengan fallback ke Inter dan sans-serif.
 
 ```css
-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-family: "Manrope", "Inter", sans-serif;
 ```
 
-**Type Scale (8-point grid):**
+**Weights:** 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold), 800 (ExtraBold).
 
-```css
---text-xs: 12px; /* Caption, timestamp */
---text-sm: 14px; /* Labels, secondary text */
---text-base: 16px; /* Body text */
---text-lg: 20px; /* Card titles */
---text-xl: 24px; /* Section headings */
---text-2xl: 32px; /* Page titles */
---text-3xl: 40px; /* Hero heading */
-```
+### UI Components Styling
 
-### Spacing System
+Konfigurasi Tailwind (`tailwind.config.js`) mencakup kustomisasi berikut:
 
-**8-point Grid:**
+**Border Radius:**
 
-```css
---space-1: 4px;
---space-2: 8px;
---space-3: 12px;
---space-4: 16px;
---space-6: 24px;
---space-8: 32px;
---space-12: 48px;
---space-16: 64px;
-```
+  - `rounded-xl`: 12px
+  - `rounded-2xl`: 16px
+  - `rounded-3xl`: 24px
 
-### Component Guidelines
+**Box Shadow:**
 
-**Buttons:**
+  - `shadow-soft`: `0 8px 24px rgba(0, 0, 0, 0.05)`
 
-```css
-.btn-primary {
-  background: var(--color-primary);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  min-height: 44px; /* Touch target */
-}
+**Animations:**
 
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-}
-```
+  - **Blob:** Animasi background fluid (`blob 7s infinite`).
+  - **Fade In:** Transisi masuk elemen (`fadeIn 0.5s ease-out`).
 
-**Cards:**
+-----
 
-```css
-.card {
-  background: var(--color-bg-secondary);
-  border-radius: 12px;
-  padding: 16px; /* Mobile: 16px, Desktop: 24px */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-```
-
-**Status Alerts:**
-
-```html
-<!-- Success -->
-<div
-  style="background: rgba(76, 175, 80, 0.1); color: #4CAF50; padding: 12px; border-radius: 8px;"
->
-  <svg>...</svg> Data terverifikasi BPOM
-</div>
-
-<!-- Warning -->
-<div style="background: rgba(255, 193, 7, 0.1); color: #F57C00; ...">
-  <svg>...</svg> Kandungan gula tinggi
-</div>
-
-<!-- Error -->
-<div style="background: rgba(239, 83, 80, 0.1); color: #D32F2F; ...">
-  <svg>...</svg> Terdeteksi alergen kacang
-</div>
-```
-
----
-
-## 🧪 Testing
-
-### Manual Testing Checklist
-
-**Authentication Flow:**
-
-- [ ] Register dengan email valid
-- [ ] Register dengan email duplicate (expect error)
-- [ ] Login dengan credentials valid
-- [ ] Login dengan password salah (expect error)
-- [ ] Token expiration handling
-
-**OCR Scanner:**
-
-- [ ] Upload label gizi dari gallery
-- [ ] Capture dari kamera (mobile)
-- [ ] Test dengan gambar blur/low-quality
-- [ ] Test dengan non-food image (expect error)
-- [ ] Verify extracted nutrition data accuracy
-
-**BPOM Validator:**
-
-- [ ] Scan QR code BPOM (mobile)
-- [ ] Input manual registration number
-- [ ] Test dengan nomor valid (expect TERDAFTAR)
-- [ ] Test dengan nomor invalid (expect TIDAK_DITEMUKAN)
-- [ ] Verify cache mechanism (30 hari)
-
-**AI Analysis:**
-
-- [ ] Verify health score calculation (1-10)
-- [ ] Check ingredient detection accuracy
-- [ ] Confirm allergen warnings display
-- [ ] Test AI response time (<10s)
-
-**User Profile:**
-
-- [ ] Update profile data (age, height, weight)
-- [ ] BMI auto-calculation
-- [ ] Add/remove allergies
-- [ ] Verify allergen warning pada scan results
-
-**Responsive Design:**
-
-- [ ] Mobile (320px-768px)
-- [ ] Tablet (768px-1024px)
-- [ ] Desktop (1024px+)
-- [ ] Touch targets minimal 44x44px
-
-### User Acceptance Testing Results
-
-**Test Date:** 15 Januari 2025  
-**Participants:** 15 users (mixed demographics)  
-**Completion Rate:** 93.3%
-
-**Task Success Rate:**
-
-```
-Register & Login: 100% (15/15)
-OCR Scan: 93% (14/15) - 1 blur image issue
-BPOM Validation: 100% (15/15)
-Find GiziPedia Article: 87% (13/15) - 2 navigation confusion
-Add Allergen: 100% (15/15)
-```
-
-**Average Task Time:**
-
-```
-First scan (OCR): 45 seconds
-BPOM validation: 28 seconds
-Read article: 3m 12s
-```
-
-**User Feedback Highlights:**
-
-```
-Positive:
-✓ "Sangat cepat untuk scan"
-✓ "AI analysis jelas dan helpful"
-✓ "Design clean dan tidak membingungkan"
-
-Improvements:
-⚠ "Butuh tutorial pertama kali pakai"
-⚠ "GiziPedia bisa lebih prominent"
-```
-
----
-
-## 🚢 Deployment Guide
-
-### Production Checklist
-
-**Backend:**
-
-```bash
-# 1. Update environment variables
-ENVIRONMENT=production
-DEBUG=False
-ALLOWED_ORIGINS=https://lacaknutri.rbwtech.io
-
-# 2. Database migration
-alembic upgrade head
-
-# 3. Create superuser
-python scripts/create_admin.py
-
-# 4. Run production server
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-```
-
-**Frontend:**
-
-```bash
-# 1. Build production bundle
-npm run build
-
-# 2. Deploy to VPS (via SFTP/Git)
-scp -r dist/* user@153.92.5.156:/var/www/lacaknutri/
-
-# 3. Configure Nginx
-server {
-    listen 80;
-    server_name lacaknutri.rbwtech.io;
-
-    location / {
-        root /var/www/lacaknutri;
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://backend-url:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-
-# 4. Enable SSL
-certbot --nginx -d lacaknutri.rbwtech.io
-```
-
-**Database:**
-
-```bash
-# Backup before deployment
-mysqldump -u root -p lacak_nutri > backup_$(date +%Y%m%d).sql
-
-# Setup automated backups (cron)
-0 2 * * * mysqldump -u root -p lacak_nutri > /backups/lacak_nutri_$(date +\%Y\%m\%d).sql
-```
-
-### Monitoring & Logging
-
-**Backend Logging:**
-
-```python
-# app/core/logger.py
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/app.log'),
-        logging.StreamHandler()
-    ]
-)
-```
-
-**Health Check Endpoint:**
-
-```python
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "database": "connected"
-    }
-```
-
-**Nginx Access Logs:**
-
-```nginx
-access_log /var/log/nginx/lacaknutri_access.log;
-error_log /var/log/nginx/lacaknutri_error.log;
-```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions from the community. Follow these guidelines:
-
-### Development Workflow
-
-1. **Fork & Clone:**
-
-```bash
-git clone https://github.com/YOUR_USERNAME/lacak-nutri.git
-cd lacak-nutri
-```
-
-2. **Create Feature Branch:**
-
-```bash
-git checkout -b feature/amazing-feature
-```
-
-3. **Code Standards:**
-
-```python
-# Python (Backend)
-- Follow PEP 8
-- Use type hints
-- Docstrings for functions
-- Max line length: 88 (Black formatter)
-
-# JavaScript (Frontend)
-- ESLint + Prettier
-- Functional components (React Hooks)
-- PropTypes validation
-- Max line length: 80
-```
-
-4. **Commit Convention:**
-
-```bash
-feat: Add allergen cross-reference
-fix: Resolve OCR accuracy on rotated images
-docs: Update API documentation
-style: Format code with Black
-refactor: Optimize BPOM cache logic
-test: Add unit tests for AI service
-```
-
-5. **Push & Pull Request:**
-
-```bash
-git push origin feature/amazing-feature
-# Open PR on GitHub with description
-```
-
-### Code Review Process
-
-- All PRs require 1 approval
-- CI must pass (linting, tests)
-- Update documentation if needed
-- Squash commits before merge
-
----
-
-## 📄 License
+## LICENSE
 
 This project is licensed under the **MIT License**.
 
@@ -1345,7 +1001,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ---
 
-## 👥 Team
+## TEAM
 
 **Trio WakwaW Team** - UINIC 7.0 Web Development Competition
 
@@ -1357,14 +1013,12 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 │  • Agung Nugraha
 │  • Bayu Wicaksono
 │
-│  🌐 Website: https://lacaknutri.rbwtech.io
-│  📦 GitHub: github.com/rbwtech/lacak-nutri
 └─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🙏 Acknowledgments
+## ACKNOWLEDGEMENT
 
 **Technologies:**
 
@@ -1385,7 +1039,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ---
 
-## 📞 Support
+## SUPPORT
 
 **Issues & Bugs:**  
 Report via [GitHub Issues](https://github.com/rbwtech/lacak-nutri/issues)
