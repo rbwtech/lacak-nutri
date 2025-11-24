@@ -23,18 +23,19 @@
 
 ---
 
-## 📋 Overview
+## Overview
 
-LacakNutri adalah aplikasi web berbasis AI untuk analisis nutrisi dan validasi keamanan produk makanan/minuman. Menggunakan OCR untuk scan label, Gemini AI untuk analisis komposisi, dan integrasi real-time dengan database BPOM.
+LacakNutri adalah aplikasi web berbasis Full Stack dan AI yang dirancang untuk memberikan analisis nutrisi instan dan validasi keamanan pangan untuk produk makanan/minuman kemasan. Aplikasi ini menggunakan Vision Language Model (VLM) dari Google Gemini untuk memproses label nutrisi dan komposisi dari gambar, serta mekanisme web scraping untuk memverifikasi status registrasi produk ke database resmi BPOM.
 
 **Problem Statement:** Minimnya transparansi informasi nilai gizi dan kesulitan memverifikasi keamanan produk BPOM.
 
 **Solution:** Platform end-to-end yang mengubah label fisik menjadi data terstruktur dengan insight kesehatan personal dalam hitungan detik.
 
-### 🎯 Core Value
+### Core Value
 
 ```
-Scan → Extract → Analyze → Validate → Decide
+Capture Image → AI Analysis (VLM) → Personalized Health Insights
+QR Code → BPOM Validation (Scraping) → BPOM Result
 ```
 
 **Target Users:**
@@ -77,6 +78,9 @@ Password: demo123
 ---
 
 ## ✨ Core Features
+
+Disclaimer:
+Fungsi utama /api/scan/analyze menggunakan Gemini AI (VLM) untuk membaca dan menganalisis label dari gambar secara langsung. Ini lebih dari sekadar OCR; ini adalah analisis gambar terstruktur. Tesseract hanya digunakan untuk raw text extraction di endpoint terpisah (/api/scan/ocr-text).
 
 ### 1. OCR Nutrition Scanner
 
@@ -601,26 +605,35 @@ pip install -r requirements.txt
 **Environment Variables (.env):**
 
 ```env
-# Database
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=lacak_nutri
-DB_USER=root
-DB_PASSWORD=your_password
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
 
-# Security
-SECRET_KEY=S@DZYLbbTfLaZDi0U?qe0zsU
+SECRET_KEY=
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
+ACCESS_TOKEN_EXPIRE_MINUTES=43200
 
-# Gemini AI
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=
 
-# CORS
-ALLOWED_ORIGINS=http://localhost:5173,https://lacaknutri.rbwtech.io
+UPLOAD_DIR=./uploads
+MAX_UPLOAD_SIZE=10485760
 
-# Environment
-ENVIRONMENT=development
+CORS_ORIGINS=
+
+DEBUG=True
+HOST=0.0.0.0
+PORT=8000
+
+RECAPTCHA_SECRET_KEY=
+EMAIL_SENDER_NAME=
+EMAIL_SENDER_ADDRESS=
+
+SMTP_SERVER=
+SMTP_PORT=
+SMTP_USERNAME=
+SMTP_PASSWORD=
 ```
 
 **Run Server:**
