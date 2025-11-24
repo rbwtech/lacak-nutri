@@ -49,40 +49,63 @@ def create_reset_token(email: str):
     return create_access_token(to_encode, expires_delta=timedelta(minutes=expire_minutes))
 
 def send_reset_email(recipient_email: str, reset_link: str):
-    """Sends email via SMTP (Brevo) securely."""
+    """Mengirim email reset password dengan template HTML profesional."""
     
-    subject = "LacakNutri: Reset Kata Sandi Anda"
+    subject = "Reset Password - LacakNutri"
     
-    # Template HTML
+    logo_url = f"{settings.FRONTEND_BASE_URL}/lacaknutri.png" 
+    
     body_html = f"""
+    <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            .button {{
-                display: inline-block;
-                padding: 10px 20px;
-                background-color: #FF9966;
-                color: white !important;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: bold;
-            }}
+            /* Reset CSS dasar untuk email */
+            body {{ margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 40px; margin-bottom: 40px; }}
+            .header {{ background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); padding: 40px 20px; text-align: center; }}
+            .logo {{ width: 80px; height: 80px; background-color: white; border-radius: 50%; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); object-fit: contain; }}
+            .content {{ padding: 40px 30px; color: #334155; text-align: center; }}
+            .h1 {{ font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 10px; }}
+            .text {{ font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 30px; }}
+            .button {{ display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 94, 98, 0.4); transition: all 0.3s ease; }}
+            .footer {{ background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }}
+            .link {{ color: #FF9966; word-break: break-all; }}
         </style>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-            <h2 style="color: #FF9966;">Permintaan Reset Password</h2>
-            <p>Halo,</p>
-            <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun LacakNutri Anda.</p>
-            <p style="margin: 25px 0;">
+    <body>
+        <div class="container">
+            <div class="header">
+                <img src="{logo_url}" alt="LacakNutri Logo" class="logo">
+            </div>
+            
+            <div class="content">
+                <div class="h1">Lupa Kata Sandi?</div>
+                <p class="text">
+                    Jangan khawatir, kami menerima permintaan untuk mereset kata sandi akun <strong>LacakNutri</strong> Anda.
+                    Klik tombol di bawah ini untuk membuat kata sandi baru.
+                </p>
+                
                 <a href="{reset_link}" class="button">
-                    Reset Kata Sandi Sekarang
+                    Reset Kata Sandi Saya
                 </a>
-            </p>
-            <p>Atau salin tautan ini ke browser Anda:</p>
-            <p style="font-size: 12px; color: #666;">{reset_link}</p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-            <p><small>Tautan ini berlaku selama 30 menit. Jika Anda tidak merasa meminta reset password, abaikan email ini.</small></p>
+                
+                <p style="margin-top: 30px; font-size: 14px; color: #64748b;">
+                    Tautan ini hanya berlaku selama <strong>30 menit</strong>.
+                </p>
+                
+                <div style="margin-top: 40px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">
+                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 5px;">Atau salin tautan ini ke browser Anda:</p>
+                    <a href="{reset_link}" class="link" style="font-size: 12px;">{reset_link}</a>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>&copy; {datetime.now().year} LacakNutri by Trio WakwaW. All rights reserved.</p>
+                <p>Email ini dikirim secara otomatis, mohon jangan dibalas.</p>
+            </div>
         </div>
     </body>
     </html>
