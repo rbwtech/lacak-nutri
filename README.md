@@ -1,12 +1,12 @@
 <div align="center">
 
 ```
-██╗      █████╗  ██████╗ █████╗ ██╗  ██╗    ███╗   ██╗██╗   ██╗████████╗██████╗ ██╗
-██║     ██╔══██╗██╔════╝██╔══██╗██║ ██╔╝    ████╗  ██║██║   ██║╚══██╔══╝██╔══██╗██║
-██║     ███████║██║     ███████║█████╔╝     ██╔██╗ ██║██║   ██║   ██║   ██████╔╝██║
-██║     ██╔══██║██║     ██╔══██║██╔═██╗     ██║╚██╗██║██║   ██║   ██║   ██╔══██╗██║
-███████╗██║  ██║╚██████╗██║  ██║██║  ██╗    ██║ ╚████║╚██████╔╝   ██║   ██║  ██║██║
-╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝
+    ██╗      █████╗  ██████╗ █████╗ ██╗  ██╗    ███╗   ██╗██╗   ██╗████████╗██████╗ ██╗
+    ██║     ██╔══██╗██╔════╝██╔══██╗██║ ██╔╝    ████╗  ██║██║   ██║╚══██╔══╝██╔══██╗██║
+    ██║     ███████║██║     ███████║█████╔╝     ██╔██╗ ██║██║   ██║   ██║   ██████╔╝██║
+    ██║     ██╔══██║██║     ██╔══██║██╔═██╗     ██║╚██╗██║██║   ██║   ██║   ██╔══██╗██║
+    ███████╗██║  ██║╚██████╗██║  ██║██║  ██╗    ██║ ╚████║╚██████╔╝   ██║   ██║  ██║██║
+    ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝
 ```
 
 ### Smart Nutrition Tracking & BPOM Validation Platform
@@ -893,27 +893,389 @@ Get article by slug
 }
 ```
 
-### Admin Endpoints (Requires admin role)
+## Admin Endpoints (Membutuhkan *role* Admin)
+
+Semua *Admin Endpoints* memerlukan otorisasi dengan *role* pengguna sebagai **`admin`** dan harus menyertakan *header*: `Authorization: Bearer <token>`.
+
+### Dashboard & Pengguna
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/dashboard/stats` | Dapatkan statistik utama untuk *admin dashboard*. |
+| **GET** | `/admin/users` | Daftar semua pengguna terdaftar dengan filter/paginasi. |
+| **PATCH** | `/admin/users/{user_id}/role` | Perbarui *role* pengguna tertentu. |
+| **DELETE**| `/admin/scan-history/{scan_id}` | Hapus catatan hasil pemindaian (scan history). |
+
+Detail Endpoints Dashboard & Pengguna
 
 #### GET `/admin/dashboard/stats`
 
-Get dashboard statistics
+Dapatkan statistik utama untuk *admin dashboard*.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "total_users": 1500,
+    "total_scans_24h": 450,
+    "total_articles": 35,
+    "new_users_7d": 55,
+    "top_scanned_nutri_facts": {
+      "calories": 15000,
+      "fat": 8000
+    }
+  }
+}
+```
 
 #### GET `/admin/users`
 
-List all users
+Daftar semua pengguna terdaftar.
+
+**Query Params:**
+
+| Parameter | Tipe | Default | Deskripsi |
+| :--- | :--- | :--- | :--- |
+| `page` | integer | 1 | Nomor halaman untuk paginasi. |
+| `limit` | integer | 10 | Jumlah pengguna per halaman. |
+| `search` | string | - | Cari pengguna berdasarkan nama atau email. |
+| `role` | string | - | Filter berdasarkan *role* (`user`, `admin`). |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "email": "john.doe@example.com",
+        "full_name": "John Doe",
+        "role": "user",
+        "created_at": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "total": 1500,
+    "page": 1,
+    "limit": 10
+  }
+}
+```
 
 #### PATCH `/admin/users/{user_id}/role`
 
-Update user role
+Perbarui *role* pengguna tertentu.
+
+**Path Parameters:**
+
+  * `user_id`: ID pengguna yang akan diperbarui.
+
+**Request:**
+
+```json
+{
+  "new_role": "admin"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 10,
+    "email": "john.doe@example.com",
+    "full_name": "John Doe",
+    "role": "admin"
+  }
+}
+```
 
 #### DELETE `/admin/scan-history/{scan_id}`
 
-Delete scan record
+Hapus catatan hasil pemindaian.
+
+**Path Parameters:**
+
+  * `scan_id`: ID catatan pemindaian yang akan dihapus.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Scan record deleted successfully"
+}
+```
+
+
+### Education & Konten
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/articles` | Daftar semua artikel (dapat menggunakan paginasi/filter). |
+| **POST** | `/admin/articles` | Buat artikel edukasi baru. |
+| **PUT** | `/admin/articles/{article_id}` | Perbarui artikel yang sudah ada. |
+| **DELETE**| `/admin/articles/{article_id}` | Hapus artikel. |
+
+Detail Endpoints Education & Konten
+
+#### GET `/admin/articles`
+
+Daftar semua artikel dengan detail admin. (Gunakan *Query Params* seperti pada `/education/articles`).
 
 #### POST `/admin/articles`
 
-Create new article
+Buat artikel baru.
+
+**Request:**
+
+```json
+{
+  "title": "Judul Artikel Baru",
+  "slug": "judul-artikel-baru",
+  "content": "Konten lengkap artikel dalam format Markdown...",
+  "category_id": 2,
+  "thumbnail_url": "/images/new-article.jpg",
+  "reading_time_minutes": 7
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 51,
+    "title": "Judul Artikel Baru",
+    "slug": "judul-artikel-baru",
+    "category": "Kategori Artikel",
+    "published_at": "2025-11-24T11:30:00Z"
+  }
+}
+```
+
+#### PUT `/admin/articles/{article_id}`
+
+Perbarui artikel yang sudah ada.
+
+**Path Parameters:**
+
+  * `article_id`: ID artikel yang akan diperbarui.
+
+**Request:** Sama dengan `POST /admin/articles`.
+
+**Response:** Sama dengan `POST /admin/articles`.
+
+#### DELETE `/admin/articles/{article_id}`
+
+Hapus artikel.
+
+**Path Parameters:**
+
+  * `article_id`: ID artikel yang akan dihapus.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Article deleted successfully"
+}
+```
+
+
+### Master Data (Additives, Allergens, Diseases, dll.)
+
+Berdasarkan struktur kode, terdapat endpoint generik untuk mengelola data master seperti *Additives*, *Allergens*, *Diseases*, dan *Categories*. Pola CRUD (Create, Read, Update, Delete) umumnya sama untuk setiap entitas.
+
+#### Pola Umum Endpoint Master Data
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/{resource}` | Daftar semua item dalam *resource* tersebut. |
+| **POST** | `/admin/{resource}` | Buat item baru. |
+| **PUT** | `/admin/{resource}/{id}` | Perbarui item. |
+| **DELETE**| `/admin/{resource}/{id}` | Hapus item. |
+
+**Catatan:** `{resource}` diganti dengan nama entitas (*additives*, *allergens*, *diseases*, *categories*, dll.).
+
+-----
+
+#### Endpoints Bahan Tambahan (*Additives*)
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/additives` | Daftar semua bahan tambahan. |
+| **POST** | `/admin/additives` | Tambah bahan tambahan baru. |
+| **PUT** | `/admin/additives/{additive_id}` | Perbarui detail bahan tambahan. |
+| **DELETE**| `/admin/additives/{additive_id}` | Hapus bahan tambahan. |
+
+Detail Endpoints Additives
+
+#### GET `/admin/additives`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Monosodium Glutamate (MSG)",
+      "e_number": "E621",
+      "health_risk_level": "low"
+    }
+  ]
+}
+```
+
+#### POST `/admin/additives`
+
+**Request:**
+
+```json
+{
+  "name": "Tartrazine",
+  "e_number": "E102",
+  "health_risk_level": "moderate"
+}
+```
+
+#### Endpoints Alergen (*Allergens*)
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/allergens` | Daftar semua alergen master. |
+| **POST** | `/admin/allergens` | Tambah alergen master baru. |
+| **PUT** | `/admin/allergens/{allergen_id}` | Perbarui detail alergen. |
+| **DELETE**| `/admin/allergens/{allergen_id}` | Hapus alergen. |
+
+Detail Endpoints Allergens
+
+#### GET `/admin/allergens`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Gluten",
+      "description": "Alergen umum dalam biji-bijian."
+    }
+  ]
+}
+```
+
+#### POST `/admin/allergens`
+
+**Request:**
+
+```json
+{
+  "name": "Kacang-kacangan",
+  "description": "Alergen yang dapat menyebabkan reaksi anafilaksis."
+}
+```
+
+\</details\>
+
+#### Endpoints Penyakit (*Diseases*)
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/diseases` | Daftar semua penyakit/kondisi kesehatan. |
+| **POST** | `/admin/diseases` | Tambah penyakit/kondisi kesehatan baru. |
+| **PUT** | `/admin/diseases/{disease_id}` | Perbarui detail penyakit. |
+| **DELETE**| `/admin/diseases/{disease_id}` | Hapus penyakit. |
+
+\<details\>
+\<summary\>Detail Endpoints Diseases\</summary\>
+
+#### GET `/admin/diseases`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Diabetes Mellitus Tipe 2",
+      "is_autoimmune": false,
+      "diet_restriction_keywords": ["gula", "karbohidrat sederhana"]
+    }
+  ]
+}
+```
+
+#### POST `/admin/diseases`
+
+**Request:**
+
+```json
+{
+  "name": "Hipertensi",
+  "is_autoimmune": false,
+  "diet_restriction_keywords": ["sodium", "garam", "natrium"]
+}
+```
+
+\</details\>
+
+#### Endpoints Kategori Artikel (*Article Categories*)
+
+| Method | Path | Deskripsi |
+| :--- | :--- | :--- |
+| **GET** | `/admin/article-categories` | Daftar semua kategori artikel. |
+| **POST** | `/admin/article-categories` | Tambah kategori baru. |
+| **PUT** | `/admin/article-categories/{category_id}` | Perbarui kategori. |
+| **DELETE**| `/admin/article-categories/{category_id}` | Hapus kategori. |
+
+\<details\>
+\<summary\>Detail Endpoints Article Categories\</summary\>
+
+#### GET `/admin/article-categories`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Label & Istilah"
+    },
+    {
+      "id": 2,
+      "name": "Gizi Makro"
+    }
+  ]
+}
+```
+
+#### POST `/admin/article-categories`
+
+**Request:**
+
+```json
+{
+  "name": "Tips Pola Makan"
+}
+```
+
+\</details\>
 
 -----
 
@@ -949,7 +1311,7 @@ Warna dikelola menggunakan CSS Variables untuk mendukung pergantian tema yang mu
 Menggunakan **Manrope** dari Google Fonts sebagai font utama, dengan fallback ke Inter dan sans-serif.
 
 ```css
-font-family: "Manrope", "Inter", sans-serif;
+font-family: "Manrope", "Inter", "sans-serif";
 ```
 
 **Weights:** 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold), 800 (ExtraBold).
