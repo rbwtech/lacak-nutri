@@ -127,8 +127,8 @@ graph TD
     style C fill:#222d3d,stroke:#333,stroke-width:2px
     style B fill:#222d3d,stroke:#333,stroke-width:1px
     style Security Check fill:#ffebee,stroke:#f44336,stroke-width:2px,stroke-dasharray: 5 5
-    style Error429 fill:#ffcdd2,stroke:#f44336
-    style Error403 fill:#ffcdd2,stroke:#f44336
+    style Error429 fill:#203040,stroke:#f44336
+    style Error403 fill:#203040,stroke:#f44336
 ```
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
