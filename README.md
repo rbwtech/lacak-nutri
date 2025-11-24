@@ -77,7 +77,7 @@ Password: demo123
 
 ---
 
-## ✨ Core Features
+## Core Features
 
 ```
 Disclaimer:
@@ -106,24 +106,24 @@ style B fill:#222d3d,stroke:#333,stroke-width:1px
 
 **Hasil Structured JSON yang Dikelola oleh AI Service:**
 
-| Field              | Tipe Data       | Deskripsi                                                                                                            |
-| :----------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------- |
-| **`nutrition`**    | JSON Object     | Data nutrisi terstruktur (kalori, protein, lemak, gula, sodium, dll.).                                               |
-| **`health_score`** | Integer (0-100) | Penilaian kesehatan objektif oleh AI.                                                                                |
-| **`grade`**        | String (A-E)    | Kategori nilai kesehatan berdasarkan `health_score`.                                                                 |
-| **`summary`**      | String          | Ringkasan analisis nutrisi (2-3 kalimat).                                                                            |
-| **`pros`, `cons`** | List of Strings | Keunggulan dan kelemahan nutrisi yang terdeteksi.                                                                    |
-| **`ingredients`**  | String          | Daftar bahan yang diekstraksi.                                                                                       |
-| **`warnings`**     | List of Strings | Daftar potensi peringatan (misalnya, Tinggi Gula, Aditif) **ditambah alergen yang terdeteksi dari profil pengguna**. |
+| Field | Tipe Data | Deskripsi |
+| :--- | :--- | :--- |
+| **`nutrition`** | JSON Object | Data nutrisi terstruktur (kalori, protein, lemak, gula, sodium, dll.). |
+| **`health_score`** | Integer (0-100) | Penilaian kesehatan objektif oleh AI. |
+| **`grade`** | String (A-E) | Kategori nilai kesehatan berdasarkan `health_score`. |
+| **`summary`** | String | Ringkasan analisis nutrisi (2-3 kalimat). |
+| **`pros`, `cons`** | List of Strings | Keunggulan dan kelemahan nutrisi yang terdeteksi. |
+| **`ingredients`** | String | Daftar bahan yang diekstraksi. |
+| **`warnings`** | List of Strings | Daftar potensi peringatan (misalnya, Tinggi Gula, Aditif) **ditambah alergen yang terdeteksi dari profil pengguna**. |
 
 #### Rate Limiting (Keterbatasan Penggunaan)
 
-Untuk menjaga _resource_ AI, _endpoint_ `/api/scan/analyze` memiliki batasan penggunaan harian:
+Untuk menjaga *resource* AI, *endpoint* `/api/scan/analyze` memiliki batasan penggunaan harian:
 
-- **Pengguna Tamu (Guest)** atau **Pengguna Terdaftar Biasa**: Maksimal **10x Analisis AI per hari**.
-- **Administrator**: Tidak memiliki batasan.
+  - **Pengguna Tamu (Guest)** atau **Pengguna Terdaftar Biasa**: Maksimal **10x Analisis AI per hari**.
+  - **Administrator**: Tidak memiliki batasan.
 
-### 2. BPOM Validation
+### 2\. BPOM Validation
 
 Fitur ini memvalidasi produk menggunakan nomor registrasi BPOM yang diinput (MD/ML/SI/DBL) atau dipindai QR-nya.
 
@@ -148,7 +148,7 @@ sequenceDiagram
     API-->>-User: Validation result
 ```
 
-**Benefit Caching:** Hasil *scraping* disimpan dalam *database* (`bpom_cache`) untuk menghemat *resource* dan memberikan respons cepat, terutama jika produk yang sama divalidasi berkali-kali.
+**Benefit Caching:** Hasil *scraping* disimpan dalam *database* (`bpom_cache`) untuk menghemat *resource* dan memberikan respons cepat.
 
 **Sample Response:**
 
@@ -166,7 +166,7 @@ sequenceDiagram
 }
 ```
 
-### 3. Allergen Cross-Reference (Personalisasi)
+### 3\. Allergen Cross-Reference (Personalisasi)
 
 *Endpoint* `/api/scan/analyze` secara otomatis memeriksa bahan-bahan yang diidentifikasi oleh AI terhadap daftar alergi yang tersimpan di profil pengguna.
 
@@ -174,94 +174,77 @@ sequenceDiagram
   * Daftar bahan (`ingredients`) dari hasil AI diubah menjadi huruf kecil dan diperiksa keberadaan alergen yang telah diatur oleh pengguna.
   * Alergen yang terdeteksi ditambahkan ke dalam *field* `warnings` sebelum disimpan ke `ScanHistoryOCR` dan ditampilkan kepada pengguna.
 
-### 4. GiziPedia (Education Hub)
+### 4\. Food Catalog (Database Makanan)
+
+Akses cepat ke database internal yang berisi **4.122 data produk** makanan dan minuman yang telah terkurasi.
+
+**Fitur Utama:**
+
+  * **Pencarian Cepat (`/api/food/search`):** Mencari produk berdasarkan nama atau merek.
+  * **Detail Nutrisi:** Menampilkan informasi nilai gizi (AKG), komposisi, dan takaran saji tanpa perlu melakukan scan ulang.
+  * **Pagination:** Mendukung *infinite scroll* atau *pagination* untuk menjelajahi katalog.
+
+**Data Point:**
+
+  * 4.122 entri produk unik.
+  * Mencakup kategori: Makanan Ringan, Minuman, Produk Susu, Makanan Instan, dll.
+
+### 5\. Favorites Management
+
+Pengguna dapat menyimpan produk hasil scan atau pencarian ke dalam daftar favorit untuk akses cepat di kemudian hari.
+
+  * **Endpoint:** `/api/favorites`
+  * **Fungsi:** Simpan (`POST`), Hapus (`DELETE`), dan Lihat Daftar (`GET`) produk favorit.
+  * **Integrasi:** Terhubung langsung dengan *Food Catalog* dan *Scan History*.
+
+### 6\. GiziPedia (Education Hub)
 
 **Content Structure:**
 
-- **Categories:** Zat Gizi Makro, Zat Gizi Mikro, Aditif Makanan, Label & Istilah
-- **Articles:** 50+ artikel edukasi
-- **Format:** Markdown-based dengan images
-- **Search:** Full-text search dengan relevance ranking
+  - **Categories:** Zat Gizi Makro, Zat Gizi Mikro, Aditif Makanan, Label & Istilah
+  - **Articles:** 100 artikel edukasi
+  - **Format:** Markdown-based dengan images
+  - **Search:** Full-text search dengan relevance ranking
 
 **Features:**
 
-- Rich text editor (admin)
-- Category filtering
-- Bookmark system
-- Reading time estimate
-- Related articles
+  - Rich text editor (admin)
+  - Category filtering
+  - Bookmark system
+  - Reading time estimate
+  - Related articles
 
-**Sample Topics:**
+### 7\. Allergen Management System
 
-```
-- "Apa itu AKG% dan Cara Membacanya"
-- "Bahaya Konsumsi Gula Berlebih"
-- "Mengenal MSG: Fakta vs Mitos"
-- "Panduan Diet untuk Diabetes"
-- "Alergen Umum di Indonesia"
-```
-
-### 5. Allergen Management System
-
-**User Workflow:**
-
-```
-1. Profile → Manage Allergies
-2. Select from 15+ common allergens
-3. System cross-references dengan database
-4. Auto-warning pada setiap scan result
-```
+Manajemen data alergen yang dinamis.
 
 **Allergen Database:**
+Admin dapat mengelola master data alergen (cth: Kacang, Susu, Gluten, Seafood) yang nantinya dipilih oleh user di profil mereka.
 
-```sql
-allergens:
-- Kacang tanah
-- Susu & derivatif
-- Telur
-- Gluten (gandum)
-- Seafood
-- Kedelai
-- MSG
-- Sulfites
-- dll (15 total)
-```
-
-**Detection Logic:**
+**Detection Logic (Actual Implementation):**
 
 ```python
-def check_allergens(ingredients: list, user_allergies: list):
-    detected = []
-    for ingredient in ingredients:
-        matches = fuzzy_match(ingredient, allergen_database)
-        if matches in user_allergies:
-            detected.append({
-                "allergen": matches,
-                "severity": get_severity(matches),
-                "alternative": suggest_alternative(matches)
-            })
-    return detected
+# app/routers/scan.py
+user_allergies = [allergy.name.lower() for allergy in current_user.allergies]
+ingredients_text = result.get('ingredients', '').lower()
+
+detected_allergens = [
+    allergy.capitalize() 
+    for allergy in user_allergies 
+    if allergy in ingredients_text
+]
+# Result: ["Kacang Tanah", "Gluten"]
 ```
 
-### 6. Scan History & Analytics
+### 8\. Scan History & Analytics
 
-**User Dashboard:**
+Setiap aktivitas scan (OCR maupun BPOM) disimpan untuk referensi pengguna.
 
-- Timeline view (card-based)
-- Filter: Date range, product type, health score
-- Export: CSV/PDF
-- Statistics: Total scans, avg health score, top allergens
+  - **Riwayat Terpisah:** Tab khusus untuk Riwayat OCR dan Riwayat BPOM.
+  - **Detail View:** Pengguna dapat melihat kembali detail nutrisi dan hasil analisis AI dari produk yang pernah discan sebelumnya.
+  - **Admin Analytics:** Admin dapat memantau jumlah scan harian untuk mengevaluasi penggunaan sistem.
 
-**Data Visualization:**
-
-```
-Health Score Distribution (Chart.js)
-Weekly Scan Activity (Line chart)
-Top Scanned Categories (Donut chart)
-Allergen Detection Frequency (Bar chart)
-```
-
----
+-----
 
 ## 🛠 Technology Stack
 
