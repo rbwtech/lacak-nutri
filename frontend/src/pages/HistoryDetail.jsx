@@ -23,6 +23,11 @@ const HistoryDetail = () => {
   const [searchParams] = useSearchParams();
   const fromSource = searchParams.get("from");
 
+  // Chat State
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+
   const getBackLink = () => {
     const defaultNav = { url: "/history", text: t("nav.history") };
     if (fromSource === "favorites")
@@ -77,6 +82,48 @@ const HistoryDetail = () => {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const question = chatInput;
+    setChatHistory([...chatHistory, { role: "user", text: question }]);
+    setChatInput("");
+    setChatLoading(true);
+
+    const productContext = {
+      product_name: data.product_name,
+      nutrition: data.nutrition_data,
+      ingredients: data.ingredients,
+      summary: data.summary,
+      grade: data.grade,
+      health_score: data.health_score,
+      warnings: data.warnings,
+    };
+
+    try {
+      const { data: response } = await api.post("/scan/chat", {
+        product_context: JSON.stringify(productContext),
+        question,
+        language: i18n.language,
+      });
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "ai", text: response.answer },
+      ]);
+    } catch {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: t("scanner.errorChatFailed") || "Maaf, terjadi kesalahan.",
+        },
+      ]);
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -220,7 +267,7 @@ const HistoryDetail = () => {
                 </h2>
                 <div className="flex items-center justify-center gap-3">
                   <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
-                    Health Score: {data.health_score || 0}/100
+                    Health Score: {Math.round(data.health_score || 0)}/100
                   </div>
                   <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold text-sm">
                     Grade {data.grade || "?"}
@@ -355,6 +402,50 @@ const HistoryDetail = () => {
                   </p>
                 </Card>
               )}
+
+              <div className="pt-6 border-t border-border">
+                <h3 className="font-bold text-text-primary mb-4">
+                  {t("scanner.askAI") || "Tanya AI tentang Produk Ini"}
+                </h3>
+                <div className="space-y-3 mb-4 max-h-48 overflow-y-auto px-1">
+                  {chatHistory.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-2xl text-sm ${
+                        msg.role === "user"
+                          ? "bg-primary/10 ml-8 text-right"
+                          : "bg-bg-base mr-8 text-left"
+                      }`}
+                    >
+                      <strong className="block text-xs text-text-secondary mb-1">
+                        {msg.role === "user"
+                          ? t("scanner.you") || "Anda"
+                          : t("scanner.ai") || "AI"}
+                      </strong>
+                      {msg.text}
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleChatSubmit} className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 px-4 py-3 rounded-xl border border-border bg-bg-surface focus:ring-2 focus:ring-primary/20 outline-none text-sm"
+                    placeholder={
+                      t("scanner.askSomething") || "Tanya sesuatu..."
+                    }
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    disabled={chatLoading}
+                  />
+                  <Button
+                    size="sm"
+                    type="submit"
+                    disabled={chatLoading || !chatInput}
+                  >
+                    {chatLoading ? "..." : t("scanner.send") || "Kirim"}
+                  </Button>
+                </form>
+              </div>
             </div>
           )}
         </div>

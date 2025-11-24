@@ -7,12 +7,13 @@ from app.services.ai_service import GeminiService
 from app.schemas.scan import BPOMRequest, ScanResponse, AnalyzeImageRequest, ChatRequest
 from app.dependencies import get_current_user_optional, get_current_user
 from app.crud import scan as crud_scan 
-from datetime import date
 from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
-from app.models.user import User  # ONLY User, no UserAllergy
+from app.models.user import User
 import json
+from datetime import date
 
 router = APIRouter(prefix="/api/scan", tags=["Scan"])
+
 MAX_FREE_OCR_SCANS_PER_DAY = 4
 
 @router.post("/bpom", response_model=ScanResponse)
@@ -70,8 +71,10 @@ async def analyze_ocr(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=detail_msg
         )
+
     service = GeminiService()
-    result = await service.analyze_nutrition_image(request.image_base64)
+    language = getattr(request, 'language', 'id')
+    result = await service.analyze_nutrition_image(request.image_base64, language=language)
 
     user_allergies = []
     if current_user:
@@ -144,7 +147,8 @@ async def extract_text_only(
 @router.post("/chat")
 async def chat_product(request: ChatRequest):
     service = GeminiService()
-    answer = await service.chat_about_product(request.product_context, request.question)
+    language = getattr(request, 'language', 'id')
+    answer = await service.chat_about_product(request.product_context, request.question, language=language)
     return {"answer": answer}
 
 @router.get("/bpom/{scan_id}")

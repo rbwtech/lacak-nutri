@@ -26,7 +26,9 @@ class ScanResponse(BaseModel):
 class AnalyzeImageRequest(BaseModel):
     product_name: str
     image_base64: str
+    language: Optional[str] = "id"
 
 class ChatRequest(BaseModel):
     product_context: str 
     question: str
+    language: Optional[str] = "id"

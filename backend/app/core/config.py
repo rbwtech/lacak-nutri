@@ -23,5 +23,6 @@ class Settings:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", 8000))
     RECAPTCHA_SECRET_KEY: str = os.getenv("RECAPTCHA_SECRET_KEY")
+    FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL")
 
 settings = Settings()

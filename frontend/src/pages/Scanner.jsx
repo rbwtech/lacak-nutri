@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const Scanner = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scanMode, setScanMode] = useState("ocr");
@@ -432,21 +432,20 @@ const Scanner = () => {
   const simulateRealisticProgress = (callback) => {
     let progress = 0;
     const interval = setInterval(() => {
-      if (progress < 25) {
-        progress += Math.random() * 3;
-      } else if (progress < 50) {
+      if (progress < 30) {
         progress += Math.random() * 2;
-      } else if (progress < 75) {
-        progress += Math.random() * 1.5;
-      } else if (progress < 90) {
-        progress += Math.random() * 0.8;
-      } else if (progress < 95) {
-        progress += Math.random() * 0.3;
+      } else if (progress < 60) {
+        progress += Math.random() * 1;
+      } else if (progress < 85) {
+        progress += Math.random() * 0.5;
+      } else if (progress < 98) {
+        progress += Math.random() * 0.1;
       }
 
-      progress = Math.min(progress, 95);
-      callback(progress);
-    }, 500);
+      progress = Math.min(progress, 99);
+
+      callback(Math.round(progress * 10) / 10);
+    }, 200);
 
     return interval;
   };
@@ -489,6 +488,7 @@ const Scanner = () => {
       const { data } = await api.post("/scan/analyze", {
         product_name: productName,
         image_base64: ocrImage,
+        language: i18n.language,
       });
 
       clearInterval(progressInterval);
@@ -569,6 +569,7 @@ const Scanner = () => {
       const { data } = await api.post("/scan/chat", {
         product_context: JSON.stringify(result.data),
         question,
+        language: i18n.language,
       });
       setChatHistory((prev) => [...prev, { role: "ai", text: data.answer }]);
     } catch {
@@ -1108,8 +1109,7 @@ const Scanner = () => {
                       </h2>
                       <div className="flex items-center justify-center gap-3 mt-3">
                         <div className="px-4 py-1 bg-secondary/10 text-secondary rounded-full font-bold">
-                          Health Score:{" "}
-                          {Math.round(result.data.health_score || 0)}/100
+                          Health Score: {result.data.health_score || 0}/100
                         </div>
                         <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold text-sm">
                           Grade {result.data.grade || "?"}
