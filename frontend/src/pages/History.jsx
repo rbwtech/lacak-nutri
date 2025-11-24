@@ -168,9 +168,9 @@ const History = () => {
                       className="p-4 hover:shadow-lg transition-all cursor-pointer group"
                       onClick={() => viewDetail(item)}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start gap-4">
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                             item.type === "bpom"
                               ? "bg-green-100 text-green-600"
                               : "bg-blue-100 text-blue-600"
@@ -207,7 +207,7 @@ const History = () => {
                             viewDetail(item);
                           }}
                         >
-                          <h3 className="font-bold text-text-primary group-hover:text-primary transition-colors cursor-pointer">
+                          <h3 className="font-bold text-text-primary group-hover:text-primary transition-colors cursor-pointer wrap-break-words">
                             {item.title}
                           </h3>
                           <p className="text-sm text-text-secondary">
@@ -215,16 +215,16 @@ const History = () => {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 ml-auto justify-end">
                           {item.score && (
-                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
+                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold shrink-0">
                               {item.score}/100
                             </span>
                           )}
 
                           <button
                             onClick={(e) => toggleFavorite(item, e)}
-                            className="p-2 hover:bg-bg-base rounded-lg transition-colors"
+                            className="p-2 hover:bg-bg-base rounded-lg transition-colors shrink-0"
                           >
                             <svg
                               className={`w-6 h-6 transition-colors ${
@@ -244,7 +244,7 @@ const History = () => {
                             </svg>
                           </button>
 
-                          <div className="text-right">
+                          <div className="text-right shrink-0">
                             <p className="text-xs text-text-secondary">
                               {new Date(item.date).toLocaleDateString(
                                 i18n.language,

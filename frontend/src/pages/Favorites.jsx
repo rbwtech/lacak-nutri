@@ -134,9 +134,9 @@ const Favorites = () => {
                       className="p-4 hover:shadow-lg transition-all cursor-pointer group"
                       onClick={() => viewDetail(fav)}
                     >
-                      <div className="flex items-center gap-4 min-h-[88px]">
+                      <div className="flex items-start gap-4">
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                             fav.product_type === "bpom"
                               ? "bg-green-100 text-green-600"
                               : "bg-blue-100 text-blue-600"
@@ -173,15 +173,15 @@ const Favorites = () => {
                             viewDetail(fav);
                           }}
                         >
-                          <h3 className="font-bold text-text-primary text-lg mb-1 group-hover:text-primary transition-colors cursor-pointer">
+                          <h3 className="font-bold text-text-primary text-lg mb-1 group-hover:text-primary transition-colors cursor-pointer wrap-break-words">
                             {fav.product_name || t("favorites.noName")}
                           </h3>
                           {fav.bpom_number && (
-                            <p className="text-sm text-text-secondary font-mono mb-2">
+                            <p className="text-sm text-text-secondary font-mono mb-2 truncate">
                               {fav.bpom_number}
                             </p>
                           )}
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-bold">
                               {fav.product_type === "bpom"
                                 ? t("common.bpomLabel")
@@ -201,28 +201,29 @@ const Favorites = () => {
                             )}
                           </div>
                         </div>
-
-                        <button
-                          onClick={(e) =>
-                            removeFavorite(fav.id, fav.product_type, e)
-                          }
-                          className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors shrink-0"
-                          title={t("favorites.removeTitle")}
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                        <div className="flex flex-col sm:flex-row gap-1 shrink-0">
+                          <button
+                            onClick={(e) =>
+                              removeFavorite(fav.id, fav.product_type, e)
+                            }
+                            className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors"
+                            title={t("favorites.removeTitle")}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
 
                         <button
                           onClick={(e) => {
