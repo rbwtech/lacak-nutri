@@ -26,6 +26,7 @@ async def scan_bpom(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
+    # Cek Cache
     cached_data = crud_scan.get_bpom_cache(db, request.bpom_number)
     if cached_data:
         history = crud_scan.create_bpom_history(db, user_id, cached_data, session_id)
@@ -33,8 +34,15 @@ async def scan_bpom(
         response_data['id'] = history.id 
         return {"found": True, "message": "Data ditemukan (Cache)", "data": response_data}
 
-    scraper = BPOMScraper()
-    result = await scraper.search_bpom(request.bpom_number)
+    try:
+        scraper = BPOMScraper()
+        result = await scraper.search_bpom(request.bpom_number)
+    except Exception as e:
+        return {
+            "found": False,
+            "message": f"Gagal terhubung ke server BPOM atau waktu habis. Silakan coba lagi.",
+            "data": None
+        }
     
     if not result:
         return {
@@ -59,32 +67,30 @@ async def analyze_ocr(
     session_id = x_session_id or "guest"
     user_id = current_user.id if current_user else None
 
-    if current_user and getattr(current_user, 'is_admin', False):
-        pass  
-    else:
+    if not (current_user and getattr(current_user, 'role', '') == 'admin'):
         scan_count_today = crud_scan.get_daily_ocr_scans_count(db, user_id, session_id)
         
         if scan_count_today >= MAX_FREE_OCR_SCANS_PER_DAY:
             limit = MAX_FREE_OCR_SCANS_PER_DAY
-            if user_id:
-                detail_msg = f"Anda telah mencapai batas maksimal {limit}x Analisis AI per hari. Silakan coba lagi besok."
-            else:
-                detail_msg = f"Anda sebagai Tamu telah mencapai batas maksimal {limit}x Analisis AI per hari. Silakan buat akun untuk batas yang lebih longgar, atau coba lagi besok."
-                
+            detail_msg = f"Batas harian {limit}x Analisis AI tercapai."
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=detail_msg
             )
     
-    service = GeminiService()
-    language_from_request = getattr(request, 'language', None)
-    if current_user and getattr(current_user, 'locale', None):
-        language = current_user.locale.split('-')[0].lower()
-    elif language_from_request:
-        language = language_from_request
-    else:
-        language = 'id'
-    result = await service.analyze_nutrition_image(request.image_base64, language=language)
+    try:
+        service = GeminiService()
+        language_from_request = getattr(request, 'language', None)
+        if current_user and getattr(current_user, 'locale', None):
+            language = current_user.locale.split('-')[0].lower()
+        elif language_from_request:
+            language = language_from_request
+        else:
+            language = 'id'
+            
+        result = await service.analyze_nutrition_image(request.image_base64, language=language)
+    except Exception as e:
+         raise HTTPException(status_code=500, detail=str(e))
 
     user_allergies = []
     if current_user:
@@ -156,10 +162,31 @@ async def extract_text_only(
 
 @router.post("/chat")
 async def chat_product(request: ChatRequest):
-    service = GeminiService()
-    language = getattr(request, 'language', 'id')
-    answer = await service.chat_about_product(request.product_context, request.question, language=language)
-    return {"answer": answer}
+    try:
+        if not request.question or not request.question.strip():
+            return {"answer": "Silakan ajukan pertanyaan."}
+
+        context = request.product_context
+        if not context or context == "null" or context == "{}":
+             return {"answer": "Maaf, saya tidak memiliki data produk yang cukup untuk menjawab pertanyaan ini. Silakan scan ulang produk."}
+
+        service = GeminiService()
+        language = getattr(request, 'language', 'id')
+        
+        answer = await service.chat_about_product(
+            context, 
+            request.question, 
+            language=language
+        ) 
+
+        if answer.startswith("Quota") or answer.startswith("Terjadi kesalahan") or answer.startswith("Maaf, terjadi kesalahan tak terduga"):
+            return {"answer": answer} 
+
+        return {"answer": answer}
+        
+    except Exception as e:
+        print(f"Chat Error: {str(e)}")
+        return {"answer": f"Maaf, terjadi kesalahan saat memproses pertanyaan Anda. Coba lagi. (Detail Server: {type(e).__name__})"}
 
 @router.get("/bpom/{scan_id}")
 def get_bpom_detail(

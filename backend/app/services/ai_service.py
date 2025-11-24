@@ -1,6 +1,7 @@
 from google import genai
 from google.genai.errors import ClientError
 from app.core.config import settings
+from asyncio import to_thread
 import json
 import re
 import base64
@@ -143,7 +144,8 @@ class GeminiService:
         
         for attempt in range(max_attempts):
             try:
-                response = self.client.models.generate_content(
+                response = await to_thread(
+                    self.client.models.generate_content, 
                     model="gemini-2.5-flash", 
                     contents=[prompt, image]
                 )
@@ -241,7 +243,7 @@ class GeminiService:
         if score >= 35: return "D"
         return "E"
 
-    async def chat_about_product(self, product_context: str, user_question: str):
+    async def chat_about_product(self, product_context: str, user_question: str, language: str):
         if not self.client:
             return "AI tidak tersedia"
 
@@ -249,14 +251,15 @@ class GeminiService:
 
 Pertanyaan: "{user_question}"
 
-Jawab singkat (max 3 kalimat), edukatif, tanpa bold/italic."""
-        
+Jawab singkat (max 3 kalimat), edukatif, tanpa bold/italic. Jawab dalam bahasa {language}."""
+
         max_attempts = len(self.api_keys) + 1
         
         for attempt in range(max_attempts):
             try:
-                response = self.client.models.generate_content(
-                    model="gemini-2.5-flash",
+                response = await to_thread(
+                    self.client.models.generate_content,
+                    model="gemini-2.0-flash",
                     contents=prompt
                 )
                 return response.text.strip().replace("**", "").replace("*", "")
