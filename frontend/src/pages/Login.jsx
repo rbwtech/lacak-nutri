@@ -40,8 +40,7 @@ const Login = () => {
       await login(email, password, recaptchaToken);
       navigate("/dashboard");
     } catch (error) {
-      const errorDetail = error.response?.data?.detail;
-      setLoginError(errorDetail || t("auth.loginFailed"));
+      setLoginError(error.message);
     } finally {
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();

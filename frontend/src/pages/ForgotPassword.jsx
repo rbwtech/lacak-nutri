@@ -39,8 +39,31 @@ const ForgotPassword = () => {
 
       setSubmitted(true);
     } catch (err) {
-      const errorDetail = err.response?.data?.detail;
-      setError(errorDetail || t("common.error"));
+      let errorMsg = t("common.error");
+
+      if (axios.isAxiosError(err) && err.response) {
+        const detail = err.response.data?.detail;
+
+        if (typeof detail === "string") {
+          errorMsg = detail;
+        } else if (
+          Array.isArray(detail) &&
+          detail.length > 0 &&
+          detail[0].msg
+        ) {
+          const msgs = detail
+            .map((e) => {
+              const field = e.loc.length > 1 ? e.loc[1] : "field";
+              return `${field}: ${e.msg}`;
+            })
+            .join("; ");
+          errorMsg = `Validasi gagal. ${msgs}`;
+        } else {
+          errorMsg = t("common.operationFailed");
+        }
+      }
+
+      setError(errorMsg);
     } finally {
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();

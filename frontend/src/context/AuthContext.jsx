@@ -24,15 +24,28 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, recaptchaToken) => {
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post("/auth/login", {
+        email,
+        password,
+        recaptcha_token: recaptchaToken,
+      });
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user);
       return data;
     } catch (e) {
-      throw e;
+      let errorMessage = "Login failed";
+      if (e.response && e.response.data) {
+        const detail = e.response.data.detail;
+        if (typeof detail === "string") {
+          errorMessage = detail;
+        } else if (Array.isArray(detail) && detail.length > 0) {
+          errorMessage = detail.map((err) => err.msg).join(", ");
+        }
+      }
+      throw new Error(errorMessage);
     }
   };
 
@@ -44,7 +57,16 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (e) {
-      throw e;
+      let errorMessage = "Registration failed";
+      if (e.response && e.response.data) {
+        const detail = e.response.data.detail;
+        if (typeof detail === "string") {
+          errorMessage = detail;
+        } else if (Array.isArray(detail) && detail.length > 0) {
+          errorMessage = detail.map((err) => err.msg).join(", ");
+        }
+      }
+      throw new Error(errorMessage);
     }
   };
 
@@ -62,6 +84,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Update profile context error", error);
     }
   };
+
   const changePassword = async (passwordData) => {
     try {
       const { data } = await api.post("/auth/change-password", passwordData);

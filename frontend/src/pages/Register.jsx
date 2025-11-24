@@ -59,8 +59,7 @@ const Register = () => {
       });
       navigate("/dashboard");
     } catch (error) {
-      const errorDetail = error.response?.data?.detail;
-      setErrors({ submit: errorDetail || t("auth.registerFailed") });
+      setErrors({ submit: error.message });
     } finally {
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
