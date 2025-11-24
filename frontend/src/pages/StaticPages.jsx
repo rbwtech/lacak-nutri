@@ -120,14 +120,14 @@ export const Contact = () => {
                 placeholder={t("static.contactNamePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
               />
               <textarea
                 rows="4"
                 placeholder={t("static.contactMessagePlaceholder")}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full p-3 rounded-xl border border-border bg-bg-base focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
               ></textarea>
               <button
                 onClick={handleSend}

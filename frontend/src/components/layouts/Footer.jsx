@@ -9,10 +9,11 @@ const Footer = () => {
   return (
     <footer className="bg-bg-surface border-t border-border mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* FIX: Gunakan string lengkap agar terbaca oleh Tailwind */}
         <div
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${
-            user ? "5" : "4"
-          } gap-8`}
+          className={`grid grid-cols-1 sm:grid-cols-2 gap-8 ${
+            user ? "lg:grid-cols-5" : "lg:grid-cols-4"
+          }`}
         >
           {/* Brand Section */}
           <div>
@@ -66,6 +67,7 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Aktivitas (Hanya jika Login) */}
           {user && (
             <div>
               <h4 className="font-semibold text-text-primary mb-3">
