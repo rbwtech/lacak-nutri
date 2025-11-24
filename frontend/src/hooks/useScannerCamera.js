@@ -89,6 +89,7 @@ export const useScannerCamera = ({
   const [hasFlash, setHasFlash] = useState(false);
   const [facingMode, setFacingMode] = useState("environment");
   const [availableCameras, setAvailableCameras] = useState([]);
+  const [preferredBackCameraId, setPreferredBackCameraId] = useState(null);
   const [qrBoxPositions, setQrBoxPositions] = useState([]);
 
   const enumerateCameras = useCallback(async () => {
@@ -96,10 +97,20 @@ export const useScannerCamera = ({
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter((d) => d.kind === "videoinput");
       setAvailableCameras(cameras);
+
+      const backCam = cameras.find(
+        (c) =>
+          c.label.toLowerCase().includes("back") ||
+          c.label.toLowerCase().includes("rear") ||
+          c.label.toLowerCase().includes("environment")
+      );
+
+      if (backCam) setPreferredBackCameraId(backCam.deviceId);
     } catch (e) {
       console.error("Error enumerating cameras:", e);
     }
   }, []);
+
   useEffect(() => {
     enumerateCameras();
     return () => stopCamera();
@@ -226,7 +237,7 @@ export const useScannerCamera = ({
           }
         } catch (e) {}
       }
-    }, 200);
+    }, 120);
   }, [handleBarcodeSuccess]);
 
   const startLiveScan = useCallback(() => {
@@ -259,18 +270,18 @@ export const useScannerCamera = ({
     async (isLiveScan = false) => {
       stopCamera();
 
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 60));
 
       setIsScannerActive(true);
       setError(null);
 
       try {
         const constraints = {
-          video: {
-            facingMode: { ideal: facingMode },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
+          video: preferredBackCameraId
+            ? { deviceId: { exact: preferredBackCameraId } }
+            : { facingMode: { ideal: facingMode } },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -293,6 +304,9 @@ export const useScannerCamera = ({
             if (scanMode === "barcode") startBarcodeScanLoop();
             if (isLiveScan) startLiveScan();
           };
+          videoRef.current.setAttribute("playsinline", true);
+          videoRef.current.setAttribute("autoplay", true);
+          videoRef.current.setAttribute("muted", true);
         }
       } catch (err) {
         console.error(err);
@@ -325,7 +339,7 @@ export const useScannerCamera = ({
   const switchCamera = useCallback(() => {
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
     stopCamera();
-    setTimeout(() => startCamera(liveScanMode), 100);
+    setTimeout(() => startCamera(liveScanMode), 60);
   }, [startCamera, stopCamera, liveScanMode]);
 
   const handleZoom = useCallback((e) => {

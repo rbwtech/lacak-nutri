@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3"; // Import ini
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import App from "./App.jsx";
 import "./index.css";
 import "./i18n/config";
