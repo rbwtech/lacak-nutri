@@ -129,19 +129,6 @@ flowchart TD
 
     ALRGY -- "No Allergens" --> SHOW
 
-    %% Styling
-    classDef input fill:#f7faa7,stroke:#fbc02d,stroke-width:2px;
-    classDef frontend fill:#b3e5fc,stroke:#039be5,stroke-width:2px;
-    classDef api fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef backend fill:#fffde7,stroke:#bfae6c,stroke-width:1.5px;
-    classDef decision fill:#ffe0b2,stroke:#fb8c00,stroke-width:2px;
-    classDef service fill:#ede7f6,stroke:#6c5ce7,stroke-width:2px;
-    classDef ai fill:#e1bee7,stroke:#8e24aa,stroke-width:1.5px;
-    classDef result fill:#c8e6c9,stroke:#388e3c,stroke-width:2px;
-    classDef error fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px;
-    classDef storage fill:#bbdefb,stroke:#1976d2,stroke-width:1.5px;
-    classDef SECURITY fill:#ffe5b4,stroke:#fb8c00,stroke-width:2px,stroke-dasharray: 6 4;
-
     %% Assignment of classes
     class U input;
     class FE frontend;
