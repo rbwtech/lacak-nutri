@@ -277,22 +277,39 @@ const CameraView = ({
           {t("scanner.openCamera")}
         </Button>
       </div>
-      {scanMode === "barcode" && (
-        <div className="mt-6">
+      {scanMode === "barcode" && !isScannerActive && !ocrImage && (
+        <div className="mt-6 animate-fade-in-up">
+          <div className="flex items-center gap-3 justify-center mt-6 mb-4">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs font-semibold text-text-secondary tracking-wider">
+              {t("scanner.manualInput")}
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <label className="text-sm font-semibold text-text-primary mb-1 block">
+            {t("scanner.bpomCode")}
+          </label>
+
           <div className="flex gap-2">
             <Input
-              placeholder="Input BPOM Manual"
+              placeholder={t("scanner.example")}
               value={bpomInput}
               onChange={(e) => setBpomInput(e.target.value)}
               containerClass="flex-1"
+              className="h-12"
             />
             <Button
+              className="h-12 px-6"
               onClick={() => handleBarcodeSuccess(bpomInput)}
               disabled={!bpomInput}
             >
-              Check
+              {t("scanner.check")}
             </Button>
           </div>
+          <p className="text-xs text-text-secondary mt-1">
+            {t("scanner.inputHint")}
+          </p>
         </div>
       )}
     </div>

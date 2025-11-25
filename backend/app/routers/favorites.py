@@ -7,6 +7,29 @@ from app.models.scan import ScanHistoryBPOM, ScanHistoryOCR
 
 router = APIRouter(prefix="/api/favorites", tags=["Favorites"])
 
+@router.get("/status/{scan_type}/{scan_id}")
+def check_favorite_status(
+    scan_type: str,
+    scan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if scan_type == "bpom":
+        item = db.query(ScanHistoryBPOM).filter(
+            ScanHistoryBPOM.id == scan_id,
+            ScanHistoryBPOM.user_id == current_user.id
+        ).first()
+    else:
+        item = db.query(ScanHistoryOCR).filter(
+            ScanHistoryOCR.id == scan_id,
+            ScanHistoryOCR.user_id == current_user.id
+        ).first()
+    
+    if not item:
+        return {"is_favorited": False}
+    
+    return {"is_favorited": item.is_favorited}
+
 @router.post("/{scan_type}/{scan_id}/toggle")
 def toggle_fav(
     scan_type: str,
