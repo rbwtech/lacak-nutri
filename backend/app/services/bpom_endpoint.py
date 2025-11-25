@@ -1,27 +1,30 @@
-# backend/app/services/bpom_endpoint.py
 import httpx
 from bs4 import BeautifulSoup
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import re
-import asyncio
 
 class BPOMScraper:
     def __init__(self):
         self.base_url = "https://cekbpom.pom.go.id"
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/javascript, */*; q=0.01',
             'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+            'Origin': 'https://cekbpom.pom.go.id',
+            'Referer': 'https://cekbpom.pom.go.id/all-produk',
         }
-        self._client = None
 
     def _get_query_variants(self, bpom_number: str) -> list:
         clean = re.sub(r'[^a-zA-Z0-9]', '', bpom_number).upper()
-        match = re.match(r'^([A-Z]{2}|PIRT)(\d+)$', clean)
         
+        match = re.match(r'^([A-Z]{2}|PIRT)(\d+)$', clean)
         if match:
             prefix, number = match.groups()
-            return [f"{prefix} {number}", f"{prefix}{number}", clean]
+            return [
+                f"{prefix} {number}", 
+                f"{prefix}{number}",  
+                clean                 
+            ]
         
         return [bpom_number.strip().upper()]
 
@@ -29,29 +32,18 @@ class BPOMScraper:
         variants = self._get_query_variants(bpom_number)
         
         for search_query in variants:
-            result = await self._scrape_single_query(search_query)
+            result = await self._perform_request(search_query)
+            
             if result:
+                result['searched_code'] = search_query 
                 return result
         
         return None
 
-    async def _scrape_single_query(self, search_query: str) -> Optional[Dict]:
-        timeout = httpx.Timeout(15.0, connect=5.0)
-        
-        async with httpx.AsyncClient(
-            timeout=timeout,
-            follow_redirects=True,
-            limits=httpx.Limits(max_connections=5)
-        ) as client:
+    async def _perform_request(self, search_query: str) -> Optional[Dict]:
+        async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
-                home_response = await client.get(
-                    self.base_url,
-                    headers=self.headers
-                )
-                
-                if home_response.status_code != 200:
-                    return None
-                
+                home_response = await client.get(self.base_url, headers=self.headers)
                 soup = BeautifulSoup(home_response.text, 'html.parser')
                 csrf_meta = soup.find('meta', {'name': 'csrf-token'})
                 
@@ -78,7 +70,7 @@ class BPOMScraper:
                     'length': '10',
                     'search[value]': '',
                     'search[regex]': 'false',
-                    'query': search_query
+                    'query': search_query 
                 }
                 
                 search_headers = self.headers.copy()
@@ -91,26 +83,18 @@ class BPOMScraper:
                 })
 
                 api_url = f'{self.base_url}/produk-dt/all'
-                
-                response = await client.post(
-                    api_url,
-                    data=post_data,
-                    headers=search_headers,
-                    cookies=home_response.cookies
-                )
+                response = await client.post(api_url, data=post_data, headers=search_headers, cookies=home_response.cookies)
                 
                 if response.status_code == 200:
                     result = response.json()
                     if result.get('recordsFiltered', 0) > 0:
-                        return self._format_product(result['data'][0])
+                        raw = result['data'][0]
+                        return self._format_product(raw)
                 
                 return None
 
-            except (httpx.TimeoutException, httpx.ConnectTimeout):
-                print(f"Timeout for query: {search_query}")
-                return None
             except Exception as e:
-                print(f"Error for query '{search_query}': {e}")
+                print(f"Scraper Exception for query '{search_query}': {e}")
                 return None
 
     def _format_product(self, raw: Dict) -> Dict:

@@ -194,7 +194,7 @@ export const useScannerCamera = ({
     if (!("BarcodeDetector" in window)) return;
 
     const detector = new window.BarcodeDetector({
-      formats: ["qr_code", "ean_13", "ean_8", "code_128"],
+      formats: ["qr_code"],
     });
 
     scanIntervalRef.current = setInterval(async () => {
