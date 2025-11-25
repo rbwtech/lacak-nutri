@@ -125,6 +125,7 @@ export const useScannerCamera = ({
   }, [setLiveOcrText]);
 
   const stopCamera = useCallback(() => {
+    processingRef.current = false;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
@@ -133,9 +134,7 @@ export const useScannerCamera = ({
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    if (videoRef.current) videoRef.current.srcObject = null;
     setIsScannerActive(false);
     setQrBoxPositions([]);
     setFlashOn(false);
@@ -189,56 +188,57 @@ export const useScannerCamera = ({
     [handleBarcodeSuccess]
   );
 
+  const processingRef = useRef(false);
+
   const startBarcodeScanLoop = useCallback(() => {
-    if (!("BarcodeDetector" in window)) {
-      console.warn("BarcodeDetector not supported");
-      return;
-    }
+    if (!("BarcodeDetector" in window)) return;
 
     const detector = new window.BarcodeDetector({
       formats: ["qr_code", "ean_13", "ean_8", "code_128"],
     });
 
     scanIntervalRef.current = setInterval(async () => {
-      if (videoRef.current && videoRef.current.readyState === 4) {
-        try {
-          const barcodes = await detector.detect(videoRef.current);
+      if (processingRef.current || !videoRef.current?.readyState === 4) return;
 
-          if (barcodes.length === 0) {
-            setQrBoxPositions([]);
-            return;
-          }
+      try {
+        const barcodes = await detector.detect(videoRef.current);
+        setQrBoxPositions(
+          barcodes.length === 0
+            ? []
+            : barcodes.map((bc) => {
+                const rect = videoRef.current.getBoundingClientRect();
+                return {
+                  rawValue: bc.rawValue,
+                  format: bc.format,
+                  x:
+                    bc.boundingBox.x *
+                    (rect.width / videoRef.current.videoWidth),
+                  y:
+                    bc.boundingBox.y *
+                    (rect.height / videoRef.current.videoHeight),
+                  width:
+                    bc.boundingBox.width *
+                    (rect.width / videoRef.current.videoWidth),
+                  height:
+                    bc.boundingBox.height *
+                    (rect.height / videoRef.current.videoHeight),
+                };
+              })
+        );
 
-          const videoEl = videoRef.current;
-          const videoRect = videoEl.getBoundingClientRect();
-          const scaleX = videoRect.width / videoEl.videoWidth;
-          const scaleY = videoRect.height / videoEl.videoHeight;
+        if (barcodes.length === 1 && scanIntervalRef.current) {
+          processingRef.current = true;
+          clearInterval(scanIntervalRef.current);
+          scanIntervalRef.current = null;
 
-          const boxes = barcodes.map((bc) => ({
-            rawValue: bc.rawValue,
-            format: bc.format,
-            x: bc.boundingBox.x * scaleX,
-            y: bc.boundingBox.y * scaleY,
-            width: bc.boundingBox.width * scaleX,
-            height: bc.boundingBox.height * scaleY,
-          }));
-
-          setQrBoxPositions(boxes);
-
-          if (barcodes.length === 1) {
-            if (!scanIntervalRef.current) return;
-            clearInterval(scanIntervalRef.current);
-            scanIntervalRef.current = null;
-
-            setTimeout(() => {
-              const cleaned = cleanBarcodeData(barcodes[0].rawValue);
-              handleBarcodeSuccess(cleaned);
-            }, 500);
-          }
-        } catch (e) {}
-      }
+          setTimeout(
+            () => handleBarcodeSuccess(cleanBarcodeData(barcodes[0].rawValue)),
+            500
+          );
+        }
+      } catch (e) {}
     }, 120);
-  }, [handleBarcodeSuccess]);
+  }, [handleBarcodeSuccess, cleanBarcodeData]);
 
   const startLiveScan = useCallback(() => {
     liveScanIntervalRef.current = setInterval(async () => {
