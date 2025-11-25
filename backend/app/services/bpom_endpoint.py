@@ -1,13 +1,17 @@
 import httpx
 from bs4 import BeautifulSoup
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import re
 
 class BPOMScraper:
     def __init__(self):
         self.base_url = "https://cekbpom.pom.go.id"
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+            'Origin': 'https://cekbpom.pom.go.id',
+            'Referer': 'https://cekbpom.pom.go.id/all-produk',
         }
 
     def _get_query_variants(self, bpom_number: str) -> list:
@@ -17,9 +21,9 @@ class BPOMScraper:
         if match:
             prefix, number = match.groups()
             return [
-                f"{prefix} {number}",
-                f"{prefix}{number}",
-                bpom_number.strip().upper()
+                f"{prefix} {number}", 
+                f"{prefix}{number}",  
+                clean                 
             ]
         
         return [bpom_number.strip().upper()]
@@ -28,13 +32,15 @@ class BPOMScraper:
         variants = self._get_query_variants(bpom_number)
         
         for search_query in variants:
-            result = await self._scrape_single_query(search_query)
+            result = await self._perform_request(search_query)
+            
             if result:
+                result['searched_code'] = search_query 
                 return result
         
         return None
 
-    async def _scrape_single_query(self, search_query: str) -> Optional[Dict]:
+    async def _perform_request(self, search_query: str) -> Optional[Dict]:
         async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
                 home_response = await client.get(self.base_url, headers=self.headers)
@@ -45,7 +51,7 @@ class BPOMScraper:
                     return None
                 
                 csrf_token = csrf_meta['content']
-                
+
                 post_data = {
                     'draw': '1',
                     'columns[0][data]': 'PRODUCT_ID',

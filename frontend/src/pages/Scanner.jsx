@@ -61,6 +61,38 @@ const Scanner = () => {
   const [liveScanMode, setLiveScanMode] = useState(false);
   const [liveOcrText, setLiveOcrText] = useState("");
 
+  const handleBarcodeSuccess = useCallback(
+    async (code) => {
+      setLoading(true);
+      setLoadingMessage(t("scanner.loadingBPOM"));
+      setError(null);
+
+      try {
+        const token = await getToken("scan_ocr");
+        if (!token) throw new Error(t("auth.recaptchaRequired"));
+
+        const { data } = await api.post(
+          "/scan/bpom",
+          { bpom_number: code },
+          { headers: { "X-Recaptcha-Token": token } }
+        );
+
+        setResult({
+          type: "bpom",
+          found: data.found,
+          data: data.data,
+          code: data.searched_code || code,
+          scan_id: data.data?.id,
+        });
+      } catch (err) {
+        setError(t("scanner.errorBPOMFetch"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken, t]
+  );
+
   // Hook for Camera/Scanning Logic
   const {
     videoRef,
@@ -77,12 +109,12 @@ const Scanner = () => {
     hasFlash,
     flashOn,
     qrBoxPositions,
-    handleBarcodeSuccess: handleBarcodeSuccessFromHook,
+    handleBarcodeTap,
     stopLiveScan,
     cleanBarcodeData,
-    handleBarcodeTap,
   } = useScannerCamera({
     scanMode,
+    onDetected: handleBarcodeSuccess,
     setResult,
     setError,
     setOcrImage,
@@ -101,7 +133,6 @@ const Scanner = () => {
         const { data } = await api.get(`/favorites/status/${type}/${id}`);
         setIsFavorited(data.is_favorited);
       } catch (e) {
-        console.error("Gagal memeriksa status favorit:", e);
         setIsFavorited(false);
       }
     },
@@ -117,19 +148,15 @@ const Scanner = () => {
   }, [result, user, checkFavoriteStatus]);
 
   useEffect(() => {
-    const fetchAllergies = async () => {
-      try {
-        const { data } = await api.get("/users/my-allergies");
-        setMyAllergies(data.map((a) => a.name.toLowerCase()));
-      } catch (e) {
-        console.error(t("scanner.errorLoadAllergies"), e);
-      }
-    };
-
     if (user) {
-      fetchAllergies();
+      api
+        .get("/users/my-allergies")
+        .then(({ data }) =>
+          setMyAllergies(data.map((a) => a.name.toLowerCase()))
+        )
+        .catch(console.error);
     }
-  }, [user, t]);
+  }, [user]);
 
   const processImageAnalysis = async () => {
     if (!productName.trim()) {
@@ -256,23 +283,14 @@ const Scanner = () => {
 
   const handleAddToFavorites = async () => {
     if (!user) {
-      if (window.confirm(t("scanner.confirmLoginFav"))) {
-        navigate("/login");
-      }
+      if (window.confirm(t("scanner.confirmLoginFav"))) navigate("/login");
       return;
     }
-
-    if (!result || !result.scan_id) {
-      alert(t("scanner.errorNoScanID"));
-      return;
-    }
-
     try {
       const { data } = await api.post(
         `/favorites/${result.type}/${result.scan_id}/toggle`
       );
       setIsFavorited(data.is_favorited);
-
       setSuccessMessage(
         data.is_favorited
           ? t("history.addedToFav")
@@ -280,11 +298,7 @@ const Scanner = () => {
       );
       setShowSuccess(true);
     } catch (e) {
-      console.error(e);
-      setSuccessMessage(
-        e.response?.data?.detail || t("scanner.errorAddingFav")
-      );
-      setShowSuccess(true);
+      alert(t("scanner.errorAddingFav"));
     }
   };
 
@@ -295,10 +309,8 @@ const Scanner = () => {
     setProductName("");
     setBpomInput("");
     setChatHistory([]);
-    setLiveOcrText("");
     setIsFavorited(false);
     stopCamera();
-    stopLiveScan();
   };
 
   const switchMode = (mode) => {
@@ -308,12 +320,11 @@ const Scanner = () => {
 
   const toggleLiveScan = () => {
     if (liveScanMode) {
-      stopLiveScan();
       setLiveScanMode(false);
+      stopLiveScan();
     } else {
       setLiveScanMode(true);
-      if (isScannerActive) startCamera(true);
-      else startCamera(true);
+      startCamera(true);
     }
   };
 
@@ -386,7 +397,7 @@ const Scanner = () => {
                 productName={productName}
                 setProductName={setProductName}
                 processImageAnalysis={processImageAnalysis}
-                handleBarcodeSuccess={handleBarcodeSuccessFromHook}
+                handleBarcodeSuccess={handleBarcodeSuccess}
                 cleanBarcodeData={cleanBarcodeData}
                 videoRef={videoRef}
                 qrBoxPositions={qrBoxPositions}
